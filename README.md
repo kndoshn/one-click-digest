@@ -113,6 +113,17 @@ The settings page offers additional configuration:
 - Prompt caching (TTL)
 - Cost limits and extraction limits
 
+## Disclaimer
+
+This extension is provided "as is" without warranty of any kind. By using this extension, you acknowledge and agree that:
+
+- **API Costs**: You are solely responsible for any charges incurred through the Anthropic API. Monitor your usage and set appropriate limits in the [Anthropic Console](https://console.anthropic.com/).
+- **Data Transmission**: Article content is sent to Anthropic's servers for processing. Do not use this extension on confidential or sensitive content.
+- **Accuracy**: Summaries are AI-generated and may contain errors or omissions. Always verify important information from the original source.
+- **Availability**: This extension depends on third-party services that may change or become unavailable without notice.
+
+The developers are not liable for any damages, costs, or losses arising from the use of this extension.
+
 ## License
 
 MIT License - See [LICENSE](LICENSE)
