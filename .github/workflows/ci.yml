@@ -114,13 +114,13 @@ jobs:
           zip -r ../one-click-digest.zip .
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: extension-dist
           path: dist/
 
       - name: Upload extension zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: extension-zip
           path: one-click-digest.zip
