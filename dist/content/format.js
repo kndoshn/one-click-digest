@@ -44,21 +44,27 @@ var AS;
         }
         const SUMMARY_RE = new RegExp(`^\\s*(?:${SUMMARY_LABELS.map(escapeRegex).join('|')})\\s*:`, 'i');
         const CONCLUSION_RE = new RegExp(`^\\s*(?:${CONCLUSION_LABELS.map(escapeRegex).join('|')})\\s*:`, 'i');
-        function isTldrLine(line) {
+        function isSummaryLine(line) {
             return SUMMARY_RE.test(line.trim());
         }
+        Format.isSummaryLine = isSummaryLine;
         function isConclusionLine(line) {
             return CONCLUSION_RE.test(line.trim());
         }
+        Format.isConclusionLine = isConclusionLine;
+        function isBulletLine(line) {
+            return BULLET_RE.test(line);
+        }
+        Format.isBulletLine = isBulletLine;
         function validate(mode, text) {
             const cleaned = normalize(text);
             const lines = cleaned.split('\n');
             const first = firstNonEmptyLine(lines) || '';
             if (mode === 'TLDR_12_CONCLUSION') {
-                if (!isTldrLine(first)) {
+                if (!isSummaryLine(first)) {
                     return { ok: false, reason: 'Missing Summary line' };
                 }
-                const tldrIndex = lines.findIndex((l) => isTldrLine(l));
+                const tldrIndex = lines.findIndex((l) => isSummaryLine(l));
                 const conclusionIndex = lines.findIndex((l) => isConclusionLine(l));
                 if (tldrIndex < 0) {
                     return { ok: false, reason: 'Missing Summary line' };
@@ -69,13 +75,34 @@ var AS;
                 if (tldrIndex >= conclusionIndex) {
                     return { ok: false, reason: 'Summary must come before Conclusion' };
                 }
+                for (let i = 0; i < tldrIndex; i++) {
+                    if (lines[i].trim().length > 0) {
+                        return { ok: false, reason: 'Unexpected content before Summary line' };
+                    }
+                }
                 if (lines[tldrIndex + 1] === undefined || lines[tldrIndex + 1].trim() !== '') {
                     return { ok: false, reason: 'Missing blank line after Summary line' };
                 }
                 if (lines[conclusionIndex - 1] === undefined || lines[conclusionIndex - 1].trim() !== '') {
                     return { ok: false, reason: 'Missing blank line before Conclusion line' };
                 }
-                const bullets = extractBulletLines(cleaned);
+                for (let i = conclusionIndex + 1; i < lines.length; i++) {
+                    if (lines[i].trim().length > 0) {
+                        return { ok: false, reason: 'Unexpected content after Conclusion line' };
+                    }
+                }
+                const bullets = [];
+                for (let i = tldrIndex + 2; i <= conclusionIndex - 2; i++) {
+                    const line = lines[i] ?? '';
+                    const trimmed = line.trim();
+                    if (trimmed.length === 0) {
+                        return { ok: false, reason: 'Unexpected blank line in bullet section' };
+                    }
+                    if (!isBulletLine(line)) {
+                        return { ok: false, reason: 'Expected bullet line in TLDR mode' };
+                    }
+                    bullets.push(trimmed);
+                }
                 if (bullets.length !== 12) {
                     return { ok: false, reason: `Expected 12 bullets, got ${bullets.length}` };
                 }
@@ -83,13 +110,17 @@ var AS;
             }
             // Bullet-only modes
             const expected = expectedBulletCount(mode);
-            const bullets = extractBulletLines(cleaned);
-            if (bullets.length !== expected) {
-                return { ok: false, reason: `Expected ${expected} bullets, got ${bullets.length}` };
+            const nonEmpty = lines.filter((line) => line.trim().length > 0);
+            for (const line of nonEmpty) {
+                if (isSummaryLine(line) || isConclusionLine(line)) {
+                    return { ok: false, reason: 'Unexpected header in bullet-only mode' };
+                }
+                if (!isBulletLine(line)) {
+                    return { ok: false, reason: 'Unexpected non-bullet line' };
+                }
             }
-            // Avoid surprising headers in bullet modes.
-            if (isTldrLine(first) || isConclusionLine(first)) {
-                return { ok: false, reason: 'Unexpected header in bullet-only mode' };
+            if (nonEmpty.length !== expected) {
+                return { ok: false, reason: `Expected ${expected} bullets, got ${nonEmpty.length}` };
             }
             return { ok: true };
         }

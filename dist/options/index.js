@@ -3,18 +3,9 @@
 // - Stores non-sensitive preferences in chrome.storage.local
 import { STORAGE_KEYS } from '../shared/constants.js';
 import { normalizeApprovalThresholds } from '../shared/approval.js';
-const DEFAULT_PREFS = {
-    modelMap: 'claude-haiku-4-5',
-    modelFinal: 'claude-sonnet-4-5',
-    promptCachingEnabled: true,
-    promptCachingTtl: '5m',
-    hardCostLimitUsd: 1.0,
-    approvalThresholdUsd: 1.0,
-    approvalThresholdChars: 100_000,
-    minArticleChars: 600,
-    maxArticleCharsToSend: 200_000,
-    uiLanguage: 'auto'
-};
+import { DEFAULT_SETTINGS } from '../shared/types.js';
+import { parseNumberOr } from '../shared/utils.js';
+const DEFAULT_PREFS = DEFAULT_SETTINGS;
 const SUPPORTED_UI_LANGS = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
 let messages = {};
 function $(id) {
@@ -106,16 +97,6 @@ function parseNum(input, fallback, opts) {
     if (typeof max === 'number' && n > max)
         return fallback;
     return n;
-}
-function parseNumberOr(value, fallback) {
-    if (typeof value === 'number' && Number.isFinite(value))
-        return value;
-    if (typeof value === 'string') {
-        const parsed = Number(value);
-        if (Number.isFinite(parsed))
-            return parsed;
-    }
-    return fallback;
 }
 function toUiLang(input) {
     const raw = String(input || '').trim();

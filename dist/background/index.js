@@ -1,3 +1,4 @@
+/// <reference types="chrome" />
 // Background service worker (MV3)
 //
 // Responsibilities
@@ -9,6 +10,8 @@
 import { STORAGE_KEYS } from '../shared/constants.js';
 import { normalizeApprovalThresholds } from '../shared/approval.js';
 import { createAbortRegistry } from './abort_registry.js';
+import { DEFAULT_SETTINGS } from '../shared/types.js';
+import { parseNumberOr } from '../shared/utils.js';
 // -----------------------------
 // Script injection
 // -----------------------------
@@ -81,18 +84,6 @@ const STORAGE_KEY_API_KEY = STORAGE_KEYS.CLAUDE_API_KEY;
 //   and refresh on demand.
 let apiKeyCache;
 let apiKeyLoaded = false;
-const DEFAULT_SETTINGS = {
-    modelMap: 'claude-haiku-4-5',
-    modelFinal: 'claude-sonnet-4-5',
-    promptCachingEnabled: true,
-    promptCachingTtl: '5m',
-    hardCostLimitUsd: 1.0,
-    approvalThresholdUsd: 1.0,
-    approvalThresholdChars: 100_000,
-    minArticleChars: 600,
-    maxArticleCharsToSend: 200_000,
-    uiLanguage: 'auto'
-};
 const SETTINGS_STORAGE_KEYS = [
     STORAGE_KEYS.MODEL_MAP,
     STORAGE_KEYS.MODEL_FINAL,
@@ -107,16 +98,6 @@ const SETTINGS_STORAGE_KEYS = [
 ];
 let settingsCache = { ...DEFAULT_SETTINGS };
 let settingsLoaded = false;
-function parseNumberOr(value, fallback) {
-    if (typeof value === 'number' && Number.isFinite(value))
-        return value;
-    if (typeof value === 'string') {
-        const parsed = Number(value);
-        if (Number.isFinite(parsed))
-            return parsed;
-    }
-    return fallback;
-}
 async function refreshSettingsCache() {
     const res = await chrome.storage.local.get([...SETTINGS_STORAGE_KEYS]);
     const modelMap = res?.[STORAGE_KEYS.MODEL_MAP] || DEFAULT_SETTINGS.modelMap;

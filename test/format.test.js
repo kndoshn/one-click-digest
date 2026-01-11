@@ -97,3 +97,25 @@ test('Format: bullet-only mode rejects Summary/Conclusion headers', () => {
   const r = AS.Format.validate('BULLETS_3', text);
   assert.equal(r.ok, false);
 });
+
+test('Format: bullet-only mode rejects extra non-bullet lines', () => {
+  const AS = loadFormat();
+  const text = '- a\n- b\nnote\n- c';
+  const r = AS.Format.validate('BULLETS_3', text);
+  assert.equal(r.ok, false);
+});
+
+test('Format: TLDR mode rejects extra non-empty lines', () => {
+  const AS = loadFormat();
+  const text = [
+    'Summary: one line',
+    '',
+    ...Array.from({ length: 12 }, (_, i) => `- bullet ${i + 1}`),
+    '',
+    'Conclusion: last line',
+    'extra'
+  ].join('\n');
+
+  const r = AS.Format.validate('TLDR_12_CONCLUSION', text);
+  assert.equal(r.ok, false);
+});

@@ -232,9 +232,9 @@ var AS;
             const normalizeSummaryText = (input) => {
                 const lines = String(input || '').replace(/\r\n/g, '\n').split('\n');
                 const out = [];
-                const BULLET_RE = /^\s*(?:[-*•・]\s+|\d+[.)]\s+)/;
-                const isTldr = (line) => /^TL;?D[RL]\s*:/i.test(line.trim()) || /^\s*要約\s*:/i.test(line.trim());
-                const isConclusion = (line) => /^\s*Conclusion\s*:/i.test(line.trim()) || /^\s*結論\s*:/i.test(line.trim());
+                const isBullet = (line) => AS.Format.isBulletLine(line);
+                const isSummary = (line) => AS.Format.isSummaryLine(line);
+                const isConclusion = (line) => AS.Format.isConclusionLine(line);
                 const lastNonEmptyIndex = () => {
                     for (let i = out.length - 1; i >= 0; i--) {
                         if (out[i].trim().length > 0)
@@ -248,12 +248,12 @@ var AS;
                         out.push('');
                         continue;
                     }
-                    if (BULLET_RE.test(line) || isTldr(line) || isConclusion(line)) {
+                    if (isBullet(line) || isSummary(line) || isConclusion(line)) {
                         out.push(line);
                         continue;
                     }
                     const prevIndex = lastNonEmptyIndex();
-                    if (prevIndex >= 0 && BULLET_RE.test(out[prevIndex])) {
+                    if (prevIndex >= 0 && isBullet(out[prevIndex])) {
                         out[prevIndex] = `${out[prevIndex]} ${line}`;
                     }
                     else {
@@ -263,46 +263,9 @@ var AS;
                 return out.join('\n').trim();
             };
             try {
-                if (estimate.chunkCount > 1) {
-                    const chunks = AS.Chunker.chunkText(article.text, AS.CHUNK_TARGET_INPUT_TOKENS);
-                    const total = Math.max(1, chunks.length);
-                    // Fallback to single pass if chunker couldn't produce multiple chunks.
-                    if (total <= 1) {
-                        const singleModel = AS.MODEL_MAP;
-                        const repairModel = AS.MODEL_MAP;
-                        reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
-                        const single = await sendToBackground(runId, 'single', {
-                            type: 'RUN_SUMMARY_SINGLE',
-                            payload: {
-                                runId,
-                                title: article.title,
-                                url: article.url,
-                                language,
-                                mode,
-                                articleText: article.text,
-                                // Must match our cost model assumptions: single-pass uses the map model.
-                                model: singleModel
-                            }
-                        });
-                        if (!isRunActive(runId))
-                            return;
-                        if (single && single.ok === true && typeof single.text === 'string') {
-                            let finalText = await maybeRepairFormat(runId, mode, language, single.text, repairModel, {
-                                title: article.title,
-                                url: article.url
-                            });
-                            finalText = await maybeRepairTruncation(runId, mode, language, finalText, repairModel, {
-                                title: article.title,
-                                url: article.url
-                            });
-                            if (!isRunActive(runId))
-                                return;
-                            reduce({ type: 'SUMMARY_DONE', runId, summaryText: normalizeSummaryText(finalText), usage: single.usage }, true);
-                            return;
-                        }
-                        reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(single) }, true);
-                        return;
-                    }
+                const chunks = AS.Chunker.chunkText(article.text, AS.CHUNK_TARGET_INPUT_TOKENS);
+                const total = chunks.length;
+                if (total > 1) {
                     const chunkSummaries = [];
                     for (let i = 0; i < total; i++) {
                         if (!isRunActive(runId))

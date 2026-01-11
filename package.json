@@ -1,15 +1,40 @@
 {
   "name": "article-summarizer-extension",
   "version": "1.0.0",
+  "description": "Chrome extension for AI-powered article summarization using Claude API",
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test"
+    "test": "npm run build && node --test",
+    "test:coverage": "npm run build && c8 --include='dist/**/*.js' --exclude='dist/third_party/**' node --test",
+    "test:coverage:report": "npm run test:coverage && c8 report --reporter=html"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/one-click-digest"
+  },
+  "bugs": {
+    "url": "https://github.com/user/one-click-digest/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "claude",
+    "ai",
+    "summarizer",
+    "article"
+  ],
+  "author": "",
+  "license": "MIT",
   "devDependencies": {
+    "@types/chrome": "^0.1.33",
+    "@types/filesystem": "^0.0.36",
+    "c8": "^10.1.3",
     "typescript": "^5.5.0"
   }
 }

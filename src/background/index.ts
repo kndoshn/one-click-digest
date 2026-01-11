@@ -1,3 +1,4 @@
+/// <reference types="chrome" />
 // Background service worker (MV3)
 //
 // Responsibilities
@@ -10,6 +11,8 @@
 import { STORAGE_KEYS } from '../shared/constants.js';
 import { normalizeApprovalThresholds } from '../shared/approval.js';
 import { createAbortRegistry } from './abort_registry.js';
+import { CacheTtl, RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
+import { parseNumberOr } from '../shared/utils.js';
 
 // -----------------------------
 // Script injection
@@ -55,7 +58,7 @@ const CONTENT_FILES: string[] = [
   'content/bootstrap.js'
 ];
 
-chrome.action.onClicked.addListener(async (tab: any) => {
+chrome.action.onClicked.addListener(async (tab: chrome.tabs.Tab) => {
   try {
     const tabId = tab?.id;
     const url = tab?.url;
@@ -89,34 +92,6 @@ const STORAGE_KEY_API_KEY = STORAGE_KEYS.CLAUDE_API_KEY;
 let apiKeyCache: string | undefined;
 let apiKeyLoaded = false;
 
-type CacheTtl = '5m' | '1h';
-
-type RuntimeSettings = {
-  modelMap: string;
-  modelFinal: string;
-  promptCachingEnabled: boolean;
-  promptCachingTtl: CacheTtl;
-  hardCostLimitUsd: number;
-  approvalThresholdUsd: number;
-  approvalThresholdChars: number;
-  minArticleChars: number;
-  maxArticleCharsToSend: number;
-  uiLanguage: string;
-};
-
-const DEFAULT_SETTINGS: RuntimeSettings = {
-  modelMap: 'claude-haiku-4-5',
-  modelFinal: 'claude-sonnet-4-5',
-  promptCachingEnabled: true,
-  promptCachingTtl: '5m',
-  hardCostLimitUsd: 1.0,
-  approvalThresholdUsd: 1.0,
-  approvalThresholdChars: 100_000,
-  minArticleChars: 600,
-  maxArticleCharsToSend: 200_000,
-  uiLanguage: 'auto'
-};
-
 const SETTINGS_STORAGE_KEYS = [
   STORAGE_KEYS.MODEL_MAP,
   STORAGE_KEYS.MODEL_FINAL,
@@ -132,15 +107,6 @@ const SETTINGS_STORAGE_KEYS = [
 
 let settingsCache: RuntimeSettings = { ...DEFAULT_SETTINGS };
 let settingsLoaded = false;
-
-function parseNumberOr<T extends number>(value: unknown, fallback: T): T {
-  if (typeof value === 'number' && Number.isFinite(value)) return value as T;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed as T;
-  }
-  return fallback;
-}
 
 async function refreshSettingsCache(): Promise<void> {
   const res = await chrome.storage.local.get([...SETTINGS_STORAGE_KEYS]);
@@ -199,7 +165,7 @@ async function ensureSettingsLoaded(): Promise<void> {
 }
 
 // Keep cache up-to-date while the service worker is alive.
-chrome.storage.onChanged.addListener((changes, areaName) => {
+chrome.storage.onChanged.addListener((changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
   if (areaName !== 'local') return;
 
   // API key cache update
@@ -749,7 +715,7 @@ type AnyMsg =
   | MsgRunRepair
   | { type: string; payload?: any };
 
-chrome.runtime.onMessage.addListener((msg: AnyMsg, _sender: any, sendResponse: (resp: any) => void) => {
+chrome.runtime.onMessage.addListener((msg: AnyMsg, _sender: chrome.runtime.MessageSender, sendResponse: (resp: unknown) => void) => {
   (async () => {
     try {
       if (!msg || typeof msg.type !== 'string') {

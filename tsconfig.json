@@ -7,11 +7,11 @@
       "DOM"
     ],
     "strict": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "skipLibCheck": true,
     "rootDir": "src",
     "outDir": "dist",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true

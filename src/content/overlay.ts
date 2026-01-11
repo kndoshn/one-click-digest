@@ -183,7 +183,6 @@ namespace AS {
           gap: 6px 10px;
           font-size: 14px;
         }
-        .kv .k { color: rgba(0,0,0,0.7); }
         .kv .k { color: rgba(255,255,255,0.7); }
         .kv .v { color: rgba(255,255,255,0.92); }
         .summary {
@@ -694,10 +693,6 @@ namespace AS {
       const pre = el('div', 'summary');
       pre.textContent = state.summaryText;
       inst.body.appendChild(pre);
-
-      const usage = state.usage;
-      void usage;
-
 
       renderFooterButtons(inst, [
         { key: 'buttonCopy', primary: true, event: 'as:copy' },

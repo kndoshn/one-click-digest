@@ -270,11 +270,9 @@ namespace AS {
       const normalizeSummaryText = (input: string): string => {
         const lines = String(input || '').replace(/\r\n/g, '\n').split('\n');
         const out: string[] = [];
-        const BULLET_RE = /^\s*(?:[-*•・]\s+|\d+[.)]\s+)/;
-        const isTldr = (line: string): boolean =>
-          /^TL;?D[RL]\s*:/i.test(line.trim()) || /^\s*要約\s*:/i.test(line.trim());
-        const isConclusion = (line: string): boolean =>
-          /^\s*Conclusion\s*:/i.test(line.trim()) || /^\s*結論\s*:/i.test(line.trim());
+        const isBullet = (line: string): boolean => Format.isBulletLine(line);
+        const isSummary = (line: string): boolean => Format.isSummaryLine(line);
+        const isConclusion = (line: string): boolean => Format.isConclusionLine(line);
         const lastNonEmptyIndex = (): number => {
           for (let i = out.length - 1; i >= 0; i--) {
             if (out[i].trim().length > 0) return i;
@@ -288,13 +286,13 @@ namespace AS {
             out.push('');
             continue;
           }
-          if (BULLET_RE.test(line) || isTldr(line) || isConclusion(line)) {
+          if (isBullet(line) || isSummary(line) || isConclusion(line)) {
             out.push(line);
             continue;
           }
 
           const prevIndex = lastNonEmptyIndex();
-          if (prevIndex >= 0 && BULLET_RE.test(out[prevIndex])) {
+          if (prevIndex >= 0 && isBullet(out[prevIndex])) {
             out[prevIndex] = `${out[prevIndex]} ${line}`;
           } else {
             out.push(line);
@@ -305,49 +303,10 @@ namespace AS {
       };
 
       try {
-        if (estimate.chunkCount > 1) {
-          const chunks = Chunker.chunkText(article.text, CHUNK_TARGET_INPUT_TOKENS);
-          const total = Math.max(1, chunks.length);
+        const chunks = Chunker.chunkText(article.text, CHUNK_TARGET_INPUT_TOKENS);
+        const total = chunks.length;
 
-          // Fallback to single pass if chunker couldn't produce multiple chunks.
-          if (total <= 1) {
-            const singleModel = MODEL_MAP;
-            const repairModel = MODEL_MAP;
-            reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
-            const single = await sendToBackground(runId, 'single', {
-              type: 'RUN_SUMMARY_SINGLE',
-              payload: {
-                runId,
-                title: article.title,
-                url: article.url,
-                language,
-                mode,
-                articleText: article.text,
-                // Must match our cost model assumptions: single-pass uses the map model.
-                model: singleModel
-              }
-            });
-            if (!isRunActive(runId)) return;
-            if (single && single.ok === true && typeof single.text === 'string') {
-              let finalText = await maybeRepairFormat(runId, mode, language, single.text, repairModel, {
-                title: article.title,
-                url: article.url
-              });
-              finalText = await maybeRepairTruncation(runId, mode, language, finalText, repairModel, {
-                title: article.title,
-                url: article.url
-              });
-              if (!isRunActive(runId)) return;
-              reduce(
-                { type: 'SUMMARY_DONE', runId, summaryText: normalizeSummaryText(finalText), usage: single.usage },
-                true
-              );
-              return;
-            }
-            reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(single) }, true);
-            return;
-          }
-
+        if (total > 1) {
           const chunkSummaries: string[] = [];
           for (let i = 0; i < total; i++) {
             if (!isRunActive(runId)) return;
@@ -710,7 +669,7 @@ namespace AS {
 
       try {
         if (chrome?.storage?.onChanged?.addListener) {
-          chrome.storage.onChanged.addListener((changes, areaName) => {
+          chrome.storage.onChanged.addListener((changes: { [key: string]: { newValue?: unknown; oldValue?: unknown } }, areaName: string) => {
             if (areaName !== 'local') return;
             if (!changes || !Object.prototype.hasOwnProperty.call(changes, 'uiLanguage')) return;
             if (!ctx.overlay) return;

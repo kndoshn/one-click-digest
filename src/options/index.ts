@@ -4,34 +4,12 @@
 
 import { STORAGE_KEYS } from '../shared/constants.js';
 import { normalizeApprovalThresholds } from '../shared/approval.js';
+import { CacheTtl, RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
+import { parseNumberOr } from '../shared/utils.js';
 
-type CacheTtl = '5m' | '1h';
+type Preferences = RuntimeSettings;
 
-type Preferences = {
-  modelMap: string;
-  modelFinal: string;
-  promptCachingEnabled: boolean;
-  promptCachingTtl: CacheTtl;
-  hardCostLimitUsd: number;
-  approvalThresholdUsd: number;
-  approvalThresholdChars: number;
-  minArticleChars: number;
-  maxArticleCharsToSend: number;
-  uiLanguage: string;
-};
-
-const DEFAULT_PREFS: Preferences = {
-  modelMap: 'claude-haiku-4-5',
-  modelFinal: 'claude-sonnet-4-5',
-  promptCachingEnabled: true,
-  promptCachingTtl: '5m',
-  hardCostLimitUsd: 1.0,
-  approvalThresholdUsd: 1.0,
-  approvalThresholdChars: 100_000,
-  minArticleChars: 600,
-  maxArticleCharsToSend: 200_000,
-  uiLanguage: 'auto'
-};
+const DEFAULT_PREFS: Preferences = DEFAULT_SETTINGS;
 
 const SUPPORTED_UI_LANGS = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'] as const;
 type UiLang = (typeof SUPPORTED_UI_LANGS)[number];
@@ -131,15 +109,6 @@ function parseNum(input: string, fallback: number, opts?: { min?: number; max?: 
   if (typeof min === 'number' && n < min) return fallback;
   if (typeof max === 'number' && n > max) return fallback;
   return n;
-}
-
-function parseNumberOr<T extends number>(value: unknown, fallback: T): T {
-  if (typeof value === 'number' && Number.isFinite(value)) return value as T;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed as T;
-  }
-  return fallback;
 }
 
 function toUiLang(input: string): UiLang {
