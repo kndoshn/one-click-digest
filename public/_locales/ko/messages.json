@@ -1,0 +1,335 @@
+{
+  "appName": {
+    "message": "OneClickDigest",
+    "description": "Extension name"
+  },
+  "appDescription": {
+    "message": "Claude를 사용해 현재 기사를 오버레이로 요약합니다.",
+    "description": "Extension description"
+  },
+  "actionTitle": {
+    "message": "이 기사 요약",
+    "description": "Action tooltip"
+  },
+  "panelTitle": {
+    "message": "OneClickDigest"
+  },
+  "closeAria": {
+    "message": "닫기"
+  },
+  "labelLanguage": {
+    "message": "출력 언어"
+  },
+  "languageAuto": {
+    "message": "자동"
+  },
+  "buttonSettings": {
+    "message": "설정"
+  },
+  "optionsTitle": {
+    "message": "OneClickDigest - 옵션"
+  },
+  "optionsHeading": {
+    "message": "OneClickDigest 옵션"
+  },
+  "optionsIntro": {
+    "message": "이 확장은 오픈 소스입니다: <a href=\"http://github.com/kndoshn/one-click-digest\" target=\"_blank\" rel=\"noreferrer\">kndoshn/one-click-digest</a>. API 키는 이 기기에 로컬로 저장됩니다 (<code>chrome.storage.local</code>). 아래 설정도 로컬에 저장됩니다."
+  },
+  "sectionUiLanguage": {
+    "message": "UI 언어"
+  },
+  "labelUiLanguage": {
+    "message": "UI 언어"
+  },
+  "hintUiLanguage": {
+    "message": "확장 UI 언어를 설정합니다. 출력 언어는 별도로 설정됩니다."
+  },
+  "sectionApiKey": {
+    "message": "Claude API 키"
+  },
+  "labelApiKey": {
+    "message": "API 키"
+  },
+  "hintApiKeyKeep": {
+    "message": "비워두면 기존 키를 유지합니다."
+  },
+  "buttonClearApiKey": {
+    "message": "API 키 삭제"
+  },
+  "sectionPreferences": {
+    "message": "고급 옵션"
+  },
+  "labelModelsAdvanced": {
+    "message": "모델 (고급)"
+  },
+  "hintModelsAdvanced": {
+    "message": "Map은 분할 요약, Final은 통합/복원에 사용됩니다."
+  },
+  "labelMapModel": {
+    "message": "Map 모델"
+  },
+  "labelFinalModel": {
+    "message": "Final 모델"
+  },
+  "labelPromptCachingAdvanced": {
+    "message": "프롬프트 캐시 (고급)"
+  },
+  "labelPromptCachingEnable": {
+    "message": "프롬프트 캐시 사용 (긴 작업의 비용/지연 감소)"
+  },
+  "labelPromptCachingTtl": {
+    "message": "TTL"
+  },
+  "hintPromptCaching": {
+    "message": "지원되는 경우와 프롬프트가 충분히 길 때만 적용됩니다."
+  },
+  "labelCostControls": {
+    "message": "비용 제어 (고급)"
+  },
+  "hintCostControls": {
+    "message": "클라이언트 측 추정 및 차단에만 사용됩니다."
+  },
+  "labelHardLimitUsd": {
+    "message": "하드 제한 (USD)"
+  },
+  "labelApprovalThresholdUsd": {
+    "message": "승인 임계값 (USD)"
+  },
+  "labelApprovalThresholdChars": {
+    "message": "승인 임계값 (문자 수)"
+  },
+  "labelExtractionLimits": {
+    "message": "추출/전송 제한 (고급)"
+  },
+  "labelMinArticleChars": {
+    "message": "최소 본문 문자 수"
+  },
+  "labelMaxSendChars": {
+    "message": "최대 전송 문자 수"
+  },
+  "buttonSave": {
+    "message": "저장"
+  },
+  "buttonResetDefaults": {
+    "message": "기본값으로 재설정"
+  },
+  "statusSavedKeySet": {
+    "message": "저장됨. 이 기기에 API 키가 설정되어 있습니다."
+  },
+  "statusSavedKeyMissing": {
+    "message": "저장됨. API 키가 설정되어 있지 않습니다."
+  },
+  "statusClearedKey": {
+    "message": "API 키를 삭제했습니다."
+  },
+  "statusResetDefaults": {
+    "message": "설정을 기본값으로 되돌렸습니다."
+  },
+  "statusKeySet": {
+    "message": "이 기기에 API 키가 설정되어 있습니다."
+  },
+  "statusKeyMissing": {
+    "message": "API 키가 설정되어 있지 않습니다."
+  },
+  "statusReloading": {
+    "message": "저장됨. UI 언어를 적용하기 위해 다시 로드합니다."
+  },
+  "promptChooseMode": {
+    "message": "요약 수준을 선택하세요:"
+  },
+  "mode3Label": {
+    "message": "3개"
+  },
+  "mode3Desc": {
+    "message": "매우 짧게"
+  },
+  "mode5Label": {
+    "message": "5개"
+  },
+  "mode5Desc": {
+    "message": "기본"
+  },
+  "mode10Label": {
+    "message": "10개"
+  },
+  "mode10Desc": {
+    "message": "더 자세히"
+  },
+  "modeDLabel": {
+    "message": "결론 포함"
+  },
+  "modeDDesc": {
+    "message": "가장 상세"
+  },
+  "warningApiKeyMissing": {
+    "message": "Claude API 키가 설정되어 있지 않습니다. 상단의 설정 버튼을 클릭해 설정해 주세요."
+  },
+  "statusExtracting": {
+    "message": "페이지 분석 중"
+  },
+  "statusSummarizing": {
+    "message": "요약 생성 중"
+  },
+  "statusSummarizingMap": {
+    "message": "요약 생성 중(분할)"
+  },
+  "statusSummarizingReduce": {
+    "message": "요약 생성 중(통합)"
+  },
+  "statusSummarizingRepair": {
+    "message": "요약 생성 중(형식 정리)"
+  },
+  "sectionEstimate": {
+    "message": "예상"
+  },
+  "labelChars": {
+    "message": "추출 문자 수"
+  },
+  "labelSendChars": {
+    "message": "전송"
+  },
+  "labelTokens": {
+    "message": "입력 토큰"
+  },
+  "labelRefining": {
+    "message": "정밀화"
+  },
+  "labelCost": {
+    "message": "예상 비용"
+  },
+  "labelWorst": {
+    "message": "최대"
+  },
+  "labelTime": {
+    "message": "예상 시간"
+  },
+  "labelModel": {
+    "message": "모델"
+  },
+  "labelChunkCount": {
+    "message": "분할 수"
+  },
+  "labelLinkDensity": {
+    "message": "링크 밀도"
+  },
+  "noteTruncated": {
+    "message": "참고: 본문이 길어 안전 한도까지 잘라 전송했습니다."
+  },
+  "promptApprovalRequired": {
+    "message": "긴 요청으로 보입니다. 실행 전에 확인하세요:"
+  },
+  "labelCostWorst": {
+    "message": "최악의 비용"
+  },
+  "buttonProceed": {
+    "message": "계속"
+  },
+  "buttonRun": {
+    "message": "실행"
+  },
+  "buttonRunLight": {
+    "message": "실행(3개)"
+  },
+  "buttonCancel": {
+    "message": "취소"
+  },
+  "buttonCopy": {
+    "message": "복사"
+  },
+  "buttonBack": {
+    "message": "뒤로"
+  },
+  "buttonClose": {
+    "message": "닫기"
+  },
+  "buttonOpenOptions": {
+    "message": "설정 열기"
+  },
+  "labelUsage": {
+    "message": "토큰 사용량"
+  },
+  "toastCopied": {
+    "message": "복사됨"
+  },
+  "toastCopyFailed": {
+    "message": "복사 실패"
+  },
+  "toastModeAdjusted": {
+    "message": "본문이 짧아 모드를 $1로 조정했습니다."
+  },
+  "confirmCancel": {
+    "message": "진행 중인 작업을 취소하고 시작 화면으로 돌아갈까요?"
+  },
+  "confirmCloseWhileRunning": {
+    "message": "작업이 진행 중입니다. 취소하고 닫을까요?"
+  },
+  "bannerCancelled": {
+    "message": "취소했습니다."
+  },
+  "errorApiKeyMissing": {
+    "message": "Claude API 키가 설정되어 있지 않습니다. 상단의 설정 버튼을 클릭해 설정해 주세요."
+  },
+  "errorAuth": {
+    "message": "인증에 실패했습니다. 설정에서 API 키를 확인하세요."
+  },
+  "errorRateLimit": {
+    "message": "요청 제한 또는 일시적 과부하입니다. 잠시 후 다시 시도하세요."
+  },
+  "errorBadRequest": {
+    "message": "요청이 거부되었습니다. 다시 시도하세요."
+  },
+  "errorTimeout": {
+    "message": "시간 초과입니다. 다시 시도하세요."
+  },
+  "errorNetwork": {
+    "message": "네트워크 오류입니다. 연결을 확인하고 다시 시도하세요."
+  },
+  "errorServer": {
+    "message": "Claude API 오류입니다. 잠시 후 다시 시도하세요."
+  },
+  "errorTooShort": {
+    "message": "이 페이지는 요약하기에 너무 짧습니다."
+  },
+  "errorNotArticle": {
+    "message": "이 페이지는 일반적인 기사로 보이지 않습니다."
+  },
+  "errorNoMainText": {
+    "message": "기사 본문을 찾을 수 없습니다."
+  },
+  "errorExtractionFailed": {
+    "message": "본문 추출에 실패했습니다."
+  },
+  "errorUnknown": {
+    "message": "알 수 없는 오류"
+  },
+  "reasonHardLimit": {
+    "message": "예상 비용이 하드 제한을 초과했습니다."
+  },
+  "errorBlocked": {
+    "message": "차단됨: "
+  },
+  "noteChunking": {
+    "message": "참고: 긴 기사입니다. 여러 청크로 요약됩니다."
+  },
+  "noteChunkingPlanned": {
+    "message": "분할 요약이 실행됩니다. 청크 수: {count}."
+  },
+  "noteDataSent": {
+    "message": "Claude에 전송된 데이터: 제목, URL, 본문(안전 한도까지)."
+  },
+  "uiLanguageAutoFormat": {
+    "message": "자동 ($1)"
+  },
+  "placeholderApiKeyEmpty": {
+    "message": "Claude API 키 입력"
+  },
+  "placeholderApiKeySaved": {
+    "message": "Claude API 키 저장됨"
+  },
+  "confirmClearApiKey": {
+    "message": "저장된 API 키를 삭제할까요?"
+  },
+  "confirmResetDefaults": {
+    "message": "설정을 기본값으로 되돌릴까요?"
+  }
+}

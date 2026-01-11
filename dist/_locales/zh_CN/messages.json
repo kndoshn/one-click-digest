@@ -1,0 +1,335 @@
+{
+  "appName": {
+    "message": "OneClickDigest",
+    "description": "Extension name"
+  },
+  "appDescription": {
+    "message": "使用Claude在页面浮层中总结当前文章。",
+    "description": "Extension description"
+  },
+  "actionTitle": {
+    "message": "总结这篇文章",
+    "description": "Action tooltip"
+  },
+  "panelTitle": {
+    "message": "OneClickDigest"
+  },
+  "closeAria": {
+    "message": "关闭"
+  },
+  "labelLanguage": {
+    "message": "输出语言"
+  },
+  "languageAuto": {
+    "message": "自动"
+  },
+  "buttonSettings": {
+    "message": "设置"
+  },
+  "optionsTitle": {
+    "message": "OneClickDigest - 选项"
+  },
+  "optionsHeading": {
+    "message": "OneClickDigest 选项"
+  },
+  "optionsIntro": {
+    "message": "本扩展为开源：<a href=\"http://github.com/kndoshn/one-click-digest\" target=\"_blank\" rel=\"noreferrer\">kndoshn/one-click-digest</a>。你的API密钥会保存在本设备本地（<code>chrome.storage.local</code>）。以下偏好设置也会本地保存。"
+  },
+  "sectionUiLanguage": {
+    "message": "界面语言"
+  },
+  "labelUiLanguage": {
+    "message": "界面语言"
+  },
+  "hintUiLanguage": {
+    "message": "设置扩展界面语言。输出语言另行设置。"
+  },
+  "sectionApiKey": {
+    "message": "Claude API密钥"
+  },
+  "labelApiKey": {
+    "message": "API密钥"
+  },
+  "hintApiKeyKeep": {
+    "message": "留空则保留现有密钥。"
+  },
+  "buttonClearApiKey": {
+    "message": "清除API密钥"
+  },
+  "sectionPreferences": {
+    "message": "高级选项"
+  },
+  "labelModelsAdvanced": {
+    "message": "模型（高级）"
+  },
+  "hintModelsAdvanced": {
+    "message": "Map用于分块摘要；Final用于汇总/修复。"
+  },
+  "labelMapModel": {
+    "message": "Map模型"
+  },
+  "labelFinalModel": {
+    "message": "Final模型"
+  },
+  "labelPromptCachingAdvanced": {
+    "message": "提示缓存（高级）"
+  },
+  "labelPromptCachingEnable": {
+    "message": "启用提示缓存（长文可降低成本/延迟）"
+  },
+  "labelPromptCachingTtl": {
+    "message": "TTL"
+  },
+  "hintPromptCaching": {
+    "message": "仅在支持且提示足够长时生效。"
+  },
+  "labelCostControls": {
+    "message": "成本控制（高级）"
+  },
+  "hintCostControls": {
+    "message": "仅用于客户端预估与阻断。"
+  },
+  "labelHardLimitUsd": {
+    "message": "硬性上限（USD）"
+  },
+  "labelApprovalThresholdUsd": {
+    "message": "审批阈值（USD）"
+  },
+  "labelApprovalThresholdChars": {
+    "message": "审批阈值（字符数）"
+  },
+  "labelExtractionLimits": {
+    "message": "提取/发送限制（高级）"
+  },
+  "labelMinArticleChars": {
+    "message": "最小正文字符数"
+  },
+  "labelMaxSendChars": {
+    "message": "最大发送字符数"
+  },
+  "buttonSave": {
+    "message": "保存"
+  },
+  "buttonResetDefaults": {
+    "message": "恢复默认"
+  },
+  "statusSavedKeySet": {
+    "message": "已保存。API密钥已在此设备设置。"
+  },
+  "statusSavedKeyMissing": {
+    "message": "已保存。API密钥未设置。"
+  },
+  "statusClearedKey": {
+    "message": "API密钥已清除。"
+  },
+  "statusResetDefaults": {
+    "message": "已恢复默认设置。"
+  },
+  "statusKeySet": {
+    "message": "API密钥已在此设备设置。"
+  },
+  "statusKeyMissing": {
+    "message": "API密钥未设置。"
+  },
+  "statusReloading": {
+    "message": "已保存。正在重载以应用界面语言。"
+  },
+  "promptChooseMode": {
+    "message": "选择摘要粒度："
+  },
+  "mode3Label": {
+    "message": "3条"
+  },
+  "mode3Desc": {
+    "message": "很短"
+  },
+  "mode5Label": {
+    "message": "5条"
+  },
+  "mode5Desc": {
+    "message": "默认"
+  },
+  "mode10Label": {
+    "message": "10条"
+  },
+  "mode10Desc": {
+    "message": "更详细"
+  },
+  "modeDLabel": {
+    "message": "含结论"
+  },
+  "modeDDesc": {
+    "message": "最详细"
+  },
+  "warningApiKeyMissing": {
+    "message": "Claude API 密钥未设置。请点击顶部的设置按钮进行配置。"
+  },
+  "statusExtracting": {
+    "message": "正在分析页面"
+  },
+  "statusSummarizing": {
+    "message": "正在生成摘要"
+  },
+  "statusSummarizingMap": {
+    "message": "正在生成摘要（分块）"
+  },
+  "statusSummarizingReduce": {
+    "message": "正在生成摘要（汇总）"
+  },
+  "statusSummarizingRepair": {
+    "message": "正在生成摘要（格式化）"
+  },
+  "sectionEstimate": {
+    "message": "预估"
+  },
+  "labelChars": {
+    "message": "提取字符数"
+  },
+  "labelSendChars": {
+    "message": "发送"
+  },
+  "labelTokens": {
+    "message": "输入Token"
+  },
+  "labelRefining": {
+    "message": "精确中"
+  },
+  "labelCost": {
+    "message": "预估成本"
+  },
+  "labelWorst": {
+    "message": "最大"
+  },
+  "labelTime": {
+    "message": "预估时间"
+  },
+  "labelModel": {
+    "message": "模型"
+  },
+  "labelChunkCount": {
+    "message": "分块数量"
+  },
+  "labelLinkDensity": {
+    "message": "链接密度"
+  },
+  "noteTruncated": {
+    "message": "注意：文章很长，发送前已截断至安全上限。"
+  },
+  "promptApprovalRequired": {
+    "message": "该请求可能较长，请确认后再运行："
+  },
+  "labelCostWorst": {
+    "message": "最坏情况成本"
+  },
+  "buttonProceed": {
+    "message": "继续"
+  },
+  "buttonRun": {
+    "message": "运行"
+  },
+  "buttonRunLight": {
+    "message": "运行（3条）"
+  },
+  "buttonCancel": {
+    "message": "取消"
+  },
+  "buttonCopy": {
+    "message": "复制"
+  },
+  "buttonBack": {
+    "message": "返回"
+  },
+  "buttonClose": {
+    "message": "关闭"
+  },
+  "buttonOpenOptions": {
+    "message": "打开设置"
+  },
+  "labelUsage": {
+    "message": "Token使用量"
+  },
+  "toastCopied": {
+    "message": "已复制"
+  },
+  "toastCopyFailed": {
+    "message": "复制失败"
+  },
+  "toastModeAdjusted": {
+    "message": "文章较短，已将模式调整为$1。"
+  },
+  "confirmCancel": {
+    "message": "取消当前运行并返回开始界面？"
+  },
+  "confirmCloseWhileRunning": {
+    "message": "正在运行。取消并关闭？"
+  },
+  "bannerCancelled": {
+    "message": "已取消。"
+  },
+  "errorApiKeyMissing": {
+    "message": "Claude API 密钥未设置。请点击顶部的设置按钮进行配置。"
+  },
+  "errorAuth": {
+    "message": "认证失败。请在设置中检查API密钥。"
+  },
+  "errorRateLimit": {
+    "message": "速率限制或暂时过载。请稍后重试。"
+  },
+  "errorBadRequest": {
+    "message": "请求被拒绝。请重试。"
+  },
+  "errorTimeout": {
+    "message": "请求超时。请重试。"
+  },
+  "errorNetwork": {
+    "message": "网络错误。请检查连接后重试。"
+  },
+  "errorServer": {
+    "message": "Claude API错误。请稍后重试。"
+  },
+  "errorTooShort": {
+    "message": "页面内容过短，无法摘要。"
+  },
+  "errorNotArticle": {
+    "message": "该页面可能不是正常文章。"
+  },
+  "errorNoMainText": {
+    "message": "未找到文章正文。"
+  },
+  "errorExtractionFailed": {
+    "message": "正文提取失败。"
+  },
+  "errorUnknown": {
+    "message": "未知错误"
+  },
+  "reasonHardLimit": {
+    "message": "预估成本超过硬性上限。"
+  },
+  "errorBlocked": {
+    "message": "已阻止："
+  },
+  "noteChunking": {
+    "message": "注意：文章较长，将分块摘要。"
+  },
+  "noteChunkingPlanned": {
+    "message": "将进行分块摘要。分块数：{count}。"
+  },
+  "noteDataSent": {
+    "message": "发送至Claude的数据：标题、URL和文章正文（已限制长度）。"
+  },
+  "uiLanguageAutoFormat": {
+    "message": "自动（$1）"
+  },
+  "placeholderApiKeyEmpty": {
+    "message": "输入Claude API密钥"
+  },
+  "placeholderApiKeySaved": {
+    "message": "Claude API密钥已保存"
+  },
+  "confirmClearApiKey": {
+    "message": "要删除已保存的 API 密钥吗？"
+  },
+  "confirmResetDefaults": {
+    "message": "要将设置重置为默认值吗？"
+  }
+}

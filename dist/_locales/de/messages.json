@@ -1,0 +1,335 @@
+{
+  "appName": {
+    "message": "OneClickDigest",
+    "description": "Extension name"
+  },
+  "appDescription": {
+    "message": "Fasst den aktuellen Artikel in einem Overlay mit Claude zusammen.",
+    "description": "Extension description"
+  },
+  "actionTitle": {
+    "message": "Diesen Artikel zusammenfassen",
+    "description": "Action tooltip"
+  },
+  "panelTitle": {
+    "message": "OneClickDigest"
+  },
+  "closeAria": {
+    "message": "Schließen"
+  },
+  "labelLanguage": {
+    "message": "Ausgabesprache"
+  },
+  "languageAuto": {
+    "message": "Auto"
+  },
+  "buttonSettings": {
+    "message": "Einstellungen"
+  },
+  "optionsTitle": {
+    "message": "OneClickDigest - Optionen"
+  },
+  "optionsHeading": {
+    "message": "OneClickDigest-Optionen"
+  },
+  "optionsIntro": {
+    "message": "Diese Erweiterung ist Open Source: <a href=\"http://github.com/kndoshn/one-click-digest\" target=\"_blank\" rel=\"noreferrer\">kndoshn/one-click-digest</a>. Ihre API-Schlüssel werden lokal auf diesem Gerät gespeichert (<code>chrome.storage.local</code>). Die folgenden Einstellungen werden ebenfalls lokal gespeichert."
+  },
+  "sectionUiLanguage": {
+    "message": "UI-Sprache"
+  },
+  "labelUiLanguage": {
+    "message": "UI-Sprache"
+  },
+  "hintUiLanguage": {
+    "message": "Legt die UI-Sprache fest. Die Ausgabesprache wird separat eingestellt."
+  },
+  "sectionApiKey": {
+    "message": "Claude-API-Schlüssel"
+  },
+  "labelApiKey": {
+    "message": "API-Schlüssel"
+  },
+  "hintApiKeyKeep": {
+    "message": "Leer lassen, um den vorhandenen Schlüssel zu behalten."
+  },
+  "buttonClearApiKey": {
+    "message": "API-Schlüssel löschen"
+  },
+  "sectionPreferences": {
+    "message": "Erweiterte Optionen"
+  },
+  "labelModelsAdvanced": {
+    "message": "Modelle (erweitert)"
+  },
+  "hintModelsAdvanced": {
+    "message": "Map für Chunk-Zusammenfassungen; Final für Reduktion/Reparatur."
+  },
+  "labelMapModel": {
+    "message": "Map-Modell"
+  },
+  "labelFinalModel": {
+    "message": "Final-Modell"
+  },
+  "labelPromptCachingAdvanced": {
+    "message": "Prompt-Caching (erweitert)"
+  },
+  "labelPromptCachingEnable": {
+    "message": "Prompt-Caching aktivieren (reduziert Kosten/Latenz bei langen Läufen)"
+  },
+  "labelPromptCachingTtl": {
+    "message": "TTL"
+  },
+  "hintPromptCaching": {
+    "message": "Caching wird nur angewendet, wenn unterstützt und der Prompt lang genug ist."
+  },
+  "labelCostControls": {
+    "message": "Kostenkontrollen (erweitert)"
+  },
+  "hintCostControls": {
+    "message": "Nur für clientseitige Schätzungen und Sperren verwendet."
+  },
+  "labelHardLimitUsd": {
+    "message": "Harte Grenze (USD)"
+  },
+  "labelApprovalThresholdUsd": {
+    "message": "Freigabeschwelle (USD)"
+  },
+  "labelApprovalThresholdChars": {
+    "message": "Freigabeschwelle (Zeichen)"
+  },
+  "labelExtractionLimits": {
+    "message": "Extraktions-/Sendegrenzen (erweitert)"
+  },
+  "labelMinArticleChars": {
+    "message": "Min. Artikelzeichen"
+  },
+  "labelMaxSendChars": {
+    "message": "Max. zu sendende Zeichen"
+  },
+  "buttonSave": {
+    "message": "Speichern"
+  },
+  "buttonResetDefaults": {
+    "message": "Auf Standard zurücksetzen"
+  },
+  "statusSavedKeySet": {
+    "message": "Gespeichert. API-Schlüssel ist auf diesem Gerät gesetzt."
+  },
+  "statusSavedKeyMissing": {
+    "message": "Gespeichert. API-Schlüssel ist nicht gesetzt."
+  },
+  "statusClearedKey": {
+    "message": "API-Schlüssel gelöscht."
+  },
+  "statusResetDefaults": {
+    "message": "Einstellungen auf Standard zurückgesetzt."
+  },
+  "statusKeySet": {
+    "message": "API-Schlüssel ist auf diesem Gerät gesetzt."
+  },
+  "statusKeyMissing": {
+    "message": "API-Schlüssel ist nicht gesetzt."
+  },
+  "statusReloading": {
+    "message": "Gespeichert. Neu laden, um die UI-Sprache anzuwenden."
+  },
+  "promptChooseMode": {
+    "message": "Zusammenfassungsgrad wählen:"
+  },
+  "mode3Label": {
+    "message": "3 Punkte"
+  },
+  "mode3Desc": {
+    "message": "Sehr kurz"
+  },
+  "mode5Label": {
+    "message": "5 Punkte"
+  },
+  "mode5Desc": {
+    "message": "Standard"
+  },
+  "mode10Label": {
+    "message": "10 Punkte"
+  },
+  "mode10Desc": {
+    "message": "Mehr Details"
+  },
+  "modeDLabel": {
+    "message": "Mit Fazit"
+  },
+  "modeDDesc": {
+    "message": "Am detailliertesten"
+  },
+  "warningApiKeyMissing": {
+    "message": "Der Claude-API-Schlüssel ist nicht festgelegt. Klicken Sie oben auf die Schaltfläche Einstellungen, um ihn zu konfigurieren."
+  },
+  "statusExtracting": {
+    "message": "Seite wird analysiert"
+  },
+  "statusSummarizing": {
+    "message": "Wird zusammengefasst"
+  },
+  "statusSummarizingMap": {
+    "message": "Wird zusammengefasst (Chunking)"
+  },
+  "statusSummarizingReduce": {
+    "message": "Wird zusammengefasst (Finalisierung)"
+  },
+  "statusSummarizingRepair": {
+    "message": "Wird zusammengefasst (Formatierung)"
+  },
+  "sectionEstimate": {
+    "message": "Schätzung"
+  },
+  "labelChars": {
+    "message": "Extrahierte Zeichen"
+  },
+  "labelSendChars": {
+    "message": "senden"
+  },
+  "labelTokens": {
+    "message": "Eingabetokens"
+  },
+  "labelRefining": {
+    "message": "verfeinert"
+  },
+  "labelCost": {
+    "message": "Geschätzte Kosten"
+  },
+  "labelWorst": {
+    "message": "max"
+  },
+  "labelTime": {
+    "message": "Geschätzte Zeit"
+  },
+  "labelModel": {
+    "message": "Modell"
+  },
+  "labelChunkCount": {
+    "message": "Chunk-Anzahl"
+  },
+  "labelLinkDensity": {
+    "message": "Linkdichte"
+  },
+  "noteTruncated": {
+    "message": "Hinweis: Der Artikel ist sehr lang. Er wurde vor dem Senden gekürzt."
+  },
+  "promptApprovalRequired": {
+    "message": "Dies ist eine lange Anfrage. Bitte vor dem Start bestätigen:"
+  },
+  "labelCostWorst": {
+    "message": "Maximale Kosten"
+  },
+  "buttonProceed": {
+    "message": "Weiter"
+  },
+  "buttonRun": {
+    "message": "Starten"
+  },
+  "buttonRunLight": {
+    "message": "Starten (3 Punkte)"
+  },
+  "buttonCancel": {
+    "message": "Abbrechen"
+  },
+  "buttonCopy": {
+    "message": "Kopieren"
+  },
+  "buttonBack": {
+    "message": "Zurück"
+  },
+  "buttonClose": {
+    "message": "Schließen"
+  },
+  "buttonOpenOptions": {
+    "message": "Einstellungen öffnen"
+  },
+  "labelUsage": {
+    "message": "Tokenverbrauch"
+  },
+  "toastCopied": {
+    "message": "Kopiert"
+  },
+  "toastCopyFailed": {
+    "message": "Kopieren fehlgeschlagen"
+  },
+  "toastModeAdjusted": {
+    "message": "Artikel ist kurz. Modus auf $1 angepasst."
+  },
+  "confirmCancel": {
+    "message": "Aktuellen Lauf abbrechen und zur Startseite zurückkehren?"
+  },
+  "confirmCloseWhileRunning": {
+    "message": "Ein Lauf ist aktiv. Abbrechen und schließen?"
+  },
+  "bannerCancelled": {
+    "message": "Abgebrochen."
+  },
+  "errorApiKeyMissing": {
+    "message": "Der Claude-API-Schlüssel ist nicht festgelegt. Klicken Sie oben auf die Schaltfläche Einstellungen, um ihn zu konfigurieren."
+  },
+  "errorAuth": {
+    "message": "Authentifizierung fehlgeschlagen. Prüfen Sie den API-Schlüssel in den Einstellungen."
+  },
+  "errorRateLimit": {
+    "message": "Rate-Limit oder vorübergehend überlastet. Bitte später erneut versuchen."
+  },
+  "errorBadRequest": {
+    "message": "Anfrage wurde abgelehnt. Bitte erneut versuchen."
+  },
+  "errorTimeout": {
+    "message": "Zeitüberschreitung. Bitte erneut versuchen."
+  },
+  "errorNetwork": {
+    "message": "Netzwerkfehler. Verbindung prüfen und erneut versuchen."
+  },
+  "errorServer": {
+    "message": "Claude-API-Fehler. Bitte später erneut versuchen."
+  },
+  "errorTooShort": {
+    "message": "Diese Seite ist zu kurz für eine Zusammenfassung."
+  },
+  "errorNotArticle": {
+    "message": "Diese Seite sieht nicht wie ein normaler Artikel aus."
+  },
+  "errorNoMainText": {
+    "message": "Haupttext des Artikels konnte nicht gefunden werden."
+  },
+  "errorExtractionFailed": {
+    "message": "Extraktion des Artikeltexts fehlgeschlagen."
+  },
+  "errorUnknown": {
+    "message": "Unbekannter Fehler"
+  },
+  "reasonHardLimit": {
+    "message": "Geschätzte Kosten überschreiten die harte Grenze."
+  },
+  "errorBlocked": {
+    "message": "Blockiert: "
+  },
+  "noteChunking": {
+    "message": "Hinweis: Langer Artikel. Zusammenfassung in mehreren Chunks."
+  },
+  "noteChunkingPlanned": {
+    "message": "Chunk-Zusammenfassung geplant. Chunks: {count}."
+  },
+  "noteDataSent": {
+    "message": "An Claude gesendete Daten: Titel, URL und Artikeltext (begrenzt zur Sicherheit)."
+  },
+  "uiLanguageAutoFormat": {
+    "message": "Auto ($1)"
+  },
+  "placeholderApiKeyEmpty": {
+    "message": "Claude-API-Schlüssel eingeben"
+  },
+  "placeholderApiKeySaved": {
+    "message": "Claude-API-Schlüssel gespeichert"
+  },
+  "confirmClearApiKey": {
+    "message": "Gespeicherten API-Schlüssel löschen?"
+  },
+  "confirmResetDefaults": {
+    "message": "Einstellungen auf Standard zurücksetzen?"
+  }
+}

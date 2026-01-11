@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OneClickDigest - Options</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 40px; font-size: 18px; line-height: 1.65; background: #121212; color: #f2f2f2; }
+      main { max-width: 920px; margin: 0 auto; }
+      h1 { margin: 0 0 18px; }
+      h2 { margin: 0 0 16px; }
+      .row { margin: 24px 0; }
+      .row.actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+      .bottom-actions { margin-top: 32px; }
+      section { margin: 28px 0 32px; padding: 18px 20px; border: 1px solid #222; border-radius: 14px; background: #171717; }
+      label { display: block; margin-bottom: 12px; font-weight: 600; font-size: 18px; color: #e6e6e6; }
+      input[type="password"] { width: min(760px, 100%); padding: 12px 14px; font-size: 18px; background: #1f1f1f; color: #f2f2f2; border: 1px solid #3a3a3a; border-radius: 10px; }
+      input[type="number"], select { min-width: 220px; padding: 10px 12px; font-size: 18px; background: #1f1f1f; color: #f2f2f2; border: 1px solid #3a3a3a; border-radius: 10px; }
+      select { padding-right: 44px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, #cfcfcf 50%), linear-gradient(135deg, #cfcfcf 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
+      select::-ms-expand { display: none; }
+      button { padding: 12px 18px; font-size: 18px; cursor: pointer; background: #1f1f1f; color: #f2f2f2; border: 1px solid #3a3a3a; border-radius: 10px; }
+      button:hover { background: #2a2a2a; }
+      #status { margin-top: 12px; color: #cfcfcf; }
+      .hint { color: #b0b0b0; font-size: 17px; line-height: 1.65; margin-top: 12px; }
+      .danger { color: #ff6b6b; }
+      hr { border: 0; border-top: 1px solid #2a2a2a; margin: 26px 0; }
+      a { color: #9cc8ff; }
+      a:hover { color: #c6ddff; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 data-i18n="optionsHeading">Options</h1>
+
+    <p class="hint" data-i18n-html="optionsIntro">
+      This extension is OSS. Your Claude API key is stored locally on this device (<code>chrome.storage.local</code>).
+      Preferences below are also stored locally.
+    </p>
+
+    <section>
+      <h2 data-i18n="sectionUiLanguage">UI Language</h2>
+
+      <div class="row">
+        <label for="ui-language" data-i18n="labelUiLanguage">UI Language</label>
+        <select id="ui-language"></select>
+        <div class="hint" data-i18n="hintUiLanguage">
+          Controls the extension UI language. Output language is set separately.
+        </div>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2 data-i18n="sectionApiKey">Claude API Key</h2>
+
+      <div class="row">
+        <label for="api-key" data-i18n="labelApiKey">API Key</label>
+        <input id="api-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
+      </div>
+
+      <div class="row actions">
+        <button id="clear" type="button" data-i18n="buttonClearApiKey">Clear API Key</button>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2 data-i18n="sectionPreferences">Preferences</h2>
+
+      <div class="row">
+        <label data-i18n="labelModelsAdvanced">Models (advanced)</label>
+        <div class="hint" data-i18n="hintModelsAdvanced">Map is used for chunk summaries; Final is used for reduce/repair.</div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <div>
+            <div class="hint" data-i18n="labelMapModel">Map model</div>
+            <select id="model-map">
+              <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+              <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+            </select>
+          </div>
+          <div>
+            <div class="hint" data-i18n="labelFinalModel">Final model</div>
+            <select id="model-final">
+              <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+              <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <label data-i18n="labelPromptCachingAdvanced">Prompt caching (advanced)</label>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label style="display:flex; gap:8px; align-items:center; font-weight:400;">
+            <input id="prompt-caching-enabled" type="checkbox" />
+            <span data-i18n="labelPromptCachingEnable">Enable prompt caching (reduces repair cost/latency for long runs)</span>
+          </label>
+          <label style="display:flex; gap:8px; align-items:center; font-weight:400;">
+            <span data-i18n="labelPromptCachingTtl">TTL</span>
+            <select id="prompt-caching-ttl">
+              <option value="5m">5m</option>
+              <option value="1h">1h</option>
+            </select>
+          </label>
+        </div>
+        <div class="hint" data-i18n="hintPromptCaching">
+          Caching is only applied when supported and the prompt is long enough.
+        </div>
+      </div>
+
+      <div class="row">
+        <label data-i18n="labelCostControls">Cost controls</label>
+        <div class="hint" data-i18n="hintCostControls">
+          Used only for client-side preflight estimates and hard blocking.
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <div>
+            <div class="hint" data-i18n="labelHardLimitUsd">Hard limit (USD)</div>
+            <input id="hard-limit" type="number" step="0.01" min="0" />
+          </div>
+          <div>
+            <div class="hint" data-i18n="labelApprovalThresholdUsd">Approval threshold (USD)</div>
+            <input id="approval-usd" type="number" step="0.01" min="0" />
+          </div>
+          <div>
+            <div class="hint" data-i18n="labelApprovalThresholdChars">Approval threshold (chars)</div>
+            <input id="approval-chars" type="number" step="1" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <label data-i18n="labelExtractionLimits">Extraction / send limits</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <div>
+            <div class="hint" data-i18n="labelMinArticleChars">Min article chars</div>
+            <input id="min-article-chars" type="number" step="1" min="0" />
+          </div>
+          <div>
+            <div class="hint" data-i18n="labelMaxSendChars">Max chars to send</div>
+            <input id="max-send-chars" type="number" step="1000" min="1000" />
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="row actions bottom-actions">
+      <button id="reset" type="button" data-i18n="buttonResetDefaults">Reset to defaults</button>
+      <button id="save" type="button" data-i18n="buttonSave">Save</button>
+    </div>
+
+    <div id="status" role="status" aria-live="polite"></div>
+
+    <!-- Use a module script because options/index.js imports shared constants. -->
+      <script type="module" src="options/index.js"></script>
+    </main>
+  </body>
+</html>

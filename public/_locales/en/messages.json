@@ -1,0 +1,335 @@
+{
+  "appName": {
+    "message": "OneClickDigest",
+    "description": "Extension name"
+  },
+  "appDescription": {
+    "message": "Summarize the current article in an on-page overlay using Claude.",
+    "description": "Extension description"
+  },
+  "actionTitle": {
+    "message": "Summarize this article",
+    "description": "Action tooltip"
+  },
+  "panelTitle": {
+    "message": "OneClickDigest"
+  },
+  "closeAria": {
+    "message": "Close"
+  },
+  "labelLanguage": {
+    "message": "Output Language"
+  },
+  "languageAuto": {
+    "message": "Auto"
+  },
+  "buttonSettings": {
+    "message": "Settings"
+  },
+  "optionsTitle": {
+    "message": "OneClickDigest - Options"
+  },
+  "optionsHeading": {
+    "message": "OneClickDigest Options"
+  },
+  "optionsIntro": {
+    "message": "This extension is OSS: <a href=\"http://github.com/kndoshn/one-click-digest\" target=\"_blank\" rel=\"noreferrer\">kndoshn/one-click-digest</a>. Your API keys are stored locally on this device (<code>chrome.storage.local</code>). Preferences below are also stored locally. Learn how to get a Claude API key: <a href=\"https://www.merge.dev/blog/anthropic-api-key\" target=\"_blank\" rel=\"noreferrer\">merge.dev/blog/anthropic-api-key</a>."
+  },
+  "sectionUiLanguage": {
+    "message": "UI Language"
+  },
+  "labelUiLanguage": {
+    "message": "UI Language"
+  },
+  "hintUiLanguage": {
+    "message": "Controls the extension UI language. Output language is set separately."
+  },
+  "sectionApiKey": {
+    "message": "Claude API Key"
+  },
+  "labelApiKey": {
+    "message": "API Key"
+  },
+  "hintApiKeyKeep": {
+    "message": "Leave blank to keep the existing key."
+  },
+  "buttonClearApiKey": {
+    "message": "Clear API Key"
+  },
+  "sectionPreferences": {
+    "message": "Advanced Options"
+  },
+  "labelModelsAdvanced": {
+    "message": "Models (advanced)"
+  },
+  "hintModelsAdvanced": {
+    "message": "Map is used for chunk summaries; Final is used for reduce/repair."
+  },
+  "labelMapModel": {
+    "message": "Map model"
+  },
+  "labelFinalModel": {
+    "message": "Final model"
+  },
+  "labelPromptCachingAdvanced": {
+    "message": "Prompt caching (advanced)"
+  },
+  "labelPromptCachingEnable": {
+    "message": "Enable prompt caching (reduces repair cost/latency for long runs)"
+  },
+  "labelPromptCachingTtl": {
+    "message": "TTL"
+  },
+  "hintPromptCaching": {
+    "message": "Caching is only applied when supported and the prompt is long enough."
+  },
+  "labelCostControls": {
+    "message": "Cost controls (advanced)"
+  },
+  "hintCostControls": {
+    "message": "Used only for client-side preflight estimates and hard blocking."
+  },
+  "labelHardLimitUsd": {
+    "message": "Hard limit (USD)"
+  },
+  "labelApprovalThresholdUsd": {
+    "message": "Approval threshold (USD)"
+  },
+  "labelApprovalThresholdChars": {
+    "message": "Approval threshold (chars)"
+  },
+  "labelExtractionLimits": {
+    "message": "Extraction / send limits (advanced)"
+  },
+  "labelMinArticleChars": {
+    "message": "Min article chars"
+  },
+  "labelMaxSendChars": {
+    "message": "Max chars to send"
+  },
+  "buttonSave": {
+    "message": "Save"
+  },
+  "buttonResetDefaults": {
+    "message": "Reset to defaults"
+  },
+  "statusSavedKeySet": {
+    "message": "Saved. API key is set on this device."
+  },
+  "statusSavedKeyMissing": {
+    "message": "Saved. API key is not set."
+  },
+  "statusClearedKey": {
+    "message": "Cleared API key."
+  },
+  "statusResetDefaults": {
+    "message": "Reset preferences to defaults."
+  },
+  "statusKeySet": {
+    "message": "API key is set on this device."
+  },
+  "statusKeyMissing": {
+    "message": "API key is not set."
+  },
+  "statusReloading": {
+    "message": "Saved. Reloading to apply UI language."
+  },
+  "promptChooseMode": {
+    "message": "Choose summary granularity:"
+  },
+  "mode3Label": {
+    "message": "3 bullets"
+  },
+  "mode3Desc": {
+    "message": "Very short overview"
+  },
+  "mode5Label": {
+    "message": "5 bullets"
+  },
+  "mode5Desc": {
+    "message": "Default"
+  },
+  "mode10Label": {
+    "message": "10 bullets"
+  },
+  "mode10Desc": {
+    "message": "More detail"
+  },
+  "modeDLabel": {
+    "message": "With Conclusion"
+  },
+  "modeDDesc": {
+    "message": "Most detailed"
+  },
+  "warningApiKeyMissing": {
+    "message": "Claude API key is not set. Click the Settings button at the top to configure it."
+  },
+  "statusExtracting": {
+    "message": "Analyzing the page"
+  },
+  "statusSummarizing": {
+    "message": "Summarizing"
+  },
+  "statusSummarizingMap": {
+    "message": "Summarizing (chunking)"
+  },
+  "statusSummarizingReduce": {
+    "message": "Summarizing (finalizing)"
+  },
+  "statusSummarizingRepair": {
+    "message": "Summarizing (formatting)"
+  },
+  "sectionEstimate": {
+    "message": "Estimate"
+  },
+  "labelChars": {
+    "message": "Extracted chars"
+  },
+  "labelSendChars": {
+    "message": "send"
+  },
+  "labelTokens": {
+    "message": "Input tokens"
+  },
+  "labelRefining": {
+    "message": "refining"
+  },
+  "labelCost": {
+    "message": "Estimated cost"
+  },
+  "labelWorst": {
+    "message": "worst"
+  },
+  "labelTime": {
+    "message": "Estimated time"
+  },
+  "labelModel": {
+    "message": "Model"
+  },
+  "labelChunkCount": {
+    "message": "Chunk count"
+  },
+  "labelLinkDensity": {
+    "message": "Link density"
+  },
+  "noteTruncated": {
+    "message": "Note: The article is very long. It was truncated to a safety limit before sending."
+  },
+  "promptApprovalRequired": {
+    "message": "This looks like a long request. Please confirm before running:"
+  },
+  "labelCostWorst": {
+    "message": "Worst-case cost"
+  },
+  "buttonProceed": {
+    "message": "Continue"
+  },
+  "buttonRun": {
+    "message": "Run"
+  },
+  "buttonRunLight": {
+    "message": "Run (3 bullets)"
+  },
+  "buttonCancel": {
+    "message": "Cancel"
+  },
+  "buttonCopy": {
+    "message": "Copy"
+  },
+  "buttonBack": {
+    "message": "Back"
+  },
+  "buttonClose": {
+    "message": "Close"
+  },
+  "buttonOpenOptions": {
+    "message": "Open Settings"
+  },
+  "labelUsage": {
+    "message": "Token usage"
+  },
+  "toastCopied": {
+    "message": "Copied"
+  },
+  "toastCopyFailed": {
+    "message": "Copy failed"
+  },
+  "toastModeAdjusted": {
+    "message": "Article is short. Adjusted mode to $1."
+  },
+  "confirmCancel": {
+    "message": "Cancel the current run and return to the start screen?"
+  },
+  "confirmCloseWhileRunning": {
+    "message": "A run is in progress. Cancel and close?"
+  },
+  "bannerCancelled": {
+    "message": "Cancelled."
+  },
+  "errorApiKeyMissing": {
+    "message": "Claude API key is not set. Click the Settings button at the top to configure it."
+  },
+  "errorAuth": {
+    "message": "Authentication failed. Check your API key in Settings."
+  },
+  "errorRateLimit": {
+    "message": "Rate limited or temporarily overloaded. Please try again later."
+  },
+  "errorBadRequest": {
+    "message": "Request was rejected. Please try again."
+  },
+  "errorTimeout": {
+    "message": "Request timed out. Please try again."
+  },
+  "errorNetwork": {
+    "message": "Network error. Check your connection and try again."
+  },
+  "errorServer": {
+    "message": "Claude API error. Please try again later."
+  },
+  "errorTooShort": {
+    "message": "This page is too short to summarize."
+  },
+  "errorNotArticle": {
+    "message": "This page does not look like a normal article."
+  },
+  "errorNoMainText": {
+    "message": "Could not find the main article text."
+  },
+  "errorExtractionFailed": {
+    "message": "Failed to extract article text."
+  },
+  "errorUnknown": {
+    "message": "Unknown error"
+  },
+  "reasonHardLimit": {
+    "message": "Estimated cost exceeds the hard limit."
+  },
+  "errorBlocked": {
+    "message": "Blocked: "
+  },
+  "noteChunking": {
+    "message": "Note: This is a long article. It will be summarized in multiple chunks."
+  },
+  "noteChunkingPlanned": {
+    "message": "Chunked summarization will run. Chunks: {count}."
+  },
+  "noteDataSent": {
+    "message": "Data sent to Claude: title, URL, and article text (clamped for safety)."
+  },
+  "uiLanguageAutoFormat": {
+    "message": "Auto ($1)"
+  },
+  "placeholderApiKeyEmpty": {
+    "message": "Enter your Claude API key"
+  },
+  "placeholderApiKeySaved": {
+    "message": "Claude API key is saved"
+  },
+  "confirmClearApiKey": {
+    "message": "Delete the saved API key?"
+  },
+  "confirmResetDefaults": {
+    "message": "Reset preferences to defaults?"
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "appName": {
+    "message": "OneClickDigest",
+    "description": "拡張機能の名前"
+  },
+  "appDescription": {
+    "message": "閲覧中の記事を、Claudeで要約してページ上のオーバーレイに表示します。",
+    "description": "拡張機能の説明"
+  },
+  "actionTitle": {
+    "message": "この記事を要約",
+    "description": "アクションのツールチップ"
+  },
+  "panelTitle": {
+    "message": "OneClickDigest"
+  },
+  "closeAria": {
+    "message": "閉じる"
+  },
+  "labelLanguage": {
+    "message": "出力言語"
+  },
+  "languageAuto": {
+    "message": "Auto"
+  },
+  "buttonSettings": {
+    "message": "設定"
+  },
+  "optionsTitle": {
+    "message": "OneClickDigest - 設定"
+  },
+  "optionsHeading": {
+    "message": "OneClickDigest 設定"
+  },
+  "optionsIntro": {
+    "message": "この拡張はOSSです: <a href=\"http://github.com/kndoshn/one-click-digest\" target=\"_blank\" rel=\"noreferrer\">kndoshn/one-click-digest</a>。APIキーはこの端末の<code>chrome.storage.local</code>に保存されます。以下の設定もローカルに保存されます。 Claude APIキーの取得方法: <a href=\"https://www.merge.dev/blog/anthropic-api-key\" target=\"_blank\" rel=\"noreferrer\">merge.dev/blog/anthropic-api-key</a>"
+  },
+  "sectionUiLanguage": {
+    "message": "UI言語"
+  },
+  "labelUiLanguage": {
+    "message": "UI言語"
+  },
+  "hintUiLanguage": {
+    "message": "拡張機能のUI言語を設定します。出力言語とは別です。"
+  },
+  "sectionApiKey": {
+    "message": "Claude APIキー"
+  },
+  "labelApiKey": {
+    "message": "APIキー"
+  },
+  "hintApiKeyKeep": {
+    "message": "空欄の場合、既存のキーを保持します。"
+  },
+  "buttonClearApiKey": {
+    "message": "APIキーを削除"
+  },
+  "sectionPreferences": {
+    "message": "詳細設定"
+  },
+  "labelModelsAdvanced": {
+    "message": "モデル（上級）"
+  },
+  "hintModelsAdvanced": {
+    "message": "Mapはチャンク要約、Finalは統合/整形に使用します。"
+  },
+  "labelMapModel": {
+    "message": "Mapモデル"
+  },
+  "labelFinalModel": {
+    "message": "Finalモデル"
+  },
+  "labelPromptCachingAdvanced": {
+    "message": "プロンプトキャッシュ（上級）"
+  },
+  "labelPromptCachingEnable": {
+    "message": "プロンプトキャッシュを有効化（長文時のコスト/遅延を削減）"
+  },
+  "labelPromptCachingTtl": {
+    "message": "TTL"
+  },
+  "hintPromptCaching": {
+    "message": "対応モデルかつ十分な長さのときのみ適用されます。"
+  },
+  "labelCostControls": {
+    "message": "コスト制御（上級）"
+  },
+  "hintCostControls": {
+    "message": "クライアント側の見積もり/ブロックにのみ使用します。"
+  },
+  "labelHardLimitUsd": {
+    "message": "ハード上限（USD）"
+  },
+  "labelApprovalThresholdUsd": {
+    "message": "承認閾値（USD）"
+  },
+  "labelApprovalThresholdChars": {
+    "message": "承認閾値（文字数）"
+  },
+  "labelExtractionLimits": {
+    "message": "抽出/送信の上限（上級）"
+  },
+  "labelMinArticleChars": {
+    "message": "最小本文文字数"
+  },
+  "labelMaxSendChars": {
+    "message": "送信最大文字数"
+  },
+  "buttonSave": {
+    "message": "保存"
+  },
+  "buttonResetDefaults": {
+    "message": "初期値に戻す"
+  },
+  "statusSavedKeySet": {
+    "message": "保存しました。APIキーはこの端末に設定されています。"
+  },
+  "statusSavedKeyMissing": {
+    "message": "保存しました。APIキーが未設定です。"
+  },
+  "statusClearedKey": {
+    "message": "APIキーを削除しました。"
+  },
+  "statusResetDefaults": {
+    "message": "設定を初期値に戻しました。"
+  },
+  "statusKeySet": {
+    "message": "APIキーはこの端末に設定されています。"
+  },
+  "statusKeyMissing": {
+    "message": "APIキーが未設定です。"
+  },
+  "statusReloading": {
+    "message": "保存しました。UI言語を適用するため再読み込みします。"
+  },
+  "promptChooseMode": {
+    "message": "要約の粒度を選択してください:"
+  },
+  "mode3Label": {
+    "message": "3点"
+  },
+  "mode3Desc": {
+    "message": "簡潔"
+  },
+  "mode5Label": {
+    "message": "5点"
+  },
+  "mode5Desc": {
+    "message": "標準"
+  },
+  "mode10Label": {
+    "message": "10点"
+  },
+  "mode10Desc": {
+    "message": "詳細"
+  },
+  "modeDLabel": {
+    "message": "結論付き"
+  },
+  "modeDDesc": {
+    "message": "最も詳細"
+  },
+  "warningApiKeyMissing": {
+    "message": "ClaudeのAPIキーが未設定です。上部の設定ボタンから登録してください。"
+  },
+  "statusExtracting": {
+    "message": "ページを解析中"
+  },
+  "statusSummarizing": {
+    "message": "要約作成中"
+  },
+  "statusSummarizingMap": {
+    "message": "要約作成中（分割処理）"
+  },
+  "statusSummarizingReduce": {
+    "message": "要約作成中（統合）"
+  },
+  "statusSummarizingRepair": {
+    "message": "要約作成中（整形）"
+  },
+  "sectionEstimate": {
+    "message": "見積"
+  },
+  "labelChars": {
+    "message": "抽出文字数"
+  },
+  "labelSendChars": {
+    "message": "送信"
+  },
+  "labelTokens": {
+    "message": "入力トークン"
+  },
+  "labelRefining": {
+    "message": "調整中"
+  },
+  "labelCost": {
+    "message": "推定コスト"
+  },
+  "labelWorst": {
+    "message": "最大"
+  },
+  "labelTime": {
+    "message": "推定時間"
+  },
+  "labelModel": {
+    "message": "モデル"
+  },
+  "labelChunkCount": {
+    "message": "分割数"
+  },
+  "labelLinkDensity": {
+    "message": "リンク比率"
+  },
+  "noteTruncated": {
+    "message": "注: 長文のため、安全上限まで本文を切り詰めて送信します。"
+  },
+  "promptApprovalRequired": {
+    "message": "長文の可能性があるため、実行前にご確認ください:"
+  },
+  "labelCostWorst": {
+    "message": "最大コスト"
+  },
+  "buttonProceed": {
+    "message": "次へ"
+  },
+  "buttonRun": {
+    "message": "実行"
+  },
+  "buttonRunLight": {
+    "message": "3点で実行"
+  },
+  "buttonCancel": {
+    "message": "キャンセル"
+  },
+  "buttonCopy": {
+    "message": "コピー"
+  },
+  "buttonBack": {
+    "message": "戻る"
+  },
+  "buttonClose": {
+    "message": "閉じる"
+  },
+  "buttonOpenOptions": {
+    "message": "設定を開く"
+  },
+  "labelUsage": {
+    "message": "トークン使用量"
+  },
+  "toastCopied": {
+    "message": "コピーしました"
+  },
+  "toastCopyFailed": {
+    "message": "コピーできませんでした"
+  },
+  "toastModeAdjusted": {
+    "message": "本文が短いため、要約モードを「$1」に自動調整しました。"
+  },
+  "confirmCancel": {
+    "message": "実行中の処理をキャンセルして開始画面に戻りますか？"
+  },
+  "confirmCloseWhileRunning": {
+    "message": "実行中です。キャンセルして閉じますか？"
+  },
+  "bannerCancelled": {
+    "message": "キャンセルしました。"
+  },
+  "errorApiKeyMissing": {
+    "message": "ClaudeのAPIキーが未設定です。上部の設定ボタンから登録してください。"
+  },
+  "errorAuth": {
+    "message": "認証に失敗しました。設定でAPIキーを確認してください。"
+  },
+  "errorRateLimit": {
+    "message": "レート制限中、または一時的に混雑しています。時間を置いて再実行してください。"
+  },
+  "errorBadRequest": {
+    "message": "リクエストが拒否されました（不正なリクエスト）。内容を見直して再実行してください。"
+  },
+  "errorTimeout": {
+    "message": "タイムアウトしました。時間を置いて再実行してください。"
+  },
+  "errorNetwork": {
+    "message": "ネットワークエラーです。通信環境を確認して再実行してください。"
+  },
+  "errorServer": {
+    "message": "Claude API側のエラーです。時間を置いて再実行してください。"
+  },
+  "errorTooShort": {
+    "message": "本文が短すぎるため要約できません。"
+  },
+  "errorNotArticle": {
+    "message": "通常の記事本文ではない可能性が高いため要約できません。"
+  },
+  "errorNoMainText": {
+    "message": "記事本文を抽出できませんでした。"
+  },
+  "errorExtractionFailed": {
+    "message": "本文抽出に失敗しました。"
+  },
+  "errorUnknown": {
+    "message": "不明なエラー"
+  },
+  "reasonHardLimit": {
+    "message": "推定コストがハード上限を超えています。"
+  },
+  "errorBlocked": {
+    "message": "ブロック: "
+  },
+  "noteChunking": {
+    "message": "注: 長文のため、本文を分割して要約します。"
+  },
+  "noteChunkingPlanned": {
+    "message": "チャンク分割で要約します（{count}チャンク）。"
+  },
+  "noteDataSent": {
+    "message": "Claudeへ送信する情報: タイトル / URL / 本文（安全上限まで）"
+  },
+  "uiLanguageAutoFormat": {
+    "message": "自動（$1）"
+  },
+  "placeholderApiKeyEmpty": {
+    "message": "Claude APIキーを入力"
+  },
+  "placeholderApiKeySaved": {
+    "message": "Claude APIキーは保存済み"
+  },
+  "confirmClearApiKey": {
+    "message": "保存済みのAPIキーを削除しますか？"
+  },
+  "confirmResetDefaults": {
+    "message": "設定を初期値に戻しますか？"
+  }
+}
