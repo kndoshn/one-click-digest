@@ -138,19 +138,19 @@
     "message": "要約の粒度を選択してください:"
   },
   "mode3Label": {
-    "message": "3点"
+    "message": "3行"
   },
   "mode3Desc": {
     "message": "簡潔"
   },
   "mode5Label": {
-    "message": "5点"
+    "message": "5行"
   },
   "mode5Desc": {
     "message": "標準"
   },
   "mode10Label": {
-    "message": "10点"
+    "message": "10行"
   },
   "mode10Desc": {
     "message": "詳細"
@@ -228,7 +228,7 @@
     "message": "実行"
   },
   "buttonRunLight": {
-    "message": "3点で実行"
+    "message": "3行で実行"
   },
   "buttonCancel": {
     "message": "キャンセル"
