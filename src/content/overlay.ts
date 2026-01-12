@@ -400,14 +400,40 @@ namespace AS {
         return null;
       })();
 
+      const regionDisplay = (() => {
+        try {
+          // @ts-ignore - DisplayNames may not exist in older environments.
+          if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+            // @ts-ignore
+            return new Intl.DisplayNames([uiLang], { type: 'region' });
+          }
+        } catch {
+          // ignore
+        }
+        return null;
+      })();
+
       const labelFor = (code: string): string => {
         if (!code) return '';
-        const base = code.split('-')[0] || code;
+        const parts = code.split('-');
+        const base = parts[0] || code;
+        const region = parts[1];
         if (langDisplay) {
           try {
             // @ts-ignore
             const name = langDisplay.of(base);
-            if (typeof name === 'string' && name.trim()) return name;
+            if (typeof name === 'string' && name.trim()) {
+              if (region && regionDisplay) {
+                try {
+                  // @ts-ignore
+                  const regionName = regionDisplay.of(region.toUpperCase());
+                  if (typeof regionName === 'string' && regionName.trim()) return `${name} (${regionName})`;
+                } catch {
+                  // ignore
+                }
+              }
+              return name;
+            }
           } catch {
             // ignore
           }
