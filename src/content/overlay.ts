@@ -8,6 +8,7 @@ namespace AS {
       footer: HTMLDivElement;
       banner: HTMLDivElement;
       toast: HTMLDivElement;
+      backdrop: HTMLDivElement;
       languageSelect: HTMLSelectElement;
       settingsButton: HTMLButtonElement;
       closeButton: HTMLButtonElement;
@@ -236,6 +237,14 @@ namespace AS {
           color: #fff;
           font-size: 14px;
         }
+        .backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: -1;
+        }
+        .backdrop[data-busy="true"] {
+          pointer-events: none;
+        }
       `;
     }
 
@@ -329,6 +338,9 @@ namespace AS {
       const toast = el('div', 'toast hidden') as HTMLDivElement;
       toast.id = 'as-toast';
 
+      const backdrop = el('div', 'backdrop') as HTMLDivElement;
+      backdrop.addEventListener('click', () => dispatch(host, 'as:close'));
+
       panel.appendChild(header);
       panel.appendChild(meta);
       panel.appendChild(controls);
@@ -338,6 +350,7 @@ namespace AS {
       panel.appendChild(footer);
 
       shadow.appendChild(style);
+      shadow.appendChild(backdrop);
       shadow.appendChild(panel);
       shadow.appendChild(toast);
 
@@ -351,6 +364,7 @@ namespace AS {
         footer,
         banner,
         toast,
+        backdrop,
         languageSelect,
         settingsButton,
         closeButton,
@@ -767,6 +781,7 @@ namespace AS {
       const busy = isBusy(state);
       inst.languageSelect.disabled = busy;
       inst.settingsButton.disabled = busy;
+      inst.backdrop.dataset['busy'] = busy ? 'true' : 'false';
 	      renderModeBar(inst, state);
 
       if (state.phase === 'IDLE') return renderIdle(inst, state);
