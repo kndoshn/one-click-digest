@@ -32,7 +32,7 @@ var AS;
     // - Chunked map-reduce: Haiku (map) -> Sonnet (reduce/repair)
     AS.MODEL_MAP = 'claude-haiku-4-5';
     AS.MODEL_SINGLE = AS.MODEL_MAP;
-    AS.MODEL_FINAL = 'claude-sonnet-4-5';
+    AS.MODEL_FINAL = 'claude-sonnet-4-6';
     // Token count uses the same model as the intended summary for the best alignment.
     // Token counting uses Haiku. This keeps the tokenization close to map-stage accounting.
     AS.MODEL_TOKEN_COUNT = AS.MODEL_MAP;
@@ -61,7 +61,9 @@ var AS;
         // Claude Haiku 4.5: $1/MTok input, $5/MTok output
         'claude-haiku-4-5': { inputUsdPerMTok: 1.0, outputUsdPerMTok: 5.0 },
         // Claude Sonnet 4.5: $3/MTok input, $15/MTok output
-        'claude-sonnet-4-5': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 }
+        'claude-sonnet-4-5': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 },
+        // Claude Sonnet 4.6: $3/MTok input, $15/MTok output
+        'claude-sonnet-4-6': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 }
     };
     // Prompt caching multipliers
     AS.CACHE_MULTIPLIERS = {
@@ -76,7 +78,9 @@ var AS;
         // Haiku 4.5 requires a longer prefix.
         'claude-haiku-4-5': 4096,
         // Sonnet 4.5 caches shorter prefixes.
-        'claude-sonnet-4-5': 1024
+        'claude-sonnet-4-5': 1024,
+        // Sonnet 4.6 caches shorter prefixes.
+        'claude-sonnet-4-6': 1024
     };
     // Apply runtime settings from background/options. This mutates the exported variables above.
     function applyRuntimeSettings(settings) {
