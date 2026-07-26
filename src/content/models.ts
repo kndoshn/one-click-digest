@@ -50,7 +50,7 @@ namespace AS {
   // - Chunked map-reduce: Haiku (map) -> Sonnet (reduce/repair)
   export let MODEL_MAP = 'claude-haiku-4-5';
   export let MODEL_SINGLE = MODEL_MAP;
-  export let MODEL_FINAL = 'claude-sonnet-4-6';
+  export let MODEL_FINAL = 'claude-sonnet-5';
   // Token count uses the same model as the intended summary for the best alignment.
   // Token counting uses Haiku. This keeps the tokenization close to map-stage accounting.
   export let MODEL_TOKEN_COUNT = MODEL_MAP;
@@ -97,7 +97,10 @@ namespace AS {
     // Claude Sonnet 4.5: $3/MTok input, $15/MTok output
     'claude-sonnet-4-5': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 },
     // Claude Sonnet 4.6: $3/MTok input, $15/MTok output
-    'claude-sonnet-4-6': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 }
+    'claude-sonnet-4-6': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 },
+    // Claude Sonnet 5: $2/MTok input, $10/MTok output (introductory pricing through 2026-08-31;
+    // reverts to $3/$15, same as Sonnet 4.6, on 2026-09-01).
+    'claude-sonnet-5': { inputUsdPerMTok: 2.0, outputUsdPerMTok: 10.0 }
   };
 
   // Prompt caching multipliers
@@ -116,7 +119,9 @@ namespace AS {
     // Sonnet 4.5 caches shorter prefixes.
     'claude-sonnet-4-5': 1024,
     // Sonnet 4.6 caches shorter prefixes.
-    'claude-sonnet-4-6': 1024
+    'claude-sonnet-4-6': 1024,
+    // Sonnet 5 caches shorter prefixes (same minimum as Sonnet 4.5/4.6).
+    'claude-sonnet-5': 1024
   };
 
   // Apply runtime settings from background/options. This mutates the exported variables above.
