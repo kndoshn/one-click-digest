@@ -32,7 +32,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@types/chrome": "^0.1.42",
+    "@types/chrome": "^0.1.43",
     "@types/filesystem": "^0.0.36",
     "c8": "^11.0.0",
     "typescript": "^6.0.3"
