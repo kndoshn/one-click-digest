@@ -69,7 +69,7 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
           return;
         }
         if (msg.type === 'RUN_SUMMARY_SINGLE') {
-          cb({ ok: true, text: ['- A', '- B', '- C'].join('\n'), usage: { input_tokens: 10, output_tokens: 10 } });
+          cb({ ok: true, text: ['- A.', '', '- B.', '', '- C.'].join('\n'), usage: { input_tokens: 10, output_tokens: 10 } });
           return;
         }
         if (msg.type === 'ABORT_RUN') {
@@ -174,7 +174,11 @@ test('Simulated E2E: long article triggers approval → map-reduce → repair', 
           return;
         }
         if (msg.type === 'RUN_SUMMARY_REPAIR') {
-          cb({ ok: true, text: ['- Final A', '- Final B', '- Final C'].join('\n'), usage: { input_tokens: 200, output_tokens: 80 } });
+          cb({
+            ok: true,
+            text: ['- Final A.', '', '- Final B.', '', '- Final C.'].join('\n'),
+            usage: { input_tokens: 200, output_tokens: 80 }
+          });
           return;
         }
         if (msg.type === 'ABORT_RUN') {
@@ -455,7 +459,7 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
         if (msg.type === 'RUN_SUMMARY_SINGLE') {
           cb({
             ok: true,
-            text: ['- Alpha.', '- Beta.', '- Gamma is cut'].join('\n'),
+            text: ['- Alpha.', '', '- Beta.', '', '- Gamma is cut'].join('\n'),
             usage: { input_tokens: 10, output_tokens: 10 }
           });
           return;
@@ -463,7 +467,7 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
         if (msg.type === 'RUN_SUMMARY_REPAIR') {
           cb({
             ok: true,
-            text: ['- Alpha.', '- Beta.', '- Gamma is complete.'].join('\n'),
+            text: ['- Alpha.', '', '- Beta.', '', '- Gamma is complete.'].join('\n'),
             usage: { input_tokens: 5, output_tokens: 5 }
           });
           return;
@@ -523,4 +527,103 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'DONE');
   assert.ok(String(overlay.lastState.summaryText).includes('Gamma is complete.'));
   assert.ok(sent.some((m) => m.type === 'RUN_SUMMARY_REPAIR' && m.payload?.fixTruncation === true));
+});
+
+test('Simulated E2E: Japanese bullet ending without trailing "。" is not treated as truncated', async () => {
+  const sent = [];
+  const host = makeEventTarget();
+  const overlay = { host, lastState: null, renders: [] };
+
+  const chrome = {
+    i18n: {
+      getMessage: (k) => String(k),
+      // No explicit language selection is made in this test, so resolvedLanguage()
+      // falls back to the first accept-language, which we set to Japanese.
+      getAcceptLanguages: (cb) => cb(['ja'])
+    },
+    runtime: {
+      lastError: null,
+      openOptionsPage: () => {},
+      sendMessage: (msg, cb) => {
+        sent.push(msg);
+        if (msg.type === 'GET_SETTINGS') {
+          cb({ ok: true, apiKeySet: true, settings: { minArticleChars: 50, approvalThresholdChars: 1000 } });
+          return;
+        }
+        if (msg.type === 'RUN_SUMMARY_SINGLE') {
+          // Valid structure (bullets separated by blank lines), last bullet intentionally
+          // ends in a bare hiragana character with no trailing "。", per bulletStyleNoteFor.
+          cb({
+            ok: true,
+            text: ['- 最初のポイント', '', '- 二番目のポイント', '', '- 三番目のポイントです'].join('\n'),
+            usage: { input_tokens: 10, output_tokens: 10 }
+          });
+          return;
+        }
+        if (msg.type === 'RUN_SUMMARY_REPAIR') {
+          // Should never be reached; if the truncation heuristic misfires for Japanese,
+          // this stands in for whatever a "fixed" response would look like.
+          cb({
+            ok: true,
+            text: ['- 最初のポイント', '', '- 二番目のポイント', '', '- 三番目のポイントです。'].join('\n'),
+            usage: { input_tokens: 5, output_tokens: 5 }
+          });
+          return;
+        }
+        cb({ ok: false, code: 'unhandled', message: 'unhandled in test' });
+      }
+    }
+  };
+
+  const ctx = createClassicContext({
+    chrome,
+    navigator: { language: 'ja' },
+    location: { href: 'https://example.com/article', host: 'example.com' },
+    document: { getElementById: () => null },
+    confirm: () => true,
+    alert: () => {},
+    performance
+  });
+
+  loadCore(ctx);
+
+  ctx.AS.Overlay = {
+    mount: () => overlay,
+    unmount: () => {},
+    render: (_inst, state) => {
+      overlay.lastState = state;
+      overlay.renders.push(state);
+    },
+    setLanguageOptions: () => {},
+    setBanner: () => {},
+    showToast: () => {}
+  };
+
+  ctx.AS.Extract = {
+    extractArticle: () => ({
+      ok: true,
+      title: 'T',
+      url: 'https://example.com/article',
+      text: 'Hello world. '.repeat(200),
+      charCount: 2400,
+      linkDensity: 0.01
+    })
+  };
+
+  ctx.AS.copyToClipboard = async () => true;
+
+  ctx.AS.Controller.bootstrap();
+
+  await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE');
+
+  host.dispatch('as:mode', { mode: 'BULLETS_3' });
+
+  await waitFor(() => overlay.lastState && overlay.lastState.phase === 'PREFLIGHT');
+  host.dispatch('as:proceed', {});
+  await waitFor(() => overlay.lastState && overlay.lastState.phase === 'CONFIRM');
+  host.dispatch('as:run', {});
+  await waitFor(() => overlay.lastState && overlay.lastState.phase === 'DONE');
+
+  assert.ok(String(overlay.lastState.summaryText).includes('三番目のポイントです'));
+  assert.ok(!sent.some((m) => m.type === 'RUN_SUMMARY_REPAIR'), 'should not attempt any repair pass');
 });

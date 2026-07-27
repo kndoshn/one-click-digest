@@ -61,6 +61,34 @@ namespace AS {
       return BULLET_RE.test(line);
     }
 
+    // Bullets must be separated by exactly one blank line: bullet, blank, bullet, blank, ..., bullet.
+    // `block` is expected to contain no lines other than the bullets themselves (headers/blank
+    // padding around the block must be validated by the caller).
+    function validateBulletBlock(block: string[], expectedCount: number): ValidationResult {
+      const expectedLen = expectedCount * 2 - 1;
+      if (block.length !== expectedLen) {
+        return {
+          ok: false,
+          reason: `Expected ${expectedCount} bullets separated by blank lines, got ${block.length} line(s)`
+        };
+      }
+      for (let i = 0; i < block.length; i++) {
+        const line = block[i] ?? '';
+        const trimmed = line.trim();
+        if (i % 2 === 0) {
+          if (isSummaryLine(line) || isConclusionLine(line)) {
+            return { ok: false, reason: 'Unexpected header in bullet block' };
+          }
+          if (!isBulletLine(line)) {
+            return { ok: false, reason: 'Expected bullet line' };
+          }
+        } else if (trimmed.length !== 0) {
+          return { ok: false, reason: 'Expected blank line between bullets' };
+        }
+      }
+      return { ok: true };
+    }
+
     export function validate(mode: SummaryMode, text: string): ValidationResult {
       const cleaned = normalize(text);
       const lines = cleaned.split('\n');
@@ -99,42 +127,13 @@ namespace AS {
           }
         }
 
-        const bullets: string[] = [];
-        for (let i = tldrIndex + 2; i <= conclusionIndex - 2; i++) {
-          const line = lines[i] ?? '';
-          const trimmed = line.trim();
-          if (trimmed.length === 0) {
-            return { ok: false, reason: 'Unexpected blank line in bullet section' };
-          }
-          if (!isBulletLine(line)) {
-            return { ok: false, reason: 'Expected bullet line in TLDR mode' };
-          }
-          bullets.push(trimmed);
-        }
-
-        if (bullets.length !== 12) {
-          return { ok: false, reason: `Expected 12 bullets, got ${bullets.length}` };
-        }
-
-        return { ok: true };
+        const bulletBlock = lines.slice(tldrIndex + 2, conclusionIndex - 1);
+        return validateBulletBlock(bulletBlock, 12);
       }
 
       // Bullet-only modes
       const expected = expectedBulletCount(mode);
-      const nonEmpty = lines.filter((line) => line.trim().length > 0);
-      for (const line of nonEmpty) {
-        if (isSummaryLine(line) || isConclusionLine(line)) {
-          return { ok: false, reason: 'Unexpected header in bullet-only mode' };
-        }
-        if (!isBulletLine(line)) {
-          return { ok: false, reason: 'Unexpected non-bullet line' };
-        }
-      }
-      if (nonEmpty.length !== expected) {
-        return { ok: false, reason: `Expected ${expected} bullets, got ${nonEmpty.length}` };
-      }
-
-      return { ok: true };
+      return validateBulletBlock(lines, expected);
     }
   }
 }

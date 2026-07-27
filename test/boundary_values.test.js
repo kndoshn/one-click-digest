@@ -151,11 +151,11 @@ test('Format: bullets with various markers (*, -, •)', () => {
   const ctx = createClassicContext();
   runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
 
-  const dashBullets = '- a\n- b\n- c';
+  const dashBullets = '- a\n\n- b\n\n- c';
   const r1 = ctx.AS.Format.validate('BULLETS_3', dashBullets);
   assert.equal(r1.ok, true);
 
-  const asteriskBullets = '* a\n* b\n* c';
+  const asteriskBullets = '* a\n\n* b\n\n* c';
   const r2 = ctx.AS.Format.validate('BULLETS_3', asteriskBullets);
   assert.equal(r2.ok, true);
 });
@@ -164,7 +164,7 @@ test('Format: mixed bullet markers fails', () => {
   const ctx = createClassicContext();
   runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
 
-  const mixed = '- a\n* b\n- c';
+  const mixed = '- a\n\n* b\n\n- c';
   const r = ctx.AS.Format.validate('BULLETS_3', mixed);
   // May or may not pass depending on implementation
   // Test documents current behavior
@@ -175,16 +175,25 @@ test('Format: bullets with trailing newlines', () => {
   const ctx = createClassicContext();
   runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
 
-  const withTrailing = '- a\n- b\n- c\n\n\n';
+  const withTrailing = '- a\n\n- b\n\n- c\n\n\n';
   const r = ctx.AS.Format.validate('BULLETS_3', withTrailing);
   assert.equal(r.ok, true);
+});
+
+test('Format: bullets without blank line between them fail', () => {
+  const ctx = createClassicContext();
+  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+
+  const noBlank = '- a\n- b\n- c';
+  const r = ctx.AS.Format.validate('BULLETS_3', noBlank);
+  assert.equal(r.ok, false);
 });
 
 test('Format: full-width characters in bullets', () => {
   const ctx = createClassicContext();
   runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
 
-  const japanese = '- ポイント一\n- ポイント二\n- ポイント三';
+  const japanese = '- ポイント一\n\n- ポイント二\n\n- ポイント三';
   const r = ctx.AS.Format.validate('BULLETS_3', japanese);
   assert.equal(r.ok, true);
 });

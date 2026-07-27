@@ -208,7 +208,7 @@ namespace AS {
       return text;
     }
 
-    function isLikelyTruncatedOutput(text: string): boolean {
+    function isLikelyTruncatedOutput(text: string, language: string): boolean {
       const lines = String(text || '')
         .replace(/\r\n/g, '\n')
         .split('\n')
@@ -223,6 +223,12 @@ namespace AS {
       const punctuation = new Set(['.', '!', '?', '。', '！', '？', '…', '」', '』', '）', ')', '】', ']', '”', '"']);
       if (punctuation.has(lastChar)) return false;
 
+      // Japanese bullets are intentionally instructed to omit a trailing "。" (see
+      // bulletStyleNoteFor in background/index.ts), so a bare kana/kanji ending is
+      // expected there and must not be mistaken for truncation.
+      const isJapanese = String(language || '').trim().toLowerCase().startsWith('ja');
+      if (isJapanese && /[\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar)) return false;
+
       return /[A-Za-z0-9\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar);
     }
 
@@ -234,7 +240,7 @@ namespace AS {
       repairModel: string,
       repairContext?: RepairContext
     ): Promise<string> {
-      if (!isLikelyTruncatedOutput(text)) return text;
+      if (!isLikelyTruncatedOutput(text, language)) return text;
 
       reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REPAIR' }, true);
 

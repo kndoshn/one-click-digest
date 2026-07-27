@@ -329,21 +329,35 @@ function headerLabelsFor(language) {
         return { summary: '요약', conclusion: '결론' };
     return { summary: 'Summary', conclusion: 'Conclusion' };
 }
+// Extra style guidance for bullet text that is language-dependent (e.g. Japanese sentence-final
+// punctuation conventions). Kept separate from formatHintFor's structural instructions.
+function bulletStyleNoteFor(language) {
+    const lang = normalizeLang(language);
+    if (lang.startsWith('ja')) {
+        return '\nWhen a bullet point is written in Japanese, do not end it with a trailing "。".';
+    }
+    return '';
+}
 function formatHintFor(mode, language) {
-    if (mode === 'BULLETS_3')
-        return 'Return exactly 3 bullet points, each starting with "- ".';
-    if (mode === 'BULLETS_5')
-        return 'Return exactly 5 bullet points, each starting with "- ".';
-    if (mode === 'BULLETS_10')
-        return 'Return exactly 10 bullet points, each starting with "- ".';
+    const bulletNote = bulletStyleNoteFor(language);
+    if (mode === 'BULLETS_3') {
+        return `Return exactly 3 bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${bulletNote}`;
+    }
+    if (mode === 'BULLETS_5') {
+        return `Return exactly 5 bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${bulletNote}`;
+    }
+    if (mode === 'BULLETS_10') {
+        return `Return exactly 10 bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${bulletNote}`;
+    }
     const labels = headerLabelsFor(language);
-    return ('Return EXACTLY 16 lines in this order:\n' +
-        `1) ${labels.summary}: <one line>\n` +
-        '2) <blank line>\n' +
-        '3-14) 12 bullet lines, each starting with "- "\n' +
-        '15) <blank line>\n' +
-        `16) ${labels.conclusion}: <one line>\n` +
-        'No headings, no extra text.');
+    return ('Return EXACTLY this structure, with no other text (27 lines total):\n' +
+        `${labels.summary}: <one line>\n` +
+        '<blank line>\n' +
+        '12 bullet lines, each starting with "- ", with exactly one blank line between each pair of bullets\n' +
+        '<blank line>\n' +
+        `${labels.conclusion}: <one line>\n` +
+        'No headings, no extra text.' +
+        bulletNote);
 }
 function buildTokenCountPrompt(args) {
     // Keep minimal for speed and to reduce unrelated prompt tokens.
