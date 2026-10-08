@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Erro da API Claude. Tente mais tarde."
   },
+  "errorRefused": {
+    "message": "O Claude se recusou a resumir este conteúdo."
+  },
   "errorTooShort": {
     "message": "Esta página é curta demais para resumir."
   },

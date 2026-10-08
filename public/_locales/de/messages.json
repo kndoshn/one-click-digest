@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Claude-API-Fehler. Bitte später erneut versuchen."
   },
+  "errorRefused": {
+    "message": "Claude hat die Zusammenfassung dieses Inhalts abgelehnt."
+  },
   "errorTooShort": {
     "message": "Diese Seite ist zu kurz für eine Zusammenfassung."
   },

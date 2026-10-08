@@ -48,9 +48,10 @@ namespace AS {
   // Model strategy
   // - Single-pass summaries: Haiku (cost-effective)
   // - Chunked map-reduce: Haiku (map) -> Sonnet (reduce/repair)
-  export let MODEL_MAP = 'claude-haiku-4-5';
+  // Per-model request params (thinking/effort) live in src/shared/model_params.ts.
+  export let MODEL_MAP = 'claude-haiku-5-5';
   export let MODEL_SINGLE = MODEL_MAP;
-  export let MODEL_FINAL = 'claude-sonnet-5';
+  export let MODEL_FINAL = 'claude-sonnet-5-5';
   // Token count uses the same model as the intended summary for the best alignment.
   // Token counting uses Haiku. This keeps the tokenization close to map-stage accounting.
   export let MODEL_TOKEN_COUNT = MODEL_MAP;
@@ -89,18 +90,57 @@ namespace AS {
   // (Keep the values in sync with official docs.)
   // -----------------------------
 
-  export type ModelPricing = { inputUsdPerMTok: number; outputUsdPerMTok: number };
+  export type ModelPricing = {
+    inputUsdPerMTok: number;
+    outputUsdPerMTok: number;
+    // Higher rates applied when a single request's input exceeds the threshold.
+    longContext?: { thresholdInputTokens: number; inputUsdPerMTok: number; outputUsdPerMTok: number };
+  };
 
   export const PRICING: Record<string, ModelPricing> = {
+    // Claude Haiku 5.5: $0.10/MTok input, $0.50/MTok output for prompts up to 100K tokens;
+    // $0.50/$2.50 for prompts over 100K tokens.
+    'claude-haiku-5-5': {
+      inputUsdPerMTok: 0.1,
+      outputUsdPerMTok: 0.5,
+      longContext: { thresholdInputTokens: 100_000, inputUsdPerMTok: 0.5, outputUsdPerMTok: 2.5 }
+    },
     // Claude Haiku 4.5: $1/MTok input, $5/MTok output
     'claude-haiku-4-5': { inputUsdPerMTok: 1.0, outputUsdPerMTok: 5.0 },
     // Claude Sonnet 4.5: $3/MTok input, $15/MTok output
     'claude-sonnet-4-5': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 },
     // Claude Sonnet 4.6: $3/MTok input, $15/MTok output
     'claude-sonnet-4-6': { inputUsdPerMTok: 3.0, outputUsdPerMTok: 15.0 },
-    // Claude Sonnet 5: $2/MTok input, $10/MTok output (introductory pricing through 2026-08-31;
-    // reverts to $3/$15, same as Sonnet 4.6, on 2026-09-01).
-    'claude-sonnet-5': { inputUsdPerMTok: 2.0, outputUsdPerMTok: 10.0 }
+    // Claude Sonnet 5: $2/MTok input, $10/MTok output (the launch price became the standard price;
+    // the scheduled increase to $3/$15 was cancelled).
+    'claude-sonnet-5': { inputUsdPerMTok: 2.0, outputUsdPerMTok: 10.0 },
+    // Claude Sonnet 5.5: $2/MTok input, $10/MTok output
+    'claude-sonnet-5-5': { inputUsdPerMTok: 2.0, outputUsdPerMTok: 10.0 }
+  };
+
+  // Resolve the rates billed for one request with the given input size.
+  // Returns undefined for unknown models.
+  export function resolvePricing(model: string, requestInputTokens: number): ModelPricing | undefined {
+    const pricing = PRICING[model];
+    if (!pricing) return undefined;
+    return applyPricingTier(pricing, requestInputTokens);
+  }
+
+  export function applyPricingTier(pricing: ModelPricing, requestInputTokens: number): ModelPricing {
+    const lc = pricing.longContext;
+    if (lc && requestInputTokens > lc.thresholdInputTokens) {
+      return { inputUsdPerMTok: lc.inputUsdPerMTok, outputUsdPerMTok: lc.outputUsdPerMTok };
+    }
+    return pricing;
+  }
+
+  // Models on the newer tokenizer (introduced with Claude Opus 4.7) produce ~30% more tokens
+  // for the same text. Applied to the rough char-based estimate only; exact counts come from
+  // the Token Count API with the target model.
+  export const TOKENIZER_INFLATION: Record<string, number> = {
+    'claude-haiku-5-5': 1.3,
+    'claude-sonnet-5': 1.3,
+    'claude-sonnet-5-5': 1.3
   };
 
   // Prompt caching multipliers
@@ -121,7 +161,10 @@ namespace AS {
     // Sonnet 4.6 caches shorter prefixes.
     'claude-sonnet-4-6': 1024,
     // Sonnet 5 caches shorter prefixes (same minimum as Sonnet 4.5/4.6).
-    'claude-sonnet-5': 1024
+    'claude-sonnet-5': 1024,
+    // Haiku 5.5 and Sonnet 5.5 cache prefixes from 512 tokens.
+    'claude-haiku-5-5': 512,
+    'claude-sonnet-5-5': 512
   };
 
   // Apply runtime settings from background/options. This mutates the exported variables above.

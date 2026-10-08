@@ -12,6 +12,7 @@ import { normalizeApprovalThresholds } from '../shared/approval.js';
 import { createAbortRegistry } from './abort_registry.js';
 import { DEFAULT_SETTINGS } from '../shared/types.js';
 import { parseNumberOr } from '../shared/utils.js';
+import { modelRequestParams } from '../shared/model_params.js';
 // -----------------------------
 // Script injection
 // -----------------------------
@@ -492,7 +493,8 @@ async function runMessages(args) {
     const body = {
         model: args.model,
         max_tokens: args.maxTokens,
-        messages: [{ role: 'user', content: args.userPrompt }]
+        messages: [{ role: 'user', content: args.userPrompt }],
+        ...modelRequestParams(args.model)
     };
     if (args.system)
         body.system = args.system;
@@ -505,9 +507,13 @@ async function runMessages(args) {
     });
     if (!res.ok)
         return normalizeApiError(res, 'Messages request failed.');
+    const stopReason = typeof res.json?.stop_reason === 'string' ? String(res.json.stop_reason) : undefined;
+    // Safety classifiers can decline with HTTP 200; there is no usable summary in that case.
+    if (stopReason === 'refusal') {
+        return { ok: false, code: 'refusal', message: 'The model declined to respond.' };
+    }
     const text = extractTextBlocks(res.json?.content);
     const usage = res.json?.usage;
-    const stopReason = typeof res.json?.stop_reason === 'string' ? String(res.json.stop_reason) : undefined;
     return { ok: true, text, usage, stopReason };
 }
 async function runMessagesWithRetry(args) {

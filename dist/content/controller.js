@@ -64,6 +64,9 @@ var AS;
             if (code === 'api_key_missing') {
                 base = AS.t('errorApiKeyMissing');
             }
+            else if (code === 'refusal') {
+                base = AS.t('errorRefused');
+            }
             else if (status === 401 || code.includes('authentication')) {
                 base = AS.t('errorAuth');
             }

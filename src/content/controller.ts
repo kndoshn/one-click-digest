@@ -74,6 +74,8 @@ namespace AS {
 
       if (code === 'api_key_missing') {
         base = t('errorApiKeyMissing');
+      } else if (code === 'refusal') {
+        base = t('errorRefused');
       } else if (status === 401 || code.includes('authentication')) {
         base = t('errorAuth');
       } else if (status === 429 || status === 529 || code.includes('rate_limit') || code.includes('overloaded')) {

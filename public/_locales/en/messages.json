@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Claude API error. Please try again later."
   },
+  "errorRefused": {
+    "message": "Claude declined to summarize this content."
+  },
   "errorTooShort": {
     "message": "This page is too short to summarize."
   },

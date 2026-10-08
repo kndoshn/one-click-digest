@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Claude API 오류입니다. 잠시 후 다시 시도하세요."
   },
+  "errorRefused": {
+    "message": "Claude가 이 콘텐츠의 요약을 거부했습니다."
+  },
   "errorTooShort": {
     "message": "이 페이지는 요약하기에 너무 짧습니다."
   },

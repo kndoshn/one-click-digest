@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Claude API錯誤。請稍後再試。"
   },
+  "errorRefused": {
+    "message": "Claude 拒絕摘要此內容。"
+  },
   "errorTooShort": {
     "message": "頁面內容過短，無法摘要。"
   },

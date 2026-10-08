@@ -84,7 +84,8 @@ var AS;
             if (chunkCount <= 1) {
                 // Single-pass summary uses the map model (cheapest sufficient default).
                 // The final model is reserved for reduce/repair in chunked runs.
-                return costUsdInOut(totalInputTokens + SINGLE_PROMPT_OVERHEAD_TOKENS, outMax, args.mapPricing);
+                const singleInput = totalInputTokens + SINGLE_PROMPT_OVERHEAD_TOKENS;
+                return costUsdInOut(singleInput, outMax, AS.applyPricingTier(args.mapPricing, singleInput));
             }
             // Map-reduce:
             // - Map: each chunk -> small bullet summary (map model)
@@ -92,7 +93,9 @@ var AS;
             const mapOutputTokensTotal = chunkCount * AS.MAP_CHUNK_MAX_OUTPUT_TOKENS;
             // Map stage repeats small metadata per chunk (title/url/chunk headers).
             const mapInputWithOverhead = totalInputTokens + chunkCount * MAP_PROMPT_OVERHEAD_TOKENS_PER_CHUNK;
-            const mapCost = costUsdInOut(mapInputWithOverhead, mapOutputTokensTotal, args.mapPricing);
+            // Tiered pricing is decided per request, so use the average per-chunk input size.
+            const mapPricing = AS.applyPricingTier(args.mapPricing, mapInputWithOverhead / chunkCount);
+            const mapCost = costUsdInOut(mapInputWithOverhead, mapOutputTokensTotal, mapPricing);
             // Reduce stage prompt includes chunk summaries + some overhead.
             const reduceInput = mapOutputTokensTotal + REDUCE_PROMPT_OVERHEAD_TOKENS;
             // Prompt caching: chunk summaries are marked cacheable in reduce/repair.
@@ -101,7 +104,8 @@ var AS;
             const cacheMin = cacheMinTokensForModel(args.finalModel);
             const cachingLikely = useCaching && reduceInput >= cacheMin;
             const writeMult = cachingLikely ? cacheWriteMultiplier() : 1;
-            const reduceCost = costUsdInTokens(reduceInput, args.finalPricing, writeMult) + costUsdOutTokens(outMax, args.finalPricing);
+            const reducePricing = AS.applyPricingTier(args.finalPricing, reduceInput);
+            const reduceCost = costUsdInTokens(reduceInput, reducePricing, writeMult) + costUsdOutTokens(outMax, reducePricing);
             return mapCost + reduceCost;
         }
         function computeRepairCost(args) {
@@ -110,7 +114,7 @@ var AS;
             if (chunkCount <= 1) {
                 // Single-pass repair: repair prompt is based on the draft output.
                 const repairInput = outMax + REPAIR_PROMPT_OVERHEAD_TOKENS;
-                return costUsdInOut(repairInput, outMax, args.mapPricing);
+                return costUsdInOut(repairInput, outMax, AS.applyPricingTier(args.mapPricing, repairInput));
             }
             // Chunked repair: a second reduce-style call. Conservative:
             // assume chunk summaries are re-sent and the same output length is generated.
@@ -119,7 +123,7 @@ var AS;
             // Conservative: assume no cache hit (i.e., full input is billed at normal rate).
             const reduceInput = mapOutputTokensTotal + REDUCE_PROMPT_OVERHEAD_TOKENS;
             const repairInput = reduceInput + outMax + REPAIR_PROMPT_OVERHEAD_TOKENS;
-            return costUsdInOut(repairInput, outMax, args.finalPricing);
+            return costUsdInOut(repairInput, outMax, AS.applyPricingTier(args.finalPricing, repairInput));
         }
         function modelLabel(chunkCount, mapModel, finalModel) {
             if (chunkCount > 1)
@@ -141,7 +145,11 @@ var AS;
         function buildEstimate(args) {
             const extractedCharCount = clampNonNeg(args.extractedCharCount);
             const sentCharCount = args.textToSend.length;
-            const token = estimateTokens(args.textToSend);
+            // The rough estimate is calibrated for the previous tokenizer; scale it for the map model,
+            // which is also the model used for token counting.
+            const inflation = AS.TOKENIZER_INFLATION[args.mapModel] ?? 1;
+            const rough = estimateTokens(args.textToSend);
+            const token = { low: Math.ceil(rough.low * inflation), high: Math.ceil(rough.high * inflation) };
             const spec = AS.getModeRuntimeSpec(args.mode);
             const mapPricing = AS.PRICING[args.mapModel] || AS.PRICING[AS.MODEL_MAP];
             const finalPricing = AS.PRICING[args.finalModel] || AS.PRICING[AS.MODEL_FINAL];

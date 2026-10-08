@@ -16,8 +16,8 @@ export type RuntimeSettings = {
 };
 
 export const DEFAULT_SETTINGS: RuntimeSettings = {
-  modelMap: 'claude-haiku-4-5',
-  modelFinal: 'claude-sonnet-5',
+  modelMap: 'claude-haiku-5-5',
+  modelFinal: 'claude-sonnet-5-5',
   promptCachingEnabled: true,
   promptCachingTtl: '5m',
   hardCostLimitUsd: 1.0,

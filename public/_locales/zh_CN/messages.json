@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Claude API错误。请稍后重试。"
   },
+  "errorRefused": {
+    "message": "Claude 拒绝总结此内容。"
+  },
   "errorTooShort": {
     "message": "页面内容过短，无法摘要。"
   },

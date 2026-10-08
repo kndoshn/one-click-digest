@@ -151,6 +151,32 @@ test('Error handling: API 429 rate limit shows rate limit message', async () => 
   assert.ok(overlay.lastState.message.includes('errorRateLimit'));
 });
 
+test('Error handling: model refusal shows refusal message', async () => {
+  const { ctx, overlay, host } = createTestContext((msg, cb) => {
+    if (msg.type === 'GET_SETTINGS') {
+      cb({ ok: true, apiKeySet: true, settings: { minArticleChars: 50 } });
+      return;
+    }
+    if (msg.type === 'RUN_SUMMARY_SINGLE') {
+      cb({ ok: false, code: 'refusal', message: 'The model declined to respond.' });
+      return;
+    }
+    if (msg.type === 'ABORT_RUN') {
+      cb({ ok: true, aborted: true });
+      return;
+    }
+    cb({ ok: false, code: 'unhandled', message: 'unhandled' });
+  });
+
+  ctx.AS.Controller.bootstrap();
+  await waitFor(() => overlay.lastState?.phase === 'IDLE');
+
+  host.dispatch('as:mode', { mode: 'BULLETS_3' });
+  await waitFor(() => overlay.lastState?.phase === 'ERROR');
+
+  assert.ok(overlay.lastState.message.includes('errorRefused'));
+});
+
 test('Error handling: Network timeout shows timeout message', async () => {
   const { ctx, overlay, host } = createTestContext((msg, cb) => {
     if (msg.type === 'GET_SETTINGS') {

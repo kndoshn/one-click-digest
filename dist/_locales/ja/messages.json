@@ -287,6 +287,9 @@
   "errorServer": {
     "message": "Claude API側のエラーです。時間を置いて再実行してください。"
   },
+  "errorRefused": {
+    "message": "Claudeがこのコンテンツの要約を拒否しました。"
+  },
   "errorTooShort": {
     "message": "本文が短すぎるため要約できません。"
   },
