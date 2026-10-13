@@ -57,8 +57,10 @@ test('costUsd: catalog prices, long-context tier, cache multipliers and the judg
 
 test('formatFailure: the validation reason, or null for a valid summary', () => {
   assert.equal(formatFailure('BULLETS_3', '- One.\n\n- Two.\n\n- Three.'), null);
+  // Checked after the same layout tidying as in the pipeline.
+  assert.equal(formatFailure('BULLETS_3', '- One.\n- Two.\n- Three.'), null);
   assert.equal(
-    formatFailure('BULLETS_3', '- One.\n- Two.\n- Three.'),
+    formatFailure('BULLETS_3', '- One.\n- Two.'),
     'Expected 3 bullets separated by blank lines, got 3 line(s)'
   );
   assert.equal(formatFailure('TLDR_12_CONCLUSION', '**Summary:** x'), 'Missing Summary line');
