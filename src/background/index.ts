@@ -70,7 +70,7 @@ const CONTENT_FILES: string[] = [
   'content/bootstrap.js'
 ];
 
-chrome.action.onClicked.addListener(async (tab: chrome.tabs.Tab) => {
+async function injectContentScripts(tab: chrome.tabs.Tab): Promise<void> {
   try {
     const tabId = tab?.id;
     const url = tab?.url;
@@ -87,6 +87,11 @@ chrome.action.onClicked.addListener(async (tab: chrome.tabs.Tab) => {
     // Avoid logging sensitive data.
     console.error('[ArticleSummarizer] Failed to inject content scripts', err);
   }
+}
+
+chrome.action.onClicked.addListener((tab: chrome.tabs.Tab) => {
+  // injectContentScripts never rejects (it logs its own errors).
+  void injectContentScripts(tab);
 });
 
 // -----------------------------
@@ -194,7 +199,7 @@ function currentCacheControl(): CacheControlEphemeral | undefined {
 const abortRegistry = createAbortRegistry();
 
 // Runs `fn` with an AbortSignal that ABORT_RUN for `runId` can cancel.
-async function withRunAbort<T>(runId: unknown, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
+async function withRunAbort<T>(runId: string, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const id = String(runId || '');
   const controller = new AbortController();
   abortRegistry.register(id, controller);
@@ -435,7 +440,7 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
 }
 
 chrome.runtime.onMessage.addListener((msg: AnyMsg, _sender: chrome.runtime.MessageSender, sendResponse: (resp: unknown) => void) => {
-  (async () => {
+  void (async () => {
     try {
       sendResponse(await handleMessage(msg));
     } catch (err) {

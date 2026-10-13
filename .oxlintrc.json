@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
+  "categories": {
+    "correctness": "error"
+  },
+  "options": {
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-explicit-any": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["src/content/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/background/**"],
+                "message": "Content scripts run in web pages: keep API calls and the API key in the background worker."
+              }
+            ]
+          }
+        ],
+        // Content scripts are classic scripts that share `namespace AS`; oxlint sees the
+        // namespace declarations as unused.
+        "no-unused-vars": "off"
+      }
+    },
+    {
+      "files": ["test/**"],
+      "rules": {
+        // Tests are untyped JavaScript, so these type-aware rules only see `any`.
+        "typescript/no-base-to-string": "off",
+        "typescript/no-implied-eval": "off",
+        "typescript/require-array-sort-compare": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist/**", "coverage/**", "third_party/**"]
+}

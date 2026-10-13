@@ -94,7 +94,7 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
           sent.push(m);
           resp = respond ? respond(m) : { ok: false, code: 'unhandled' };
         }
-        Promise.resolve(resp).then((r) => {
+        void Promise.resolve(resp).then((r) => {
           if (r && r.__lastError) {
             chrome.runtime.lastError = { message: r.__lastError };
             try {

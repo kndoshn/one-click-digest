@@ -500,7 +500,8 @@ namespace AS {
     function handleCopy(): void {
       const s = ctx.state;
       if (s.phase !== 'DONE') return;
-      copyToClipboard(Format.applyBulletStyle(s.summaryText, s.bulletStyle)).then((ok) => {
+      // copyToClipboard never rejects; it resolves to false on failure.
+      void copyToClipboard(Format.applyBulletStyle(s.summaryText, s.bulletStyle)).then((ok) => {
         Overlay.showToast(ctx.overlay, ok ? t('toastCopied') : t('toastCopyFailed'));
       });
     }
@@ -510,7 +511,8 @@ namespace AS {
     function handleBulletStyle(style: unknown): void {
       if (!isBulletStyle(style) || style === ctx.state.bulletStyle) return;
       reduce({ type: 'BULLET_STYLE_CHANGED', bulletStyle: style }, true);
-      saveBulletStyle(style);
+      // Best-effort; saveBulletStyle never rejects.
+      void saveBulletStyle(style);
     }
 
     function handleRunLight(): void {
@@ -622,7 +624,7 @@ namespace AS {
       // stop this controller); UI events come through overlay.events, which page scripts cannot reach.
       overlay.host.addEventListener(OVERLAY_DISPOSE_EVENT, () => dispose());
       overlay.events.addEventListener('as:close', () => handleClose());
-      overlay.events.addEventListener('as:openOptions', () => openOptionsPage());
+      overlay.events.addEventListener('as:openOptions', () => void openOptionsPage());
       overlay.events.addEventListener('as:cancel', () => handleCancel());
       overlay.events.addEventListener('as:reset', () => handleReset());
       overlay.events.addEventListener('as:copy', () => handleCopy());

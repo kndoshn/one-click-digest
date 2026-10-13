@@ -27,10 +27,11 @@ function fakeTimers() {
     },
     clearTimeout: (id) => timeouts.delete(id),
     tickIntervals() {
-      for (const fn of [...intervals.values()]) fn();
+      // Iterate over a snapshot: callbacks may add or clear timers.
+      for (const fn of Array.from(intervals.values())) fn();
     },
     runTimeouts() {
-      for (const [id, fn] of [...timeouts]) {
+      for (const [id, fn] of Array.from(timeouts)) {
         timeouts.delete(id);
         fn();
       }
