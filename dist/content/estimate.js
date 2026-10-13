@@ -5,7 +5,7 @@ var AS;
     (function (Estimate) {
         // Conservative overhead constants (tokens).
         // Notes:
-        // - roughTokenEstimate() only sees the article body, not the full prompt.
+        // - estimateTokens() only sees the article body, not the full prompt.
         // - COUNT_TOKENS uses a minimal prompt (title/url + body) for speed.
         // These constants reduce the risk of under-estimating cost.
         const TOKEN_COUNT_PROMPT_OVERHEAD_TOKENS = 256;
@@ -26,12 +26,15 @@ var AS;
             }
             return n;
         }
-        function roughTokenEstimate(text) {
-            const chars = text.length;
+        Estimate.countCjkChars = countCjkChars;
+        /**
+         * Rough token range for a text of `chars` characters, `cjkChars` of which are CJK.
+         * Taking counts (instead of the text) lets callers accumulate them incrementally.
+         */
+        function estimateTokensFromCounts(chars, cjkChars) {
             if (chars <= 0)
                 return { low: 0, high: 0 };
-            const cjk = countCjkChars(text);
-            const cjkRatio = cjk / Math.max(1, chars);
+            const cjkRatio = cjkChars / Math.max(1, chars);
             // These ratios are intentionally coarse.
             if (cjkRatio >= 0.25) {
                 return {
@@ -44,11 +47,12 @@ var AS;
                 high: Math.ceil(chars / 3.3)
             };
         }
+        Estimate.estimateTokensFromCounts = estimateTokensFromCounts;
         /**
          * Public token estimate helper (rough). Useful for chunk sizing.
          */
         function estimateTokens(text) {
-            return roughTokenEstimate(text);
+            return estimateTokensFromCounts(text.length, countCjkChars(text));
         }
         Estimate.estimateTokens = estimateTokens;
         function costUsdInOut(inputTokens, outputTokens, pricing, inputMultiplier = 1) {
@@ -125,6 +129,13 @@ var AS;
             const repairInput = reduceInput + outMax + REPAIR_PROMPT_OVERHEAD_TOKENS;
             return costUsdInOut(repairInput, outMax, AS.applyPricingTier(args.finalPricing, repairInput));
         }
+        // Unknown models fall back to the default models' pricing.
+        function pricingFor(mapModel, finalModel) {
+            return {
+                mapPricing: AS.PRICING[mapModel] || AS.PRICING[AS.MODEL_MAP],
+                finalPricing: AS.PRICING[finalModel] || AS.PRICING[AS.MODEL_FINAL]
+            };
+        }
         function modelLabel(chunkCount, mapModel, finalModel) {
             if (chunkCount > 1)
                 return `map: ${mapModel} / final: ${finalModel}`;
@@ -151,8 +162,7 @@ var AS;
             const rough = estimateTokens(args.textToSend);
             const token = { low: Math.ceil(rough.low * inflation), high: Math.ceil(rough.high * inflation) };
             const spec = AS.getModeRuntimeSpec(args.mode);
-            const mapPricing = AS.PRICING[args.mapModel] || AS.PRICING[AS.MODEL_MAP];
-            const finalPricing = AS.PRICING[args.finalModel] || AS.PRICING[AS.MODEL_FINAL];
+            const { mapPricing, finalPricing } = pricingFor(args.mapModel, args.finalModel);
             const chunkCountLow = computeChunkCount(token.low);
             const chunkCountHigh = computeChunkCount(token.high);
             const chunkCount = Math.max(chunkCountLow, chunkCountHigh);
@@ -205,8 +215,7 @@ var AS;
             const exact = Math.max(0, Math.floor(exactInputTokens)) + TOKEN_COUNT_PROMPT_OVERHEAD_TOKENS;
             const specMax = estimate.maxOutputTokens;
             const chunkCount = computeChunkCount(exact);
-            const mapPricing = AS.PRICING[estimate.mapModel] || AS.PRICING[AS.MODEL_MAP];
-            const finalPricing = AS.PRICING[estimate.finalModel] || AS.PRICING[AS.MODEL_FINAL];
+            const { mapPricing, finalPricing } = pricingFor(estimate.mapModel, estimate.finalModel);
             const cost = computeCostNoRepair({
                 totalInputTokens: exact,
                 chunkCount,

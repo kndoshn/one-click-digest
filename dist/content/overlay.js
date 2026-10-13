@@ -114,12 +114,12 @@ var AS;
           overflow-wrap: anywhere;
           word-break: break-word;
         }
-	        .modebar {
-	          display: grid;
-	          grid-template-columns: repeat(4, 1fr);
-	          gap: 8px;
-	          padding: 0 12px 8px 12px;
-	        }
+        .modebar {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+          padding: 0 12px 8px 12px;
+        }
         .modebarBtn {
           padding: 6px 8px;
           border-radius: 10px;
@@ -257,6 +257,46 @@ var AS;
         function setText(node, text) {
             node.textContent = text;
         }
+        function fmtTokens(estimate) {
+            return estimate.tokenExact != null
+                ? fmtInt(estimate.tokenExact)
+                : `${fmtInt(estimate.tokenLow)} - ${fmtInt(estimate.tokenHigh)}`;
+        }
+        function fmtCostRange(estimate) {
+            return `${fmtUsd(estimate.costLowUsd)} - ${fmtUsd(estimate.costHighUsd)} (${AS.t('labelWorst')}: ${fmtUsd(estimate.costWorstUsd)})`;
+        }
+        function fmtTimeRange(estimate) {
+            return `${fmtInt(estimate.timeLowSec)} - ${fmtInt(estimate.timeHighSec)}s`;
+        }
+        // Appends a two-column key/value grid.
+        function appendKv(parent, rows) {
+            const kv = el('div', 'kv');
+            for (const [k, v] of rows) {
+                const kk = el('div', 'k');
+                kk.textContent = k;
+                const vv = el('div', 'v');
+                vv.textContent = v;
+                kv.appendChild(kk);
+                kv.appendChild(vv);
+            }
+            parent.appendChild(kv);
+        }
+        function appendNote(parent, text) {
+            const note = el('div', 'note');
+            setText(note, text);
+            parent.appendChild(note);
+        }
+        function createDisplayNames(locale, type) {
+            try {
+                if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+                    return new Intl.DisplayNames([locale], { type });
+                }
+            }
+            catch {
+                // ignore
+            }
+            return null;
+        }
         function mount() {
             const host = document.createElement('div');
             host.id = AS.OVERLAY_CONTAINER_ID;
@@ -359,32 +399,8 @@ var AS;
             // Display names are nicer than raw BCP-47 codes (e.g., "English (en-US)").
             // Fallback to the code itself when Intl.DisplayNames is unavailable.
             const uiLang = AS.getUiLanguage();
-            const langDisplay = (() => {
-                try {
-                    // @ts-ignore - DisplayNames may not exist in older environments.
-                    if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
-                        // @ts-ignore
-                        return new Intl.DisplayNames([uiLang], { type: 'language' });
-                    }
-                }
-                catch {
-                    // ignore
-                }
-                return null;
-            })();
-            const regionDisplay = (() => {
-                try {
-                    // @ts-ignore - DisplayNames may not exist in older environments.
-                    if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
-                        // @ts-ignore
-                        return new Intl.DisplayNames([uiLang], { type: 'region' });
-                    }
-                }
-                catch {
-                    // ignore
-                }
-                return null;
-            })();
+            const langDisplay = createDisplayNames(uiLang, 'language');
+            const regionDisplay = createDisplayNames(uiLang, 'region');
             const labelFor = (code) => {
                 if (!code)
                     return '';
@@ -393,12 +409,10 @@ var AS;
                 const region = parts[1];
                 if (langDisplay) {
                     try {
-                        // @ts-ignore
                         const name = langDisplay.of(base);
                         if (typeof name === 'string' && name.trim()) {
                             if (region && regionDisplay) {
                                 try {
-                                    // @ts-ignore
                                     const regionName = regionDisplay.of(region.toUpperCase());
                                     if (typeof regionName === 'string' && regionName.trim())
                                         return `${name} (${regionName})`;
@@ -482,7 +496,7 @@ var AS;
         }
         Overlay.showToast = showToast;
         let dotsTimer = null;
-        function startDots(inst, base, targetEl) {
+        function startDots(base, targetEl) {
             stopDots();
             let dots = 0;
             dotsTimer = setInterval(() => {
@@ -564,7 +578,7 @@ var AS;
             clear(inst);
             const msg = el('div', 'statusMessage');
             inst.body.appendChild(msg);
-            startDots(inst, AS.t('statusExtracting'), msg);
+            startDots(AS.t('statusExtracting'), msg);
             renderFooterButtons(inst, [{ key: 'buttonCancel', event: 'as:cancel' }]);
         }
         function renderPreflight(inst, state) {
@@ -572,29 +586,18 @@ var AS;
             const title = el('div', 'sectionTitle');
             setText(title, AS.t('sectionEstimate'));
             inst.body.appendChild(title);
-            const kv = el('div', 'kv');
-            const add = (k, v) => {
-                const kk = el('div', 'k');
-                kk.textContent = k;
-                const vv = el('div', 'v');
-                vv.textContent = v;
-                kv.appendChild(kk);
-                kv.appendChild(vv);
-            };
-            add(AS.t('labelChars'), `${fmtInt(state.estimate.charCount)} (${AS.t('labelSendChars')}: ${fmtInt(state.estimate.sentCharCount)})`);
-            const tok = state.estimate.tokenExact != null ? fmtInt(state.estimate.tokenExact) : `${fmtInt(state.estimate.tokenLow)} - ${fmtInt(state.estimate.tokenHigh)}`;
-            add(AS.t('labelTokens'), tok + (state.refining ? ` (${AS.t('labelRefining')})` : ''));
-            add(AS.t('labelCost'), `${fmtUsd(state.estimate.costLowUsd)} - ${fmtUsd(state.estimate.costHighUsd)} (${AS.t('labelWorst')}: ${fmtUsd(state.estimate.costWorstUsd)})`);
-            add(AS.t('labelTime'), `${fmtInt(state.estimate.timeLowSec)} - ${fmtInt(state.estimate.timeHighSec)}s`);
-            add(AS.t('labelModel'), state.estimate.model);
-            add(AS.t('labelChunkCount'), fmtInt(state.estimate.chunkCount));
-            add(AS.t('labelLinkDensity'), fmtPct(state.article.linkDensity));
-            inst.body.appendChild(kv);
-            if (state.estimate.truncated) {
-                const note = el('div', 'note');
-                setText(note, AS.t('noteTruncated'));
-                inst.body.appendChild(note);
-            }
+            const e = state.estimate;
+            appendKv(inst.body, [
+                [AS.t('labelChars'), `${fmtInt(e.charCount)} (${AS.t('labelSendChars')}: ${fmtInt(e.sentCharCount)})`],
+                [AS.t('labelTokens'), fmtTokens(e) + (state.refining ? ` (${AS.t('labelRefining')})` : '')],
+                [AS.t('labelCost'), fmtCostRange(e)],
+                [AS.t('labelTime'), fmtTimeRange(e)],
+                [AS.t('labelModel'), e.model],
+                [AS.t('labelChunkCount'), fmtInt(e.chunkCount)],
+                [AS.t('labelLinkDensity'), fmtPct(state.article.linkDensity)]
+            ]);
+            if (e.truncated)
+                appendNote(inst.body, AS.t('noteTruncated'));
             renderFooterButtons(inst, [
                 { key: 'buttonCancel', event: 'as:cancel' },
                 { key: 'buttonProceed', primary: true, event: 'as:proceed' }
@@ -605,41 +608,23 @@ var AS;
             const p = el('div');
             setText(p, AS.t('promptApprovalRequired'));
             inst.body.appendChild(p);
-            const kv = el('div', 'kv');
-            const add = (k, v) => {
-                const kk = el('div', 'k');
-                kk.textContent = k;
-                const vv = el('div', 'v');
-                vv.textContent = v;
-                kv.appendChild(kk);
-                kv.appendChild(vv);
-            };
             // Approval screen: show the full set requested (chars/tokens/cost/time).
-            add(AS.t('labelChars'), fmtInt(state.article.charCount));
-            add(AS.t('labelSendChars'), fmtInt(state.estimate.sentCharCount));
-            const tok = state.estimate.tokenExact != null
-                ? fmtInt(state.estimate.tokenExact)
-                : `${fmtInt(state.estimate.tokenLow)} - ${fmtInt(state.estimate.tokenHigh)}`;
-            add(AS.t('labelTokens'), tok);
-            add(AS.t('labelCost'), `${fmtUsd(state.estimate.costLowUsd)} - ${fmtUsd(state.estimate.costHighUsd)} (${AS.t('labelWorst')}: ${fmtUsd(state.estimate.costWorstUsd)})`);
-            add(AS.t('labelTime'), `${fmtInt(state.estimate.timeLowSec)} - ${fmtInt(state.estimate.timeHighSec)}s`);
-            add(AS.t('labelModel'), state.estimate.model);
-            add(AS.t('labelChunkCount'), fmtInt(state.estimate.chunkCount));
-            inst.body.appendChild(kv);
+            const e = state.estimate;
+            appendKv(inst.body, [
+                [AS.t('labelChars'), fmtInt(state.article.charCount)],
+                [AS.t('labelSendChars'), fmtInt(e.sentCharCount)],
+                [AS.t('labelTokens'), fmtTokens(e)],
+                [AS.t('labelCost'), fmtCostRange(e)],
+                [AS.t('labelTime'), fmtTimeRange(e)],
+                [AS.t('labelModel'), e.model],
+                [AS.t('labelChunkCount'), fmtInt(e.chunkCount)]
+            ]);
             // What will be sent to Claude (privacy transparency).
-            const sent = el('div', 'note');
-            setText(sent, AS.t('noteDataSent'));
-            inst.body.appendChild(sent);
-            if (state.estimate.truncated) {
-                const note = el('div', 'note');
-                setText(note, AS.t('noteTruncated'));
-                inst.body.appendChild(note);
-            }
-            if (state.note) {
-                const note = el('div', 'note');
-                setText(note, state.note);
-                inst.body.appendChild(note);
-            }
+            appendNote(inst.body, AS.t('noteDataSent'));
+            if (e.truncated)
+                appendNote(inst.body, AS.t('noteTruncated'));
+            if (state.note)
+                appendNote(inst.body, state.note);
             renderFooterButtons(inst, [
                 { key: 'buttonCancel', event: 'as:cancel' },
                 { key: 'buttonRunLight', event: 'as:runLight' },
@@ -664,7 +649,7 @@ var AS;
             else if (p?.stage === 'REPAIR') {
                 label = AS.t('statusSummarizingRepair');
             }
-            startDots(inst, label, msg);
+            startDots(label, msg);
             renderFooterButtons(inst, [{ key: 'buttonCancel', event: 'as:cancel' }]);
         }
         function renderDone(inst, state) {
@@ -672,32 +657,21 @@ var AS;
             const pre = el('div', 'summary');
             pre.textContent = state.summaryText;
             inst.body.appendChild(pre);
-            renderFooterButtons(inst, [
-                { key: 'buttonCopy', primary: true, event: 'as:copy' },
-            ]);
+            renderFooterButtons(inst, [{ key: 'buttonCopy', primary: true, event: 'as:copy' }]);
         }
         function renderError(inst, state) {
             clear(inst);
             const msg = el('div', 'alert');
             setText(msg, state.message);
             inst.body.appendChild(msg);
-            renderFooterButtons(inst, [
-                { key: 'buttonBack', event: 'as:reset' }
-            ]);
+            renderFooterButtons(inst, [{ key: 'buttonBack', event: 'as:reset' }]);
         }
         function renderBlocked(inst, state) {
             clear(inst);
             const msg = el('div', 'alert');
             setText(msg, `${AS.t('errorBlocked')}${state.reason}`);
             inst.body.appendChild(msg);
-            const kv = el('div', 'kv');
-            const kk = el('div', 'k');
-            kk.textContent = AS.t('labelCostWorst');
-            const vv = el('div', 'v');
-            vv.textContent = fmtUsd(state.estimate.costWorstUsd);
-            kv.appendChild(kk);
-            kv.appendChild(vv);
-            inst.body.appendChild(kv);
+            appendKv(inst.body, [[AS.t('labelCostWorst'), fmtUsd(state.estimate.costWorstUsd)]]);
             renderFooterButtons(inst, [
                 { key: 'buttonBack', event: 'as:reset' },
                 { key: 'buttonOpenOptions', event: 'as:openOptions' }

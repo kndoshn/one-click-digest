@@ -3,12 +3,6 @@ var AS;
 (function (AS) {
     // A single overlay instance per tab injection.
     AS.OVERLAY_CONTAINER_ID = '__article_summarizer_overlay__';
-    function safeNowMs() {
-        return typeof performance !== 'undefined' && typeof performance.now === 'function'
-            ? performance.now()
-            : Date.now();
-    }
-    AS.safeNowMs = safeNowMs;
     function makeRunId() {
         // Not crypto-grade; sufficient for correlating UI events.
         return `run_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
@@ -35,15 +29,6 @@ var AS;
         }
     }
     AS.getPageUrl = getPageUrl;
-    function getDomain() {
-        try {
-            return new URL(getPageUrl()).hostname;
-        }
-        catch {
-            return location.host || '';
-        }
-    }
-    AS.getDomain = getDomain;
     async function getAcceptLanguages() {
         const fallback = [navigator.language || 'en'];
         try {

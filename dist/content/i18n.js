@@ -4,11 +4,9 @@ var AS;
     const SUPPORTED_UI_LANGS = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
     let overrideMessages = null;
     let overrideLang = null;
+    // Keep in sync with toUiLang in src/options/index.ts.
     function toUiLang(input) {
-        const raw = String(input || '').trim();
-        if (!raw)
-            return 'en';
-        const lower = raw.toLowerCase();
+        const lower = String(input || '').trim().toLowerCase();
         if (lower.startsWith('pt'))
             return 'pt-BR';
         if (lower.startsWith('zh')) {
@@ -17,37 +15,7 @@ var AS;
             return 'zh-CN';
         }
         const base = lower.split('-')[0];
-        if (base === 'ja')
-            return 'ja';
-        if (base === 'fr')
-            return 'fr';
-        if (base === 'de')
-            return 'de';
-        if (base === 'es')
-            return 'es';
-        if (base === 'it')
-            return 'it';
-        if (base === 'ko')
-            return 'ko';
-        return 'en';
-    }
-    function uiLangToLocaleFolder(lang) {
-        if (lang === 'pt-BR')
-            return 'pt_BR';
-        if (lang === 'zh-CN')
-            return 'zh_CN';
-        if (lang === 'zh-TW')
-            return 'zh_TW';
-        return lang;
-    }
-    function uiLangToBcp(lang) {
-        if (lang === 'pt-BR')
-            return 'pt-BR';
-        if (lang === 'zh-CN')
-            return 'zh-CN';
-        if (lang === 'zh-TW')
-            return 'zh-TW';
-        return lang;
+        return SUPPORTED_UI_LANGS.includes(base) ? base : 'en';
     }
     function resolveBrowserUiLang() {
         try {
@@ -87,9 +55,7 @@ var AS;
     }
     AS.t = t;
     function getUiLanguage() {
-        if (overrideLang)
-            return uiLangToBcp(overrideLang);
-        return uiLangToBcp(resolveBrowserUiLang());
+        return overrideLang || resolveBrowserUiLang();
     }
     AS.getUiLanguage = getUiLanguage;
     async function setUiLanguage(value) {
@@ -100,7 +66,8 @@ var AS;
             return;
         }
         const lang = toUiLang(raw);
-        const folder = uiLangToLocaleFolder(lang);
+        // _locales folders use underscores (pt_BR, zh_CN, zh_TW).
+        const folder = lang.replace('-', '_');
         try {
             const url = chrome.runtime.getURL(`_locales/${folder}/messages.json`);
             const resp = await fetch(url);

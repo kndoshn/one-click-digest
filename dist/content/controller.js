@@ -6,8 +6,10 @@ var AS;
         const ctx = {
             overlay: null,
             state: null,
-            acceptLanguages: [],
+            acceptLanguages: []
         };
+        // Output languages offered in the overlay's language select.
+        const OUTPUT_LANGUAGES = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
         function setState(next, render = true) {
             ctx.state = next;
             if (render)
@@ -102,10 +104,8 @@ var AS;
         function isRunActive(runId) {
             return ctx.activeRunId === runId;
         }
-        async function sendToBackground(_runId, _purpose, message) {
-            // NOTE: The background worker maintains an AbortController registry per runId.
-            // We keep this wrapper for future observability instrumentation.
-            return await AS.sendMessage(message);
+        function isTextResponse(resp) {
+            return Boolean(resp && resp.ok === true && typeof resp.text === 'string');
         }
         function abortInFlight() {
             const runId = ctx.activeRunId;
@@ -125,7 +125,7 @@ var AS;
             if (!isRunActive(runId))
                 return;
             try {
-                const resp = await sendToBackground(runId, 'count_tokens', {
+                const resp = await AS.sendMessage({
                     type: 'COUNT_TOKENS',
                     payload: {
                         runId,
@@ -158,12 +158,10 @@ var AS;
                 reduce({ type: 'PREFLIGHT_READY', runId, estimate, refining: false }, true);
             }
         }
-        async function maybeRepairFormat(runId, mode, language, text, repairModel, repairContext) {
-            const v = AS.Format.validate(mode, text);
-            if (v.ok)
-                return text;
+        // Asks the background to rewrite `text`. Keeps `text` unless the rewrite passes format validation.
+        async function requestRepair(runId, mode, language, text, repairModel, repairContext, fixTruncation) {
             reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REPAIR' }, true);
-            const resp = await sendToBackground(runId, 'repair', {
+            const resp = await AS.sendMessage({
                 type: 'RUN_SUMMARY_REPAIR',
                 payload: {
                     runId,
@@ -171,206 +169,121 @@ var AS;
                     mode,
                     badOutput: text,
                     model: repairModel,
-                    title: repairContext?.title,
-                    url: repairContext?.url,
-                    chunkSummaries: repairContext?.chunkSummaries
+                    title: repairContext.title,
+                    url: repairContext.url,
+                    chunkSummaries: repairContext.chunkSummaries,
+                    ...(fixTruncation ? { fixTruncation: true } : {})
                 }
             });
             if (!isRunActive(runId))
                 return text;
-            if (resp && resp.ok === true && typeof resp.text === 'string') {
-                const repaired = resp.text;
-                return AS.Format.validate(mode, repaired).ok ? repaired : text;
-            }
+            if (isTextResponse(resp) && AS.Format.validate(mode, resp.text).ok)
+                return resp.text;
             return text;
         }
-        function isLikelyTruncatedOutput(text, language) {
-            const lines = String(text || '')
-                .replace(/\r\n/g, '\n')
-                .split('\n')
-                .map((line) => line.trim())
-                .filter((line) => line.length > 0);
-            if (lines.length === 0)
-                return false;
-            const lastLine = lines[lines.length - 1].replace(/^[-*•・]\s+/, '').trim();
-            if (lastLine.length === 0)
-                return false;
-            const lastChar = lastLine.slice(-1);
-            const punctuation = new Set(['.', '!', '?', '。', '！', '？', '…', '」', '』', '）', ')', '】', ']', '”', '"']);
-            if (punctuation.has(lastChar))
-                return false;
-            // Japanese bullets are intentionally instructed to omit a trailing "。" (see
-            // bulletStyleNoteFor in background/index.ts), so a bare kana/kanji ending is
-            // expected there and must not be mistaken for truncation.
-            const isJapanese = String(language || '').trim().toLowerCase().startsWith('ja');
-            if (isJapanese && /[\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar))
-                return false;
-            return /[A-Za-z0-9\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar);
-        }
-        async function maybeRepairTruncation(runId, mode, language, text, repairModel, repairContext) {
-            if (!isLikelyTruncatedOutput(text, language))
-                return text;
-            reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REPAIR' }, true);
-            const resp = await sendToBackground(runId, 'repair_truncation', {
-                type: 'RUN_SUMMARY_REPAIR',
-                payload: {
-                    runId,
-                    language,
-                    mode,
-                    badOutput: text,
-                    model: repairModel,
-                    title: repairContext?.title,
-                    url: repairContext?.url,
-                    chunkSummaries: repairContext?.chunkSummaries,
-                    fixTruncation: true
-                }
-            });
-            if (!isRunActive(runId))
-                return text;
-            if (resp && resp.ok === true && typeof resp.text === 'string') {
-                const repaired = resp.text;
-                return AS.Format.validate(mode, repaired).ok ? repaired : text;
+        // Final step shared by single-pass and map-reduce runs: repair the format if invalid, then
+        // repair a likely-truncated ending, then show the result.
+        async function finishSummary(runId, mode, language, draft, repairModel, repairContext, usage) {
+            let text = draft;
+            if (!AS.Format.validate(mode, text).ok) {
+                text = await requestRepair(runId, mode, language, text, repairModel, repairContext, false);
+                if (!isRunActive(runId))
+                    return;
             }
-            return text;
-        }
-        async function runSummary(runId, article, estimate) {
+            if (AS.Format.isLikelyTruncatedOutput(text, language)) {
+                text = await requestRepair(runId, mode, language, text, repairModel, repairContext, true);
+            }
             if (!isRunActive(runId))
                 return;
-            const language = resolvedLanguage();
-            const mode = currentMode();
-            const normalizeSummaryText = (input) => {
-                const lines = String(input || '').replace(/\r\n/g, '\n').split('\n');
-                const out = [];
-                const isBullet = (line) => AS.Format.isBulletLine(line);
-                const isSummary = (line) => AS.Format.isSummaryLine(line);
-                const isConclusion = (line) => AS.Format.isConclusionLine(line);
-                const lastNonEmptyIndex = () => {
-                    for (let i = out.length - 1; i >= 0; i--) {
-                        if (out[i].trim().length > 0)
-                            return i;
-                    }
-                    return -1;
-                };
-                for (const raw of lines) {
-                    const line = raw.trim();
-                    if (line.length === 0) {
-                        out.push('');
-                        continue;
-                    }
-                    if (isBullet(line) || isSummary(line) || isConclusion(line)) {
-                        out.push(line);
-                        continue;
-                    }
-                    const prevIndex = lastNonEmptyIndex();
-                    if (prevIndex >= 0 && isBullet(out[prevIndex])) {
-                        out[prevIndex] = `${out[prevIndex]} ${line}`;
-                    }
-                    else {
-                        out.push(line);
-                    }
-                }
-                return out.join('\n').trim();
-            };
-            try {
-                const chunks = AS.Chunker.chunkText(article.text, AS.CHUNK_TARGET_INPUT_TOKENS);
-                const total = chunks.length;
-                if (total > 1) {
-                    const chunkSummaries = [];
-                    for (let i = 0; i < total; i++) {
-                        if (!isRunActive(runId))
-                            return;
-                        reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'MAP', current: i + 1, total }, true);
-                        const resp = await sendToBackground(runId, `map_${i + 1}`, {
-                            type: 'RUN_SUMMARY_MAP',
-                            payload: {
-                                runId,
-                                title: article.title,
-                                url: article.url,
-                                language,
-                                chunkText: chunks[i],
-                                chunkIndex: i + 1,
-                                chunkCount: total,
-                                model: AS.MODEL_MAP
-                            }
-                        });
-                        if (!isRunActive(runId))
-                            return;
-                        if (resp && resp.ok === true && typeof resp.text === 'string') {
-                            chunkSummaries.push(resp.text);
-                            continue;
-                        }
-                        reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
-                        return;
-                    }
-                    if (!isRunActive(runId))
-                        return;
-                    reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REDUCE' }, true);
-                    const reduced = await sendToBackground(runId, 'reduce', {
-                        type: 'RUN_SUMMARY_REDUCE',
-                        payload: {
-                            runId,
-                            title: article.title,
-                            url: article.url,
-                            language,
-                            mode,
-                            chunkSummaries,
-                            model: AS.MODEL_FINAL
-                        }
-                    });
-                    if (!isRunActive(runId))
-                        return;
-                    if (reduced && reduced.ok === true && typeof reduced.text === 'string') {
-                        let finalText = await maybeRepairFormat(runId, mode, language, reduced.text, AS.MODEL_FINAL, {
-                            title: article.title,
-                            url: article.url,
-                            // Enable prompt caching reuse for repair by providing the same chunk summaries.
-                            chunkSummaries
-                        });
-                        finalText = await maybeRepairTruncation(runId, mode, language, finalText, AS.MODEL_FINAL, {
-                            title: article.title,
-                            url: article.url,
-                            chunkSummaries
-                        });
-                        if (!isRunActive(runId))
-                            return;
-                        reduce({ type: 'SUMMARY_DONE', runId, summaryText: normalizeSummaryText(finalText), usage: reduced.usage }, true);
-                        return;
-                    }
-                    reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(reduced) }, true);
+            reduce({ type: 'SUMMARY_DONE', runId, summaryText: AS.Format.normalizeSummaryText(text), usage }, true);
+        }
+        async function runMapReduce(runId, article, chunks, mode, language) {
+            const total = chunks.length;
+            const chunkSummaries = [];
+            for (let i = 0; i < total; i++) {
+                if (!isRunActive(runId))
                     return;
-                }
-                // Single pass.
-                reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
-                const resp = await sendToBackground(runId, 'single', {
-                    type: 'RUN_SUMMARY_SINGLE',
+                reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'MAP', current: i + 1, total }, true);
+                const resp = await AS.sendMessage({
+                    type: 'RUN_SUMMARY_MAP',
                     payload: {
                         runId,
                         title: article.title,
                         url: article.url,
                         language,
-                        mode,
-                        articleText: article.text,
-                        // Must match our cost model assumptions: single-pass uses the map model.
+                        chunkText: chunks[i],
+                        chunkIndex: i + 1,
+                        chunkCount: total,
                         model: AS.MODEL_MAP
                     }
                 });
                 if (!isRunActive(runId))
                     return;
-                if (resp && resp.ok === true && typeof resp.text === 'string') {
-                    let finalText = await maybeRepairFormat(runId, mode, language, resp.text, AS.MODEL_MAP, {
-                        title: article.title,
-                        url: article.url
-                    });
-                    finalText = await maybeRepairTruncation(runId, mode, language, finalText, AS.MODEL_MAP, {
-                        title: article.title,
-                        url: article.url
-                    });
-                    if (!isRunActive(runId))
-                        return;
-                    reduce({ type: 'SUMMARY_DONE', runId, summaryText: normalizeSummaryText(finalText), usage: resp.usage }, true);
+                if (!isTextResponse(resp)) {
+                    reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
                     return;
                 }
+                chunkSummaries.push(resp.text);
+            }
+            if (!isRunActive(runId))
+                return;
+            reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REDUCE' }, true);
+            const reduced = await AS.sendMessage({
+                type: 'RUN_SUMMARY_REDUCE',
+                payload: {
+                    runId,
+                    title: article.title,
+                    url: article.url,
+                    language,
+                    mode,
+                    chunkSummaries,
+                    model: AS.MODEL_FINAL
+                }
+            });
+            if (!isRunActive(runId))
+                return;
+            if (!isTextResponse(reduced)) {
+                reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(reduced) }, true);
+                return;
+            }
+            await finishSummary(runId, mode, language, reduced.text, AS.MODEL_FINAL, { title: article.title, url: article.url, chunkSummaries }, reduced.usage);
+        }
+        async function runSinglePass(runId, article, mode, language) {
+            reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
+            const resp = await AS.sendMessage({
+                type: 'RUN_SUMMARY_SINGLE',
+                payload: {
+                    runId,
+                    title: article.title,
+                    url: article.url,
+                    language,
+                    mode,
+                    articleText: article.text,
+                    // Must match our cost model assumptions: single-pass uses the map model.
+                    model: AS.MODEL_MAP
+                }
+            });
+            if (!isRunActive(runId))
+                return;
+            if (!isTextResponse(resp)) {
                 reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
+                return;
+            }
+            await finishSummary(runId, mode, language, resp.text, AS.MODEL_MAP, { title: article.title, url: article.url }, resp.usage);
+        }
+        async function runSummary(runId, article) {
+            if (!isRunActive(runId))
+                return;
+            const language = resolvedLanguage();
+            const mode = currentMode();
+            try {
+                const chunks = AS.Chunker.chunkText(article.text, AS.CHUNK_TARGET_INPUT_TOKENS);
+                if (chunks.length > 1) {
+                    await runMapReduce(runId, article, chunks, mode, language);
+                }
+                else {
+                    await runSinglePass(runId, article, mode, language);
+                }
             }
             catch (err) {
                 if (!isRunActive(runId))
@@ -378,6 +291,13 @@ var AS;
                 reduce({ type: 'SUMMARY_ERROR', runId, message: err?.message || AS.t('errorUnknown') }, true);
             }
         }
+        // User-facing message for each extraction failure reason.
+        const EXTRACT_ERROR_KEYS = {
+            TOO_SHORT: 'errorTooShort',
+            LINK_HEAVY: 'errorNotArticle',
+            NO_MAIN_TEXT: 'errorNoMainText',
+            UNKNOWN: 'errorExtractionFailed'
+        };
         async function doExtractAndMaybeRun(runId) {
             if (!isRunActive(runId))
                 return;
@@ -385,17 +305,7 @@ var AS;
             if (!isRunActive(runId))
                 return;
             if (!r.ok) {
-                // Map reason to user-facing message.
-                let msg = '';
-                if (r.code === 'TOO_SHORT')
-                    msg = AS.t('errorTooShort');
-                else if (r.code === 'LINK_HEAVY')
-                    msg = AS.t('errorNotArticle');
-                else if (r.code === 'NO_MAIN_TEXT')
-                    msg = AS.t('errorNoMainText');
-                else
-                    msg = AS.t('errorExtractionFailed');
-                reduce({ type: 'EXTRACT_FAIL', runId, message: msg }, true);
+                reduce({ type: 'EXTRACT_FAIL', runId, message: AS.t(EXTRACT_ERROR_KEYS[r.code] || 'errorExtractionFailed') }, true);
                 return;
             }
             // Clamp for send safety.
@@ -454,7 +364,7 @@ var AS;
             }
             // No approval needed: run immediately.
             setState(AS.StateMachine.reduce(ctx.state, { type: 'START_SUMMARY', runId }), true);
-            await runSummary(runId, articleForState, estimate);
+            await runSummary(runId, articleForState);
         }
         function startRun(mode) {
             const runId = AS.makeRunId();
@@ -487,7 +397,7 @@ var AS;
             if (s.phase !== 'CONFIRM')
                 return;
             reduce({ type: 'START_SUMMARY', runId: s.runId }, true);
-            runSummary(s.runId, s.article, s.estimate).catch(() => {
+            runSummary(s.runId, s.article).catch(() => {
                 // ignore
             });
         }
@@ -523,7 +433,7 @@ var AS;
                 return;
             }
             reduce({ type: 'START_SUMMARY', runId }, true);
-            runSummary(runId, a, est).catch((err) => {
+            runSummary(runId, a).catch((err) => {
                 console.error('[ArticleSummarizer] runSummary (light) failed', err);
                 if (isRunActive(runId)) {
                     reduce({ type: 'SUMMARY_ERROR', runId, message: AS.t('errorUnknown') }, true);
@@ -590,7 +500,6 @@ var AS;
                     return;
                 startRun(mode);
             });
-            const OUTPUT_LANGUAGES = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
             // Populate languages.
             ctx.acceptLanguages = await AS.getAcceptLanguages();
             AS.Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);

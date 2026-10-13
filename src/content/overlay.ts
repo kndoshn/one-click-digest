@@ -3,7 +3,7 @@ namespace AS {
     export type Instance = {
       host: HTMLDivElement;
       shadow: ShadowRoot;
-	      modeBar: HTMLDivElement;
+      modeBar: HTMLDivElement;
       body: HTMLDivElement;
       footer: HTMLDivElement;
       banner: HTMLDivElement;
@@ -128,12 +128,12 @@ namespace AS {
           overflow-wrap: anywhere;
           word-break: break-word;
         }
-	        .modebar {
-	          display: grid;
-	          grid-template-columns: repeat(4, 1fr);
-	          gap: 8px;
-	          padding: 0 12px 8px 12px;
-	        }
+        .modebar {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+          padding: 0 12px 8px 12px;
+        }
         .modebarBtn {
           padding: 6px 8px;
           border-radius: 10px;
@@ -273,6 +273,51 @@ namespace AS {
       node.textContent = text;
     }
 
+    function fmtTokens(estimate: Estimate): string {
+      return estimate.tokenExact != null
+        ? fmtInt(estimate.tokenExact)
+        : `${fmtInt(estimate.tokenLow)} - ${fmtInt(estimate.tokenHigh)}`;
+    }
+
+    function fmtCostRange(estimate: Estimate): string {
+      return `${fmtUsd(estimate.costLowUsd)} - ${fmtUsd(estimate.costHighUsd)} (${t('labelWorst')}: ${fmtUsd(estimate.costWorstUsd)})`;
+    }
+
+    function fmtTimeRange(estimate: Estimate): string {
+      return `${fmtInt(estimate.timeLowSec)} - ${fmtInt(estimate.timeHighSec)}s`;
+    }
+
+    // Appends a two-column key/value grid.
+    function appendKv(parent: HTMLElement, rows: Array<[string, string]>): void {
+      const kv = el('div', 'kv');
+      for (const [k, v] of rows) {
+        const kk = el('div', 'k');
+        kk.textContent = k;
+        const vv = el('div', 'v');
+        vv.textContent = v;
+        kv.appendChild(kk);
+        kv.appendChild(vv);
+      }
+      parent.appendChild(kv);
+    }
+
+    function appendNote(parent: HTMLElement, text: string): void {
+      const note = el('div', 'note');
+      setText(note, text);
+      parent.appendChild(note);
+    }
+
+    function createDisplayNames(locale: string, type: 'language' | 'region'): Intl.DisplayNames | null {
+      try {
+        if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+          return new Intl.DisplayNames([locale], { type });
+        }
+      } catch {
+        // ignore
+      }
+      return null;
+    }
+
     export function mount(): Instance {
       const host = document.createElement('div');
       host.id = OVERLAY_CONTAINER_ID;
@@ -326,8 +371,8 @@ namespace AS {
       const banner = el('div', 'banner hidden');
       banner.id = 'as-banner';
 
-	      const modeBar = el('div', 'modebar hidden');
-	      modeBar.id = 'as-modebar';
+      const modeBar = el('div', 'modebar hidden');
+      modeBar.id = 'as-modebar';
 
       const body = el('div', 'body') as HTMLDivElement;
       body.id = 'as-body';
@@ -344,8 +389,8 @@ namespace AS {
       panel.appendChild(header);
       panel.appendChild(meta);
       panel.appendChild(controls);
-	      panel.appendChild(banner);
-	      panel.appendChild(modeBar);
+      panel.appendChild(banner);
+      panel.appendChild(modeBar);
       panel.appendChild(body);
       panel.appendChild(footer);
 
@@ -358,8 +403,8 @@ namespace AS {
 
       return {
         host,
-	        shadow,
-	        modeBar,
+        shadow,
+        modeBar,
         body,
         footer,
         banner,
@@ -400,32 +445,8 @@ namespace AS {
       // Display names are nicer than raw BCP-47 codes (e.g., "English (en-US)").
       // Fallback to the code itself when Intl.DisplayNames is unavailable.
       const uiLang = getUiLanguage();
-
-      const langDisplay = (() => {
-        try {
-          // @ts-ignore - DisplayNames may not exist in older environments.
-          if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
-            // @ts-ignore
-            return new Intl.DisplayNames([uiLang], { type: 'language' });
-          }
-        } catch {
-          // ignore
-        }
-        return null;
-      })();
-
-      const regionDisplay = (() => {
-        try {
-          // @ts-ignore - DisplayNames may not exist in older environments.
-          if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
-            // @ts-ignore
-            return new Intl.DisplayNames([uiLang], { type: 'region' });
-          }
-        } catch {
-          // ignore
-        }
-        return null;
-      })();
+      const langDisplay = createDisplayNames(uiLang, 'language');
+      const regionDisplay = createDisplayNames(uiLang, 'region');
 
       const labelFor = (code: string): string => {
         if (!code) return '';
@@ -434,12 +455,10 @@ namespace AS {
         const region = parts[1];
         if (langDisplay) {
           try {
-            // @ts-ignore
             const name = langDisplay.of(base);
             if (typeof name === 'string' && name.trim()) {
               if (region && regionDisplay) {
                 try {
-                  // @ts-ignore
                   const regionName = regionDisplay.of(region.toUpperCase());
                   if (typeof regionName === 'string' && regionName.trim()) return `${name} (${regionName})`;
                 } catch {
@@ -516,7 +535,7 @@ namespace AS {
     }
 
     let dotsTimer: any = null;
-    function startDots(inst: Instance, base: string, targetEl: HTMLElement): void {
+    function startDots(base: string, targetEl: HTMLElement): void {
       stopDots();
       let dots = 0;
       dotsTimer = setInterval(() => {
@@ -538,29 +557,29 @@ namespace AS {
       stopDots();
     }
 
-	    function renderModeBar(inst: Instance, state: UiState): void {
-	      const shouldShow = state.phase === 'DONE';
-	      if (!shouldShow) {
-	        inst.modeBar.classList.add('hidden');
-	        inst.modeBar.innerHTML = '';
-	        return;
-	      }
+    function renderModeBar(inst: Instance, state: UiState): void {
+      const shouldShow = state.phase === 'DONE';
+      if (!shouldShow) {
+        inst.modeBar.classList.add('hidden');
+        inst.modeBar.innerHTML = '';
+        return;
+      }
 
-	      inst.modeBar.classList.remove('hidden');
-	      inst.modeBar.innerHTML = '';
+      inst.modeBar.classList.remove('hidden');
+      inst.modeBar.innerHTML = '';
 
-	      for (const opt of MODE_OPTIONS) {
-	        const btn = el('button', 'modebarBtn') as HTMLButtonElement;
-	        setText(btn, t(opt.labelKey));
-	        btn.title = t(opt.descKey);
-	        btn.disabled = isBusy(state);
-	        if (state.selectedMode === opt.mode) {
-	          btn.classList.add('selected');
-	        }
-	        btn.addEventListener('click', () => dispatch(inst.host, 'as:mode', { mode: opt.mode }));
-	        inst.modeBar.appendChild(btn);
-	      }
-	    }
+      for (const opt of MODE_OPTIONS) {
+        const btn = el('button', 'modebarBtn') as HTMLButtonElement;
+        setText(btn, t(opt.labelKey));
+        btn.title = t(opt.descKey);
+        btn.disabled = isBusy(state);
+        if (state.selectedMode === opt.mode) {
+          btn.classList.add('selected');
+        }
+        btn.addEventListener('click', () => dispatch(inst.host, 'as:mode', { mode: opt.mode }));
+        inst.modeBar.appendChild(btn);
+      }
+    }
 
     function renderFooterButtons(inst: Instance, buttons: Array<{ key: string; primary?: boolean; disabled?: boolean; event: string }>): void {
       inst.footer.innerHTML = '';
@@ -609,7 +628,7 @@ namespace AS {
       clear(inst);
       const msg = el('div', 'statusMessage');
       inst.body.appendChild(msg);
-      startDots(inst, t('statusExtracting'), msg);
+      startDots(t('statusExtracting'), msg);
       renderFooterButtons(inst, [{ key: 'buttonCancel', event: 'as:cancel' }]);
     }
 
@@ -620,32 +639,18 @@ namespace AS {
       setText(title, t('sectionEstimate'));
       inst.body.appendChild(title);
 
-      const kv = el('div', 'kv');
-      const add = (k: string, v: string) => {
-        const kk = el('div', 'k');
-        kk.textContent = k;
-        const vv = el('div', 'v');
-        vv.textContent = v;
-        kv.appendChild(kk);
-        kv.appendChild(vv);
-      };
+      const e = state.estimate;
+      appendKv(inst.body, [
+        [t('labelChars'), `${fmtInt(e.charCount)} (${t('labelSendChars')}: ${fmtInt(e.sentCharCount)})`],
+        [t('labelTokens'), fmtTokens(e) + (state.refining ? ` (${t('labelRefining')})` : '')],
+        [t('labelCost'), fmtCostRange(e)],
+        [t('labelTime'), fmtTimeRange(e)],
+        [t('labelModel'), e.model],
+        [t('labelChunkCount'), fmtInt(e.chunkCount)],
+        [t('labelLinkDensity'), fmtPct(state.article.linkDensity)]
+      ]);
 
-      add(t('labelChars'), `${fmtInt(state.estimate.charCount)} (${t('labelSendChars')}: ${fmtInt(state.estimate.sentCharCount)})`);
-      const tok = state.estimate.tokenExact != null ? fmtInt(state.estimate.tokenExact) : `${fmtInt(state.estimate.tokenLow)} - ${fmtInt(state.estimate.tokenHigh)}`;
-      add(t('labelTokens'), tok + (state.refining ? ` (${t('labelRefining')})` : ''));
-      add(t('labelCost'), `${fmtUsd(state.estimate.costLowUsd)} - ${fmtUsd(state.estimate.costHighUsd)} (${t('labelWorst')}: ${fmtUsd(state.estimate.costWorstUsd)})`);
-      add(t('labelTime'), `${fmtInt(state.estimate.timeLowSec)} - ${fmtInt(state.estimate.timeHighSec)}s`);
-      add(t('labelModel'), state.estimate.model);
-      add(t('labelChunkCount'), fmtInt(state.estimate.chunkCount));
-      add(t('labelLinkDensity'), fmtPct(state.article.linkDensity));
-
-      inst.body.appendChild(kv);
-
-      if (state.estimate.truncated) {
-        const note = el('div', 'note');
-        setText(note, t('noteTruncated'));
-        inst.body.appendChild(note);
-      }
+      if (e.truncated) appendNote(inst.body, t('noteTruncated'));
 
       renderFooterButtons(inst, [
         { key: 'buttonCancel', event: 'as:cancel' },
@@ -660,45 +665,22 @@ namespace AS {
       setText(p, t('promptApprovalRequired'));
       inst.body.appendChild(p);
 
-      const kv = el('div', 'kv');
-      const add = (k: string, v: string) => {
-        const kk = el('div', 'k');
-        kk.textContent = k;
-        const vv = el('div', 'v');
-        vv.textContent = v;
-        kv.appendChild(kk);
-        kv.appendChild(vv);
-      };
-
       // Approval screen: show the full set requested (chars/tokens/cost/time).
-      add(t('labelChars'), fmtInt(state.article.charCount));
-      add(t('labelSendChars'), fmtInt(state.estimate.sentCharCount));
-      const tok = state.estimate.tokenExact != null
-        ? fmtInt(state.estimate.tokenExact)
-        : `${fmtInt(state.estimate.tokenLow)} - ${fmtInt(state.estimate.tokenHigh)}`;
-      add(t('labelTokens'), tok);
-      add(t('labelCost'), `${fmtUsd(state.estimate.costLowUsd)} - ${fmtUsd(state.estimate.costHighUsd)} (${t('labelWorst')}: ${fmtUsd(state.estimate.costWorstUsd)})`);
-      add(t('labelTime'), `${fmtInt(state.estimate.timeLowSec)} - ${fmtInt(state.estimate.timeHighSec)}s`);
-      add(t('labelModel'), state.estimate.model);
-      add(t('labelChunkCount'), fmtInt(state.estimate.chunkCount));
-      inst.body.appendChild(kv);
+      const e = state.estimate;
+      appendKv(inst.body, [
+        [t('labelChars'), fmtInt(state.article.charCount)],
+        [t('labelSendChars'), fmtInt(e.sentCharCount)],
+        [t('labelTokens'), fmtTokens(e)],
+        [t('labelCost'), fmtCostRange(e)],
+        [t('labelTime'), fmtTimeRange(e)],
+        [t('labelModel'), e.model],
+        [t('labelChunkCount'), fmtInt(e.chunkCount)]
+      ]);
 
       // What will be sent to Claude (privacy transparency).
-      const sent = el('div', 'note');
-      setText(sent, t('noteDataSent'));
-      inst.body.appendChild(sent);
-
-      if (state.estimate.truncated) {
-        const note = el('div', 'note');
-        setText(note, t('noteTruncated'));
-        inst.body.appendChild(note);
-      }
-
-      if (state.note) {
-        const note = el('div', 'note');
-        setText(note, state.note);
-        inst.body.appendChild(note);
-      }
+      appendNote(inst.body, t('noteDataSent'));
+      if (e.truncated) appendNote(inst.body, t('noteTruncated'));
+      if (state.note) appendNote(inst.body, state.note);
 
       renderFooterButtons(inst, [
         { key: 'buttonCancel', event: 'as:cancel' },
@@ -723,7 +705,7 @@ namespace AS {
       } else if (p?.stage === 'REPAIR') {
         label = t('statusSummarizingRepair');
       }
-      startDots(inst, label, msg);
+      startDots(label, msg);
       renderFooterButtons(inst, [{ key: 'buttonCancel', event: 'as:cancel' }]);
     }
 
@@ -734,9 +716,7 @@ namespace AS {
       pre.textContent = state.summaryText;
       inst.body.appendChild(pre);
 
-      renderFooterButtons(inst, [
-        { key: 'buttonCopy', primary: true, event: 'as:copy' },
-      ]);
+      renderFooterButtons(inst, [{ key: 'buttonCopy', primary: true, event: 'as:copy' }]);
     }
 
     function renderError(inst: Instance, state: ErrorState): void {
@@ -746,9 +726,7 @@ namespace AS {
       setText(msg, state.message);
       inst.body.appendChild(msg);
 
-      renderFooterButtons(inst, [
-        { key: 'buttonBack', event: 'as:reset' }
-      ]);
+      renderFooterButtons(inst, [{ key: 'buttonBack', event: 'as:reset' }]);
     }
 
     function renderBlocked(inst: Instance, state: BlockedState): void {
@@ -758,14 +736,7 @@ namespace AS {
       setText(msg, `${t('errorBlocked')}${state.reason}`);
       inst.body.appendChild(msg);
 
-      const kv = el('div', 'kv');
-      const kk = el('div', 'k');
-      kk.textContent = t('labelCostWorst');
-      const vv = el('div', 'v');
-      vv.textContent = fmtUsd(state.estimate.costWorstUsd);
-      kv.appendChild(kk);
-      kv.appendChild(vv);
-      inst.body.appendChild(kv);
+      appendKv(inst.body, [[t('labelCostWorst'), fmtUsd(state.estimate.costWorstUsd)]]);
 
       renderFooterButtons(inst, [
         { key: 'buttonBack', event: 'as:reset' },
@@ -782,7 +753,7 @@ namespace AS {
       inst.languageSelect.disabled = busy;
       inst.settingsButton.disabled = busy;
       inst.backdrop.dataset['busy'] = busy ? 'true' : 'false';
-	      renderModeBar(inst, state);
+      renderModeBar(inst, state);
 
       if (state.phase === 'IDLE') return renderIdle(inst, state);
       if (state.phase === 'EXTRACTING') return renderExtracting(inst);

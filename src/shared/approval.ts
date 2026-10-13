@@ -1,3 +1,5 @@
+import { parseNumberOr } from './utils.js';
+
 type NormalizeApprovalInput = {
   rawUsd: unknown;
   rawChars: unknown;
@@ -13,15 +15,6 @@ export type ApprovalThresholds = {
   migratedChars: boolean;
 };
 
-function parseNumberOr(value: unknown, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value.trim());
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-}
-
 export function normalizeApprovalThresholds(input: NormalizeApprovalInput): ApprovalThresholds {
   const LEGACY_USD = 0.25;
   const LEGACY_CHARS = 25_000;
@@ -36,9 +29,12 @@ export function normalizeApprovalThresholds(input: NormalizeApprovalInput): Appr
 
   const approvalThresholdUsd = legacyUsd ? input.defaultUsd : parseNumberOr(rawUsd, input.defaultUsd);
   const approvalThresholdChars = legacyChars ? input.defaultChars : Math.floor(parseNumberOr(rawChars, input.defaultChars));
-  const migratedUsd = legacyUsd;
-  const migratedChars = legacyChars;
-  const migrated = migratedUsd || migratedChars;
 
-  return { approvalThresholdUsd, approvalThresholdChars, migrated, migratedUsd, migratedChars };
+  return {
+    approvalThresholdUsd,
+    approvalThresholdChars,
+    migrated: legacyUsd || legacyChars,
+    migratedUsd: legacyUsd,
+    migratedChars: legacyChars
+  };
 }

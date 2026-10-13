@@ -25,22 +25,19 @@ var AS;
     }
     AS.getModeRuntimeSpec = getModeRuntimeSpec;
     // -----------------------------
-    // Models (initial milestone)
+    // Models
     // -----------------------------
     // Model strategy
-    // - Single-pass summaries: Haiku (cost-effective)
-    // - Chunked map-reduce: Haiku (map) -> Sonnet (reduce/repair)
+    // - Single-pass summaries: the map model (cost-effective)
+    // - Chunked map-reduce: map model (map) -> final model (reduce/repair)
     // Per-model request params (thinking/effort) live in src/shared/model_params.ts.
     AS.MODEL_MAP = 'claude-haiku-5-5';
-    AS.MODEL_SINGLE = AS.MODEL_MAP;
     AS.MODEL_FINAL = 'claude-sonnet-5-5';
-    // Token count uses the same model as the intended summary for the best alignment.
-    // Token counting uses Haiku. This keeps the tokenization close to map-stage accounting.
+    // Token counting uses the map model, which is also the single-pass model. This keeps the
+    // tokenization close to map-stage accounting.
     AS.MODEL_TOKEN_COUNT = AS.MODEL_MAP;
-    // Map stage max output. The map prompt asks for up to ~6 short bullets.
+    // Map stage max output (keep in sync with src/background/prompts.ts).
     AS.MAP_CHUNK_MAX_OUTPUT_TOKENS = 220;
-    // Repair pass output upper bound (format-only). For final output we still use the mode max.
-    AS.REPAIR_MAX_OUTPUT_TOKENS = 250;
     // -----------------------------
     // Limits & thresholds
     // -----------------------------
@@ -132,7 +129,6 @@ var AS;
         // Models
         if (typeof settings.modelMap === 'string' && settings.modelMap.trim()) {
             AS.MODEL_MAP = settings.modelMap.trim();
-            AS.MODEL_SINGLE = AS.MODEL_MAP;
             AS.MODEL_TOKEN_COUNT = AS.MODEL_MAP;
         }
         if (typeof settings.modelFinal === 'string' && settings.modelFinal.trim()) {
