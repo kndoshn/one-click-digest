@@ -113,6 +113,15 @@ const HINT_5 =
   'Return exactly 5 bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.';
 const JA_NOTE = '\nWhen a bullet point is written in Japanese, do not end it with a trailing "。".';
 
+function faithful(source) {
+  return [
+    `Stay faithful to the ${source}:`,
+    `- Include only what the ${source} says. Do not add facts, causes, judgements or predictions of your own.`,
+    '- Keep its hedges and level of certainty (words such as "about", "planned", "expected", "reportedly"). Do not state anything more strongly or more precisely than it does.',
+    `- Keep numbers, names and units exact. When writing in a different language from the ${source}, make sure every number keeps its value.`
+  ].join('\n');
+}
+
 function tldrHint(summary, conclusion, note = '') {
   return (
     'Return EXACTLY this structure, with no other text (27 lines total):\n' +
@@ -121,7 +130,8 @@ function tldrHint(summary, conclusion, note = '') {
     '12 bullet lines, each starting with "- ", with exactly one blank line between each pair of bullets\n' +
     '<blank line>\n' +
     `${conclusion}: <one line>\n` +
-    'No headings, no extra text.' +
+    'No headings, no extra text.\n' +
+    `The ${conclusion} line states the article's own conclusion, not your assessment or outlook.` +
     note
   );
 }
@@ -132,6 +142,7 @@ function singlePrompt(language, hint) {
     `Output language: ${language}.`,
     hint,
     'Keep each bullet readable (no overly long lines).',
+    faithful('article'),
     'Do not include extra commentary.',
     '',
     'Title: T',
@@ -148,7 +159,7 @@ function reducePrefix(hint) {
     'Output language: en.',
     hint,
     'Keep each bullet readable (no overly long lines).',
-    'Do not invent details not present in the chunk summaries.',
+    faithful('chunk summaries'),
     '',
     'Title: T',
     'URL: https://e.com/a',
@@ -442,6 +453,7 @@ test('RUN_SUMMARY_REPAIR: plain prompt without chunk summaries', async () => {
           'Output language: en.',
           HINT_3,
           '',
+          'Use only information from the original output, with its hedges and numbers unchanged.',
           'Only return the corrected summary.',
           '',
           'Original output:',
