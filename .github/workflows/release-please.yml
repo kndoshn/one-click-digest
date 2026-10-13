@@ -8,6 +8,9 @@ name: Release Please
 on:
   push:
     branches: [main]
+  # Fallback for when a push to main does not start the workflow: run it by hand on main
+  # (gh workflow run release-please.yml --ref main). The `release` environment rejects other refs.
+  workflow_dispatch:
 
 permissions: {}
 
