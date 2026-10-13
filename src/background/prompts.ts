@@ -49,6 +49,17 @@ function bulletStyleNoteFor(language: string): string {
   return '';
 }
 
+// What keeps a summary true to its source. `source` names what the model summarizes: the article,
+// a chunk of it, or the chunk summaries.
+function faithfulnessRules(source: string): string {
+  return [
+    `Stay faithful to the ${source}:`,
+    `- Include only what the ${source} says. Do not add facts, causes, judgements or predictions of your own.`,
+    '- Keep its hedges and level of certainty (words such as "about", "planned", "expected", "reportedly"). Do not state anything more strongly or more precisely than it does.',
+    `- Keep numbers, names and units exact. When writing in a different language from the ${source}, make sure every number keeps its value.`
+  ].join('\n');
+}
+
 // The pipeline also lays out the blank lines itself (Format.tidyLayout), so the wording below matters
 // for the content, not the spacing. Shorter instructions were measured worse (eval, 2026-10-13): a
 // line-by-line TL;DR template made the model write 13 or 14 bullets far more often, and "one per line,
@@ -69,7 +80,8 @@ function formatHintFor(mode: SummaryMode, language: string): string {
     '12 bullet lines, each starting with "- ", with exactly one blank line between each pair of bullets\n' +
     '<blank line>\n' +
     `${labels.conclusion}: <one line>\n` +
-    'No headings, no extra text.' +
+    'No headings, no extra text.\n' +
+    `The ${labels.conclusion} line states the article's own conclusion, not your assessment or outlook.` +
     bulletNote
   );
 }
@@ -91,6 +103,7 @@ export function buildSinglePrompt(args: {
     `Output language: ${args.language}.`,
     formatHintFor(args.mode, args.language),
     `Keep each bullet readable (no overly long lines).`,
+    faithfulnessRules('article'),
     `Do not include extra commentary.`,
     '',
     `Title: ${args.title}`,
@@ -107,6 +120,7 @@ export function buildMapSystem(args: { language: string }): string {
     `Output language: ${args.language}.\n` +
     `Return 5 concise bullet points, each starting with "- ".\n` +
     `Focus on facts, claims, and important context. Avoid repetition.\n` +
+    `${faithfulnessRules('chunk')}\n` +
     `Do not add disclaimers or meta commentary.`
   );
 }
@@ -144,7 +158,7 @@ function buildReducePrefixBlocks(args: ReduceArgs): TextBlock[] {
     `Output language: ${args.language}.`,
     formatHintFor(args.mode, args.language),
     `Keep each bullet readable (no overly long lines).`,
-    `Do not invent details not present in the chunk summaries.`,
+    faithfulnessRules('chunk summaries'),
     '',
     `Title: ${args.title}`,
     `URL: ${args.url}`,
@@ -225,6 +239,7 @@ export function buildRepairPrompt(args: {
     formatHint,
     ...countHint,
     truncationHint,
+    `Use only information from the original output, with its hedges and numbers unchanged.`,
     `Only return the corrected summary.`,
     '',
     `Original output:`,
