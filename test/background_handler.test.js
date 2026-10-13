@@ -331,7 +331,7 @@ test('RUN_SUMMARY_MAP: request body', async () => {
   assert.deepEqual(resp, { ok: true, text: '- m', usage: { input_tokens: 11, output_tokens: 7 } });
   assert.deepEqual(lastBody(), {
     model: HAIKU,
-    max_tokens: 220,
+    max_tokens: 800,
     system:
       'You are an assistant that extracts key points from article chunks.\n' +
       'Output language: en.\n' +
@@ -356,7 +356,7 @@ test('RUN_SUMMARY_MAP: maxRetries 0 still makes one final call with a larger bud
   assert.equal(resp.text, '- partial again');
   assert.deepEqual(
     fetchCalls.map((c) => JSON.parse(c.init.body).max_tokens),
-    [220, 330]
+    [800, 1200]
   );
 });
 
