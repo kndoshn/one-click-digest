@@ -10,13 +10,15 @@
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "build": "node scripts/build.mjs",
+    "build:e2e": "node scripts/build.mjs --e2e",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "test": "node scripts/build.mjs --test && node --test",
     "test:coverage": "node scripts/build.mjs --test && c8 node --test",
-    "test:coverage:report": "npm run test:coverage && c8 report --reporter=html"
+    "test:coverage:report": "npm run test:coverage && c8 report --reporter=html",
+    "test:e2e": "npm run build:e2e && playwright test"
   },
   "repository": {
     "type": "git",
@@ -36,6 +38,7 @@
   "author": "kndoshn",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/chrome": "^0.3.4",
     "@types/node": "^24.19.1",
     "c8": "^12.0.0",

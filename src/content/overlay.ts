@@ -359,8 +359,9 @@ export function mount(): Instance {
   host.style.zIndex = '2147483647';
 
   const events = new EventTarget();
-  // Closed: page scripts cannot reach the controls through host.shadowRoot.
-  const shadow = host.attachShadow({ mode: 'closed' });
+  // Closed: page scripts cannot reach the controls through host.shadowRoot. The E2E build opens it
+  // so Playwright can locate the controls.
+  const shadow = host.attachShadow({ mode: typeof __E2E__ !== 'undefined' && __E2E__ ? 'open' : 'closed' });
 
   const style = document.createElement('style');
   style.textContent = css();
