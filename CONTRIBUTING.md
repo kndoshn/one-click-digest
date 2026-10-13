@@ -5,7 +5,7 @@ Thanks for considering contributing.
 ## Development
 
 Prerequisites:
-- Node.js (18+ recommended)
+- Node.js 22.12+ (the version in `mise.toml`; CI also tests the current LTS)
 
 Common commands:
 

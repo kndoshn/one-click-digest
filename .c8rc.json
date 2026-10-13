@@ -1,0 +1,5 @@
+{
+  "include": ["dist/**/*.js"],
+  "exclude": ["dist/third_party/**"],
+  "reporter": ["text", "lcov"]
+}

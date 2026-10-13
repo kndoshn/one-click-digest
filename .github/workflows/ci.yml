@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   typecheck:
     name: Type Check
@@ -30,7 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        # Supported LTS lines (Node 18 and 20 are end-of-life, and the dev tooling needs 22.12+).
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v7
 
@@ -64,12 +68,21 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
+      - name: Coverage summary
+        run: |
+          {
+            echo '## Coverage'
+            echo '```'
+            npx c8 report --reporter=text
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
         with:
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
 
   security:
     name: Security Audit
@@ -107,6 +120,15 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # dist/ is committed; it must match a fresh build of src/ and public/.
+      - name: Check that dist/ is up to date
+        run: |
+          if [ -n "$(git status --porcelain -- dist)" ]; then
+            git status --short -- dist
+            echo '::error::dist/ is out of date. Run `npm run build` and commit dist/.'
+            exit 1
+          fi
 
       - name: Create extension zip
         run: |
