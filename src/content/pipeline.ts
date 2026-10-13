@@ -152,7 +152,7 @@ export async function runPipeline(
         url: article.url,
         // Map-reduce runs pass the chunk summaries so the repair pass can reuse the reduce prompt cache.
         chunkSummaries,
-        ...(kind === 'truncation' ? { fixTruncation: true } : {})
+        ...(kind === 'truncation' ? { fixTruncation: true } : { bulletCount: Format.extractBulletLines(text).length })
       }
     });
     if (!isActive()) return text;

@@ -457,6 +457,59 @@ test('RUN_SUMMARY_REPAIR: plain prompt without chunk summaries', async () => {
   });
 });
 
+test('RUN_SUMMARY_REPAIR: says how many bullets the output has when the count is wrong', async () => {
+  const cases = [
+    [
+      5,
+      'The original output has 5 bullet points instead of 3. Merge related bullets or drop the least important ones so that there are exactly 3.'
+    ],
+    [
+      2,
+      'The original output has 2 bullet points instead of 3. Split bullets that cover more than one point so that there are exactly 3.'
+    ]
+  ];
+  for (const [bulletCount, line] of cases) {
+    resetFetch([messagesResponse('- fixed')]);
+    await send({
+      type: 'RUN_SUMMARY_REPAIR',
+      payload: { ...BASE, language: 'en', mode: 'BULLETS_3', badOutput: 'bad', model: HAIKU, bulletCount }
+    });
+    const prompt = lastBody().messages[0].content;
+    assert.ok(prompt.includes(`${HINT_3}\n${line}\n`), prompt);
+  }
+
+  // The right count adds nothing.
+  resetFetch([messagesResponse('- fixed')]);
+  await send({
+    type: 'RUN_SUMMARY_REPAIR',
+    payload: { ...BASE, language: 'en', mode: 'BULLETS_3', badOutput: 'bad', model: HAIKU, bulletCount: 3 }
+  });
+  assert.ok(!lastBody().messages[0].content.includes('The original output has'));
+});
+
+test('RUN_SUMMARY_REPAIR: the bullet count also goes into the prompt with chunk summaries', async () => {
+  resetFetch([messagesResponse('- fixed')]);
+  await send({
+    type: 'RUN_SUMMARY_REPAIR',
+    payload: {
+      ...BASE,
+      language: 'en',
+      mode: 'TLDR_12_CONCLUSION',
+      badOutput: 'bad',
+      model: SONNET,
+      chunkSummaries: ['- a', '- b'],
+      bulletCount: 14
+    }
+  });
+  const suffix = lastBody().messages[0].content.at(-1).text;
+  assert.ok(
+    suffix.includes(
+      'The original output has 14 bullet points instead of 12. Merge related bullets or drop the least important ones so that there are exactly 12.'
+    ),
+    suffix
+  );
+});
+
 test('RUN_SUMMARY_REPAIR: empty chunk summaries fall back to the plain prompt', async () => {
   resetFetch([messagesResponse('- fixed')]);
   await send({

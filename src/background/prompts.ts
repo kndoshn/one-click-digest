@@ -166,6 +166,20 @@ export function buildReducePrompt(args: ReduceArgs): TextBlock[] {
   return [...buildReducePrefixBlocks(args), { type: 'text', text: `\n${suffix}` }];
 }
 
+// Without this, a repair of a draft with the wrong number of bullets tends to return the same
+// number again. Empty when the count is unknown or already right.
+function bulletCountHint(mode: SummaryMode, bulletCount: number | undefined): string[] {
+  const expected = BULLET_MODE_COUNTS[mode] ?? 12;
+  if (bulletCount === undefined || bulletCount === expected) return [];
+  const fix =
+    bulletCount > expected
+      ? 'Merge related bullets or drop the least important ones'
+      : 'Split bullets that cover more than one point';
+  return [
+    `The original output has ${bulletCount} bullet points instead of ${expected}. ${fix} so that there are exactly ${expected}.`
+  ];
+}
+
 export function buildRepairPrompt(args: {
   language: string;
   mode: SummaryMode;
@@ -174,9 +188,11 @@ export function buildRepairPrompt(args: {
   url?: string;
   chunkSummaries?: string[];
   fixTruncation?: boolean;
+  bulletCount?: number;
   cacheControl?: CacheControlEphemeral;
 }): UserContent {
   const formatHint = formatHintFor(args.mode, args.language);
+  const countHint = bulletCountHint(args.mode, args.bulletCount);
   const truncationHint = args.fixTruncation
     ? `If the output looks cut off, complete the last bullet without adding new facts. Keep the bullet count unchanged.`
     : '';
@@ -198,6 +214,7 @@ export function buildRepairPrompt(args: {
       '',
       `Reformat the output to match the required format.`,
       formatHint,
+      ...countHint,
       truncationHint,
       `Only return the corrected summary.`
     ].join('\n');
@@ -208,6 +225,7 @@ export function buildRepairPrompt(args: {
     `Reformat the summary to match the required format.`,
     `Output language: ${args.language}.`,
     formatHint,
+    ...countHint,
     truncationHint,
     `Only return the corrected summary.`,
     '',

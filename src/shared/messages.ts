@@ -65,7 +65,9 @@ export const RunRepairSchema = v.object({
     url: v.optional(text),
     // Map-reduce runs pass the chunk summaries so the repair prompt can reuse the reduce cache.
     chunkSummaries: v.optional(v.array(text)),
-    fixTruncation: v.optional(v.boolean())
+    fixTruncation: v.optional(v.boolean()),
+    // Bullets in badOutput, for a format repair; the prompt says so when the count is wrong.
+    bulletCount: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0)))
   })
 });
 

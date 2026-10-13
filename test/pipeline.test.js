@@ -83,6 +83,13 @@ test('a repair whose only flaw is the blank lines is accepted', async () => {
   assert.deepEqual(r.trace.repairs, [{ kind: 'format', accepted: true }]);
 });
 
+test('a format repair is told how many bullets the draft has', async () => {
+  const t = transport('- One.\n- Two.\n- Three.\n- Four.', VALID);
+  const r = await runPipeline(SHORT, OPTS, t.send);
+  assert.equal(r.text, VALID);
+  assert.equal(t.sent[1].payload.bulletCount, 4);
+});
+
 test('an invalid rewrite is not accepted; the draft is kept', async () => {
   const t = transport('Not bullets.', 'Still not bullets.');
   const r = await runPipeline(SHORT, OPTS, t.send);
@@ -97,6 +104,7 @@ test('a likely truncated ending gets a truncation repair', async () => {
   assert.equal(r.text, VALID);
   assert.deepEqual(r.trace.repairs, [{ kind: 'truncation', accepted: true }]);
   assert.equal(t.sent[1].payload.fixTruncation, true);
+  assert.equal('bulletCount' in t.sent[1].payload, false);
 });
 
 test('long article: map each chunk, reduce on the final model, repair with the chunk summaries', async () => {

@@ -132,6 +132,7 @@ test('single pass: format repair, then truncation repair', async () => {
         language: 'en-US',
         mode: 'BULLETS_3',
         badOutput: 'Here:\n\n- A.\n\n- B.\n\n- C.',
+        bulletCount: 3,
         model: 'claude-haiku-5-5',
         title: 'Short',
         url: article.url
@@ -250,7 +251,7 @@ test('map-reduce: approval, token count, map per chunk, reduce, format repair, t
         model: 'claude-sonnet-5-5'
       }
     },
-    { type: 'RUN_SUMMARY_REPAIR', payload: { ...repairBase, badOutput: 'Summary:\n\n- x' } },
+    { type: 'RUN_SUMMARY_REPAIR', payload: { ...repairBase, badOutput: 'Summary:\n\n- x', bulletCount: 1 } },
     {
       type: 'RUN_SUMMARY_REPAIR',
       payload: { ...repairBase, badOutput: '- A.\n\n- B.\n\n- C cut', fixTruncation: true }

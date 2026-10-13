@@ -89,6 +89,7 @@ export function buildSummaryRequest(
           mode: p.mode,
           badOutput: p.badOutput,
           fixTruncation: p.fixTruncation,
+          bulletCount: p.bulletCount,
           cacheControl
         }),
         timeoutMs: 60_000,
