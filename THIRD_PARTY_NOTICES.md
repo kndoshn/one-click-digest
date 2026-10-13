@@ -4,7 +4,11 @@ This project bundles the following third-party component(s). The licenses below 
 
 ## Readability.js
 
-- Source: Arc90 Inc / Mozilla Readability
+- Source: Arc90 Inc / Mozilla Readability (https://github.com/mozilla/readability)
+- Upstream commit: d7949dc47dd9ed9ee1d3b34ffdcf3bce28cde435
+  - `Readability.js` is an unmodified copy of the file at this commit. The `Readability upstream`
+    workflow checks that it still matches, and opens an issue when upstream changes the file.
+  - To update, copy the file from a newer upstream commit and replace the hash above in the same PR.
 - Location in this repository:
   - `third_party/readability/Readability.js`
   - Built artifact: `dist/third_party/readability/Readability.js`

@@ -5,6 +5,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    # Only propose versions published at least 7 days ago (same as .npmrc min-release-age).
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     groups:
       dev-dependencies:
@@ -20,5 +23,12 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        update-types:
+          - "minor"
+          - "patch"
     commit-message:
       prefix: "ci"

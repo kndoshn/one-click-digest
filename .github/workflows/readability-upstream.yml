@@ -1,0 +1,76 @@
+name: Readability upstream
+
+# Checks that third_party/readability/Readability.js is an unmodified copy of the
+# upstream commit recorded in THIRD_PARTY_NOTICES.md, and (on schedule) opens an issue when
+# upstream has changed the file since.
+
+on:
+  pull_request:
+    paths:
+      - third_party/readability/**
+      - THIRD_PARTY_NOTICES.md
+      - .github/workflows/readability-upstream.yml
+  schedule:
+    - cron: '17 3 1 * *' # monthly
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    name: Check Readability.js
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # to open an update issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read pinned commit
+        id: pinned
+        run: |
+          sha=$(sed -n 's/^- Upstream commit: \([0-9a-f]\{40\}\)$/\1/p' THIRD_PARTY_NOTICES.md)
+          if [ -z "$sha" ]; then
+            echo '::error::No "Upstream commit" line in THIRD_PARTY_NOTICES.md'
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Compare with upstream at the pinned commit
+        env:
+          SHA: ${{ steps.pinned.outputs.sha }}
+        run: |
+          curl -fsSL -o upstream.js "https://raw.githubusercontent.com/mozilla/readability/$SHA/Readability.js"
+          if ! cmp -s upstream.js third_party/readability/Readability.js; then
+            echo "::error::third_party/readability/Readability.js differs from mozilla/readability@$SHA"
+            exit 1
+          fi
+
+      - name: Open an issue if upstream changed
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.pinned.outputs.sha }}
+        run: |
+          latest=$(gh api 'repos/mozilla/readability/commits?path=Readability.js&per_page=1' --jq '.[0].sha')
+          if [ "$latest" = "$SHA" ]; then
+            echo "Up to date ($SHA)"
+            exit 0
+          fi
+          title='Update Readability.js from upstream'
+          if [ -n "$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[].number')" ]; then
+            echo 'An update issue is already open'
+            exit 0
+          fi
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$(cat <<BODY
+          mozilla/readability changed \`Readability.js\` after the bundled commit.
+
+          - Bundled: \`$SHA\`
+          - Latest: \`$latest\`
+          - Changes: https://github.com/mozilla/readability/compare/$SHA...$latest
+
+          Review the changes, copy the new file to \`third_party/readability/Readability.js\`, and update the commit in \`THIRD_PARTY_NOTICES.md\`.
+          BODY
+          )"
