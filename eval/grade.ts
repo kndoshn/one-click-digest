@@ -36,6 +36,12 @@ export function languageOk(text: string, language: string): boolean | null {
   return null;
 }
 
+// Why `text` fails the extension's format validation, or null when it passes.
+export function formatFailure(mode: SummaryMode, text: string): string | null {
+  const r = Format.validate(mode, text);
+  return r.ok ? null : (r as Format.ValidationFail).reason;
+}
+
 export function checkSummary(mode: SummaryMode, language: string, text: string): Checks {
   return {
     formatValid: Format.validate(mode, text).ok,
@@ -68,10 +74,16 @@ export function costUsd(model: string, usage: Usage | undefined): number {
 
 export const JUDGE_MODEL = 'claude-opus-5-5';
 
+// A statement in the summary that the article does not support. Major: a reader would come away
+// believing something false (a wrong fact, number or cause, or a claim the article does not make).
+// Minor: right in substance but stated more strongly or precisely than the article.
+export type Issue = { statement: string; severity: 'major' | 'minor'; reason: string };
+
 export type Judgement = {
-  // Every statement in the summary is supported by the article.
+  // No issues at all.
   faithful: boolean;
-  unsupported: string[];
+  majorIssues: number;
+  issues: Issue[];
   // 1 (misses the main points) to 5 (covers what a reader most needs).
   coverage: number;
   notes: string;
@@ -84,11 +96,13 @@ export function judgePrompt(article: { title: string; text: string }, summary: s
     `The summary was requested in this language: ${language}.`,
     '',
     'Check two things:',
-    '1. Faithfulness: is every statement in the summary supported by the article? List each unsupported or wrong statement verbatim. Translation into another language is fine; added facts, numbers or opinions are not.',
+    '1. Faithfulness: is every statement in the summary supported by the article? Translation into another language is fine. List each statement that is not supported, quoted verbatim from the summary, with a severity:',
+    '   - "major": a reader would come away believing something false: a wrong fact, number, name or cause, or a claim, judgement or prediction the article does not make.',
+    '   - "minor": right in substance but stated more strongly or more precisely than the article, for example a dropped hedge ("about", "reportedly", "planned"), a stronger verb, or a small inference.',
     '2. Coverage: given the summary length, does it capture the points a reader most needs? Score 1 (misses the main points) to 5 (nothing important missing).',
     '',
     'Answer with only a JSON object, no code fence:',
-    '{"faithful": true|false, "unsupported": ["..."], "coverage": 1-5, "notes": "one or two sentences"}',
+    '{"issues": [{"statement": "...", "severity": "major"|"minor", "reason": "..."}], "coverage": 1-5, "notes": "one or two sentences"}',
     '',
     `<article title="${article.title.replaceAll('"', "'")}">`,
     article.text,
@@ -100,16 +114,28 @@ export function judgePrompt(article: { title: string; text: string }, summary: s
   ].join('\n');
 }
 
+function parseIssue(raw: unknown): Issue {
+  const o = (raw && typeof raw === 'object' ? raw : { statement: raw }) as Record<string, unknown>;
+  return {
+    statement: typeof o.statement === 'string' ? o.statement : '',
+    // Anything the judge did not call minor counts against the summary.
+    severity: o.severity === 'minor' ? 'minor' : 'major',
+    reason: typeof o.reason === 'string' ? o.reason : ''
+  };
+}
+
 export function parseJudgement(text: string): Judgement | undefined {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start < 0 || end <= start) return undefined;
   try {
     const j = JSON.parse(text.slice(start, end + 1));
-    if (typeof j.faithful !== 'boolean' || typeof j.coverage !== 'number') return undefined;
+    if (!Array.isArray(j.issues) || typeof j.coverage !== 'number') return undefined;
+    const issues = j.issues.map(parseIssue);
     return {
-      faithful: j.faithful,
-      unsupported: Array.isArray(j.unsupported) ? j.unsupported.map(String) : [],
+      faithful: issues.length === 0,
+      majorIssues: issues.filter((i: Issue) => i.severity === 'major').length,
+      issues,
       coverage: j.coverage,
       notes: typeof j.notes === 'string' ? j.notes : ''
     };
