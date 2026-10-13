@@ -52,3 +52,17 @@ The models offered in the settings, their prices, tokenizer and caching details,
 - Include a clear description of the change.
 - Add or update tests for behavior changes.
 - Ensure `npm test` passes.
+
+## Releases
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please):
+
+1. Every push to `main` updates an open release PR (`chore(main): release x.y.z`). It bumps the version in `package.json`, `package-lock.json` and `public/manifest.json` and updates `CHANGELOG.md` from the conventional commit titles (`feat:` → minor, `fix:` → patch, `feat!:` or `BREAKING CHANGE:` → major).
+2. Merging the release PR creates a draft GitHub release and its tag (`1.2.3`, without `v`).
+3. The workflow then builds the extension from the tag, attaches `one-click-digest-<version>.zip` with a build provenance attestation, and publishes the release.
+
+Do not bump versions or push tags by hand. To check a downloaded zip:
+
+```bash
+gh attestation verify one-click-digest-<version>.zip --repo kndoshn/one-click-digest
+```

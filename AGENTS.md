@@ -26,3 +26,4 @@ Do everything else yourself (branching, changes, tests, commits, pushes, the PR,
 - Add or update tests for behavior changes (see `CONTRIBUTING.md`). For a bug fix, add a test that fails without the fix.
 - Content scripts (`src/content/*.ts`) are ES modules that esbuild bundles into one classic script, `dist/content/main.js` (see `scripts/build.mjs`). They may import from `src/shared/`, never from `src/background/` (lint enforces this).
 - Never put API calls or the API key in content scripts. They belong in the background worker. Tests check both `src/content/` and the built bundle.
+- Do not bump versions in `package.json` or `public/manifest.json`, and do not create tags. Releases are cut by release-please (see `CONTRIBUTING.md`).
