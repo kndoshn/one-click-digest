@@ -4,7 +4,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkSummary, costUsd as rawCostUsd, japaneseRatio, languageOk, parseJudgement } from '../eval/grade.ts';
+import {
+  checkSummary,
+  costUsd as rawCostUsd,
+  formatFailure,
+  japaneseRatio,
+  languageOk,
+  parseJudgement
+} from '../eval/grade.ts';
 
 // Rounded to a millionth of a dollar, to compare without floating-point noise.
 /** @type {typeof rawCostUsd} */
@@ -48,16 +55,47 @@ test('costUsd: catalog prices, long-context tier, cache multipliers and the judg
   assert.equal(costUsd('claude-haiku-5-5', undefined), 0);
 });
 
-test('parseJudgement: a JSON object, possibly surrounded by text; undefined otherwise', () => {
-  assert.deepEqual(
-    parseJudgement('Here it is:\n{"faithful": false, "unsupported": ["X"], "coverage": 3, "notes": "n"}'),
-    {
-      faithful: false,
-      unsupported: ['X'],
-      coverage: 3,
-      notes: 'n'
-    }
+test('formatFailure: the validation reason, or null for a valid summary', () => {
+  assert.equal(formatFailure('BULLETS_3', '- One.\n\n- Two.\n\n- Three.'), null);
+  assert.equal(
+    formatFailure('BULLETS_3', '- One.\n- Two.\n- Three.'),
+    'Expected 3 bullets separated by blank lines, got 3 line(s)'
   );
+  assert.equal(formatFailure('TLDR_12_CONCLUSION', '**Summary:** x'), 'Missing Summary line');
+});
+
+test('parseJudgement: issues with severity, possibly surrounded by text', () => {
+  const text =
+    'Here it is:\n{"issues": [{"statement": "X", "severity": "major", "reason": "wrong number"}, ' +
+    '{"statement": "Y", "severity": "minor", "reason": "dropped hedge"}], "coverage": 3, "notes": "n"}';
+  assert.deepEqual(parseJudgement(text), {
+    faithful: false,
+    majorIssues: 1,
+    issues: [
+      { statement: 'X', severity: 'major', reason: 'wrong number' },
+      { statement: 'Y', severity: 'minor', reason: 'dropped hedge' }
+    ],
+    coverage: 3,
+    notes: 'n'
+  });
+});
+
+test('parseJudgement: no issues means faithful; an unknown severity counts as major', () => {
+  assert.deepEqual(parseJudgement('{"issues": [], "coverage": 5, "notes": ""}'), {
+    faithful: true,
+    majorIssues: 0,
+    issues: [],
+    coverage: 5,
+    notes: ''
+  });
+  const odd = parseJudgement('{"issues": [{"statement": "Z", "severity": "severe"}], "coverage": 4}');
+  assert.deepEqual(odd?.issues, [{ statement: 'Z', severity: 'major', reason: '' }]);
+  assert.equal(odd?.majorIssues, 1);
+});
+
+test('parseJudgement: undefined for text without a valid judgement', () => {
   assert.equal(parseJudgement('no json'), undefined);
-  assert.equal(parseJudgement('{"faithful": "yes", "coverage": 3}'), undefined);
+  assert.equal(parseJudgement('{"issues": "none", "coverage": 3}'), undefined);
+  assert.equal(parseJudgement('{"issues": [], "coverage": "high"}'), undefined);
+  assert.equal(parseJudgement('{"issues": [], "coverage": 3'), undefined);
 });

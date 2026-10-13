@@ -17,7 +17,7 @@ npm run eval -- --only ja-long                            # a subset (substring 
 npm run eval -- --dry-run                                 # canned API replies: no key, no cost
 ```
 
-The report (Markdown) is printed to stdout; full results, including every summary and API call, go to `eval/results/<timestamp>.json` (not committed).
+The report (Markdown) is printed to stdout; full results go to `eval/results/<timestamp>.json` (not committed). They include every model answer along the way (`steps`: map, single pass or reduce, repairs), the first draft's validation failure (`draftFailure`) and every API call with its usage and stop reason.
 
 Cost: the summaries cost a few cents per run. With `--judge`, each summary is also graded by `claude-opus-5-5`, which brings a run to roughly $1–3. The report shows the actual cost of each part, computed from the API's usage figures and the prices in `src/shared/models.ts`.
 
@@ -25,15 +25,15 @@ Cost: the summaries cost a few cents per run. With `--judge`, each summary is al
 
 Deterministic checks on every summary:
 
-- **Valid format on the first draft**: the single-pass or reduce output already passes the extension's format validation (bullet count, blank lines, Summary/Conclusion lines).
+- **Valid format on the first draft**: the single-pass or reduce output already passes the extension's format validation (bullet count, blank lines, Summary/Conclusion lines). The report groups the failing drafts by the validation's reason.
 - **Needed a repair pass** and **valid format after repairs**: how often the extension had to ask for a rewrite, and whether the final text is valid.
 - **Ending looks truncated**: the final text still ends mid-sentence.
 - **Output language as requested**: Japanese characters dominate for `ja` and are absent for `en`.
-- API calls, cost and time.
+- API calls, calls that stopped at `max_tokens`, cost and time.
 
 With `--judge`, an LLM judge also reports:
 
-- **Faithful**: every statement in the summary is supported by the article (unsupported statements are listed per case).
+- **Faithful**: every statement in the summary is supported by the article. Unsupported statements are listed per case with a severity: **major** when a reader would come away believing something false (a wrong fact, number or cause, or a claim the article does not make), **minor** when the statement is right in substance but stronger or more precise than the article (a dropped hedge, a stronger verb). The report shows both the share with no issues and the share with no major issues.
 - **Coverage** (1–5): whether the summary captures the points a reader most needs, for its length.
 
 The judge is a model too and is not always right; read the listed unsupported statements before drawing conclusions.

@@ -7,7 +7,7 @@ export function installFakeApi(): void {
     const prompt = JSON.stringify(body.messages);
     let text: string;
     if (prompt.includes('You are grading a summary')) {
-      text = '{"faithful": true, "unsupported": [], "coverage": 4, "notes": "dry run"}';
+      text = '{"issues": [], "coverage": 4, "notes": "dry run"}';
     } else if (body.system) {
       text = '- A point from this chunk.';
     } else {

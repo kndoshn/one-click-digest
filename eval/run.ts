@@ -17,12 +17,13 @@ import { buildSummaryRequest } from '../src/background/summary_requests.ts';
 import { runPipeline, type PipelineTrace, type SendSummaryRequest } from '../src/content/pipeline.ts';
 import { CHUNK_TARGET_INPUT_TOKENS } from '../src/content/models.ts';
 import { DEFAULT_SETTINGS } from '../src/shared/types.ts';
-import type { Usage } from '../src/shared/messages.ts';
+import type { ErrorResponse, SummaryRequestMessage, Usage } from '../src/shared/messages.ts';
 import { CASES, type EvalCase, loadArticle } from './cases.ts';
 import {
   checkSummary,
   type Checks,
   costUsd,
+  formatFailure,
   JUDGE_MODEL,
   judgePrompt,
   type Judgement,
@@ -47,6 +48,7 @@ type ApiCall = {
   purpose: 'summary' | 'judge';
   model: string;
   usage?: Usage;
+  stopReason?: string;
   ms: number;
   status: number;
 };
@@ -69,6 +71,7 @@ globalThis.fetch = async (input, init) => {
       ...tag,
       model: body.model,
       usage: json?.usage,
+      stopReason: json?.stop_reason,
       ms: performance.now() - started,
       status: res.status
     });
@@ -79,12 +82,18 @@ globalThis.fetch = async (input, init) => {
 // The extension's defaults: prompt caching on, 5-minute TTL.
 const cacheControl: CacheControlEphemeral = { type: 'ephemeral', ttl: DEFAULT_SETTINGS.promptCachingTtl };
 
+// One pipeline request and its answer (the model's raw text, before the pipeline tidies it).
+type Step = { type: SummaryRequestMessage['type']; text?: string; error?: string };
+
 type CaseResult = {
   id: string;
   status: 'done' | 'error' | 'cancelled';
   error?: string;
   text?: string;
   trace?: PipelineTrace;
+  // Why the first draft (single pass or reduce) failed format validation; null when it passed.
+  draftFailure?: string | null;
+  steps: Step[];
   checks?: Checks;
   judgement?: Judgement | null;
   ms: number;
@@ -92,9 +101,16 @@ type CaseResult = {
 
 async function runCase(c: EvalCase): Promise<CaseResult> {
   const article = loadArticle(c.article);
+  const steps: Step[] = [];
   const send: SendSummaryRequest = async (msg) => {
     const request = buildSummaryRequest(msg, cacheControl);
     const r = await runMessagesWithRetry({ ...request, apiKey });
+    if (r.ok) {
+      steps.push({ type: msg.type, text: r.text });
+    } else {
+      const e = r as ErrorResponse;
+      steps.push({ type: msg.type, error: `${e.code}: ${e.message}` });
+    }
     return (r.ok ? { ok: true, text: r.text, usage: r.usage } : r) as never;
   };
   const started = performance.now();
@@ -115,7 +131,7 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
   const ms = performance.now() - started;
   if (result.status !== 'done') {
     const error = result.status === 'error' ? `${result.error?.code}: ${result.error?.message}` : undefined;
-    return { id: c.id, status: result.status, error, ms };
+    return { id: c.id, status: result.status, error, steps, ms };
   }
 
   let judgement: Judgement | null | undefined;
@@ -132,11 +148,14 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
     judgement = r.ok ? (parseJudgement(r.text) ?? null) : null;
   }
 
+  const draft = steps.find((s) => s.type === 'RUN_SUMMARY_SINGLE' || s.type === 'RUN_SUMMARY_REDUCE');
   return {
     id: c.id,
     status: 'done',
     text: result.text,
     trace: result.trace,
+    draftFailure: formatFailure(c.mode, draft?.text ?? ''),
+    steps,
     checks: checkSummary(c.mode, c.language, result.text),
     judgement,
     ms
@@ -170,6 +189,7 @@ const done = results.filter((r) => r.status === 'done');
 const summaryCost = apiCalls.filter((c) => c.purpose === 'summary').reduce((s, c) => s + costUsd(c.model, c.usage), 0);
 const judgeCost = apiCalls.filter((c) => c.purpose === 'judge').reduce((s, c) => s + costUsd(c.model, c.usage), 0);
 const judged = done.filter((r) => r.judgement);
+const summaryCalls = apiCalls.filter((c) => c.purpose === 'summary');
 
 const lines = [
   `## Summary eval${args['dry-run'] ? ' (dry run)' : ''}`,
@@ -184,13 +204,15 @@ const lines = [
   `| Valid format after repairs | ${pct(done.filter((r) => r.checks!.formatValid).length, done.length)} |`,
   `| Ending looks truncated | ${pct(done.filter((r) => r.checks!.truncated).length, done.length)} |`,
   `| Output language as requested | ${pct(done.filter((r) => r.checks!.languageOk !== false).length, done.length)} |`,
-  `| API calls (summaries) | ${apiCalls.filter((c) => c.purpose === 'summary').length} |`,
+  `| API calls (summaries) | ${summaryCalls.length} |`,
+  `| Calls stopped at max_tokens (summaries) | ${summaryCalls.filter((c) => c.stopReason === 'max_tokens').length} |`,
   `| Cost (summaries) | $${summaryCost.toFixed(4)} |`,
   `| Median time per summary | ${median(done.map((r) => r.ms)).toFixed(0)} ms |`
 ];
 if (args.judge) {
   lines.push(
-    `| Faithful (judge) | ${pct(judged.filter((r) => r.judgement!.faithful).length, judged.length)} of ${judged.length} judged |`,
+    `| Faithful: no issues (judge) | ${pct(judged.filter((r) => r.judgement!.faithful).length, judged.length)} of ${judged.length} judged |`,
+    `| No major issues (judge) | ${pct(judged.filter((r) => r.judgement!.majorIssues === 0).length, judged.length)} of ${judged.length} judged |`,
     `| Mean coverage (judge, 1-5) | ${mean(judged.map((r) => r.judgement!.coverage)).toFixed(2)} |`,
     `| Cost (judge) | $${judgeCost.toFixed(4)} |`
   );
@@ -208,12 +230,25 @@ if (problems.length > 0) {
   for (const r of problems) {
     const why = [
       r.status !== 'done' ? `${r.status}${r.error ? ` (${r.error})` : ''}` : '',
-      r.checks && !r.checks.formatValid ? `format (${r.checks.bulletCount}/${r.checks.expectedBullets} bullets)` : '',
+      r.checks && !r.checks.formatValid ? `format (${formatFailure(cases[results.indexOf(r)].mode, r.text!)})` : '',
       r.checks?.truncated ? 'truncated' : '',
       r.checks?.languageOk === false ? 'language' : '',
-      r.judgement?.faithful === false ? `unsupported: ${r.judgement.unsupported.join(' / ')}` : ''
+      r.judgement?.faithful === false
+        ? `unsupported: ${r.judgement.issues.map((i) => `[${i.severity}] ${i.statement}`).join(' / ')}`
+        : ''
     ].filter(Boolean);
     lines.push(`- \`${r.id}\`: ${why.join('; ')}`);
+  }
+}
+// Grouped by reason, to show what the prompts get wrong before the repair pass.
+const draftFailures = new Map<string, CaseResult[]>();
+for (const r of done) {
+  if (r.draftFailure) draftFailures.set(r.draftFailure, [...(draftFailures.get(r.draftFailure) ?? []), r]);
+}
+if (draftFailures.size > 0) {
+  lines.push('', '### First drafts with an invalid format', '');
+  for (const [reason, rs] of [...draftFailures].sort((a, b) => b[1].length - a[1].length)) {
+    lines.push(`- ${reason} (${rs.length}): ${rs.map((r) => `\`${r.id}\``).join(', ')}`);
   }
 }
 console.log(lines.join('\n'));
