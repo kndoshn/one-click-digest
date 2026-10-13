@@ -175,7 +175,7 @@ var AS;
         .summary {
           white-space: pre-wrap;
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-          font-size: 14px;
+          font-size: 15px;
           line-height: 1.45;
           border: 1px solid rgba(255,255,255,0.85);
           border-radius: 10px;
