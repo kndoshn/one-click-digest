@@ -8,6 +8,11 @@ name: Release Please
 on:
   push:
     branches: [main]
+  # Fallback for when a push to main does not start the workflow: run it by hand on main
+  # (gh workflow run release-please.yml --ref main). The `release` environment rejects other refs.
+  # Creating the release fails (403) while main's .github/workflows differ from the release commit,
+  # because the App token has no workflows permission.
+  workflow_dispatch:
 
 permissions: {}
 
