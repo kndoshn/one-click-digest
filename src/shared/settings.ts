@@ -1,9 +1,15 @@
 // Reading/writing runtime settings in chrome.storage.local (shared by background and options).
 
-import { STORAGE_KEYS } from './constants.js';
-import { normalizeApprovalThresholds } from './approval.js';
-import { BULLET_STYLES, BulletStyle, DEFAULT_BULLET_STYLE, RuntimeSettings, DEFAULT_SETTINGS } from './types.js';
-import { parseNumberOr } from './utils.js';
+import { STORAGE_KEYS } from './constants.ts';
+import { normalizeApprovalThresholds } from './approval.ts';
+import {
+  BULLET_STYLES,
+  type BulletStyle,
+  DEFAULT_BULLET_STYLE,
+  type RuntimeSettings,
+  DEFAULT_SETTINGS
+} from './types.ts';
+import { parseNumberOr } from './utils.ts';
 
 // Storage keys backing RuntimeSettings (the API key is stored separately).
 export const SETTINGS_STORAGE_KEYS = [

@@ -1,4 +1,4 @@
-import { parseNumberOr } from './utils.js';
+import { parseNumberOr } from './utils.ts';
 
 type NormalizeApprovalInput = {
   rawUsd: unknown;

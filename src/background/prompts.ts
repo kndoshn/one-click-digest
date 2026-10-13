@@ -1,8 +1,7 @@
 // Prompt builders for the summarization pipeline (single pass, map, reduce, repair).
 
-import { CacheTtl } from '../shared/types.js';
-
-export type SummaryMode = 'BULLETS_3' | 'BULLETS_5' | 'BULLETS_10' | 'TLDR_12_CONCLUSION';
+import type { SummaryMode } from '../shared/summary_modes.ts';
+import type { CacheTtl } from '../shared/types.ts';
 
 export type CacheControlEphemeral = { type: 'ephemeral'; ttl?: CacheTtl };
 
@@ -11,24 +10,11 @@ export type TextBlock = { type: 'text'; text: string; cache_control?: CacheContr
 // Messages API user content: a plain string or a list of text blocks.
 export type UserContent = string | TextBlock[];
 
-export const MAP_CHUNK_MAX_OUTPUT_TOKENS = 220;
-
-const MODE_MAX_OUTPUT_TOKENS: Record<SummaryMode, number> = {
-  BULLETS_3: 450,
-  BULLETS_5: 700,
-  BULLETS_10: 1200,
-  TLDR_12_CONCLUSION: 1600
-};
-
 const BULLET_MODE_COUNTS: Partial<Record<SummaryMode, number>> = {
   BULLETS_3: 3,
   BULLETS_5: 5,
   BULLETS_10: 10
 };
-
-export function modeMaxOutputTokens(mode: SummaryMode): number {
-  return MODE_MAX_OUTPUT_TOKENS[mode];
-}
 
 function normalizeLang(language: string): string {
   return String(language || '')

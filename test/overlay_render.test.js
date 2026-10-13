@@ -1,10 +1,10 @@
-// Overlay behavior (dist/content/overlay.js) in a fake DOM with fake timers: what each phase
+// Overlay behavior (src/content/overlay.ts) in a fake DOM with fake timers: what each phase
 // renders, which events its controls dispatch, and that animation/toast timers are cleaned up.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { CustomEventPolyfill, createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { CustomEventPolyfill, createClassicContext, runContentBundle } from './helpers/classic_context.js';
 import { FakeDocument } from './helpers/fake_dom.js';
 
 function fakeTimers() {
@@ -53,13 +53,7 @@ function setup() {
     setTimeout: timers.setTimeout,
     clearTimeout: timers.clearTimeout
   });
-  runClassicScripts(ctx, [
-    'dist/content/runtime.js',
-    'dist/content/i18n.js',
-    'dist/content/models.js',
-    'dist/content/format.js',
-    'dist/content/overlay.js'
-  ]);
+  runContentBundle(ctx);
   const AS = ctx.AS;
   const inst = AS.Overlay.mount();
   const events = [];

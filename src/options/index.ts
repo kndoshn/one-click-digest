@@ -2,17 +2,15 @@
 // - Stores Claude API key in chrome.storage.local (device-local)
 // - Stores non-sensitive preferences in chrome.storage.local
 
-import { STORAGE_KEYS } from '../shared/constants.js';
-import { CacheTtl, RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
-import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../shared/settings.js';
-import { parseNumberOr } from '../shared/utils.js';
+import { STORAGE_KEYS } from '../shared/constants.ts';
+import { type CacheTtl, type RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.ts';
+import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../shared/settings.ts';
+import { SUPPORTED_UI_LANGS, type UiLang, toUiLang } from '../shared/ui_lang.ts';
+import { parseNumberOr } from '../shared/utils.ts';
 
 type Preferences = RuntimeSettings;
 
 const DEFAULT_PREFS: Preferences = DEFAULT_SETTINGS;
-
-const SUPPORTED_UI_LANGS = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'] as const;
-type UiLang = (typeof SUPPORTED_UI_LANGS)[number];
 
 type I18nSubstitutions = string | string[];
 
@@ -110,20 +108,6 @@ function parseNum(input: string, fallback: number, opts?: { min?: number; max?: 
   if (typeof min === 'number' && n < min) return fallback;
   if (typeof max === 'number' && n > max) return fallback;
   return n;
-}
-
-// Keep in sync with toUiLang in src/content/i18n.ts.
-function toUiLang(input: string): UiLang {
-  const lower = String(input || '')
-    .trim()
-    .toLowerCase();
-  if (lower.startsWith('pt')) return 'pt-BR';
-  if (lower.startsWith('zh')) {
-    if (lower.includes('tw') || lower.includes('hk') || lower.includes('mo')) return 'zh-TW';
-    return 'zh-CN';
-  }
-  const base = lower.split('-')[0];
-  return (SUPPORTED_UI_LANGS as readonly string[]).includes(base) ? (base as UiLang) : 'en';
 }
 
 function resolveBrowserUiLang(): UiLang {

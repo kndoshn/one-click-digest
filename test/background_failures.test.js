@@ -38,7 +38,7 @@ after(() => {
   console.error = consoleError;
 });
 
-await import('../dist/background/index.js');
+await import('../src/background/index.ts');
 
 function send(msg) {
   return new Promise((resolve) => {

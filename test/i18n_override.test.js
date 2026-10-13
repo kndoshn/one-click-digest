@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 test('i18n: setUiLanguage overrides messages for content UI', async () => {
   const messages = {
@@ -24,7 +24,7 @@ test('i18n: setUiLanguage overrides messages for content UI', async () => {
     navigator: { language: 'en-US' }
   });
 
-  runClassicScripts(ctx, ['dist/content/i18n.js']);
+  runContentBundle(ctx);
 
   await ctx.AS.setUiLanguage('fr');
   assert.equal(ctx.AS.t('labelLanguage'), 'Langue de sortie');

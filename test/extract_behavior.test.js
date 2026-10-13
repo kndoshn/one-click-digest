@@ -1,10 +1,10 @@
-// Article extraction (dist/content/extract.js): the Readability path (with a stubbed Readability)
+// Article extraction (src/content/extract.ts): the Readability path (with a stubbed Readability)
 // and the heuristic fallback, run against HTML fixtures in a fake DOM.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 import { FakeDocument, loadHtml } from './helpers/fake_dom.js';
 
 const sentence = (n, word = 'Body') => `${word} sentence number ${n} with enough words to count.`;
@@ -25,7 +25,7 @@ function load({ html = '', title = 'Page title', readability, minArticleChars = 
     },
     ...(readability ? { Readability: readability } : {})
   });
-  runClassicScripts(ctx, ['dist/content/runtime.js', 'dist/content/models.js', 'dist/content/extract.js']);
+  runContentBundle(ctx);
   ctx.AS.applyRuntimeSettings({ minArticleChars });
   return { AS: ctx.AS, doc };
 }

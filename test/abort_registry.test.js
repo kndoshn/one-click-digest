@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAbortRegistry } from '../dist/background/abort_registry.js';
+import { createAbortRegistry } from '../src/background/abort_registry.ts';
 
 test('AbortRegistry: register does not abort, abortRun aborts all controllers for runId', () => {
   const reg = createAbortRegistry();

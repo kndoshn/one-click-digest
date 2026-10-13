@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { STORAGE_KEYS } from '../dist/shared/constants.js';
-import { DEFAULT_SETTINGS } from '../dist/shared/types.js';
+import { STORAGE_KEYS } from '../src/shared/constants.ts';
+import { DEFAULT_SETTINGS } from '../src/shared/types.ts';
 import {
   SETTINGS_STORAGE_KEYS,
   parseBulletStyle,
   parseStoredSettings,
   settingsToStorage
-} from '../dist/shared/settings.js';
+} from '../src/shared/settings.ts';
 
 test('SETTINGS_STORAGE_KEYS covers every setting key but not the API key or the bullet style', () => {
   // The bullet style is saved from the overlay; keeping it out of the settings means saving the

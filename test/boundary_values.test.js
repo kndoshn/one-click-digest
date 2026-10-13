@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 // Chunker boundary tests
 function loadChunker() {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/estimate.js', 'dist/content/chunk.js']);
+  runContentBundle(ctx);
   return ctx;
 }
 
@@ -46,7 +46,7 @@ test('Chunker: handles very small target token size', () => {
 // Estimate boundary tests
 test('Estimate: zero characters returns minimal estimate', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/estimate.js']);
+  runContentBundle(ctx);
 
   const est = ctx.AS.Estimate.buildEstimate({
     extractedCharCount: 0,
@@ -65,7 +65,7 @@ test('Estimate: zero characters returns minimal estimate', () => {
 
 test('Estimate: single character text', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/estimate.js']);
+  runContentBundle(ctx);
 
   const est = ctx.AS.Estimate.buildEstimate({
     extractedCharCount: 1,
@@ -82,7 +82,7 @@ test('Estimate: single character text', () => {
 
 test('Estimate: MAX boundary (200k chars)', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/estimate.js']);
+  runContentBundle(ctx);
 
   const maxText = 'a'.repeat(200000);
   const est = ctx.AS.Estimate.buildEstimate({
@@ -101,7 +101,7 @@ test('Estimate: MAX boundary (200k chars)', () => {
 
 test('Estimate: CJK-heavy text has different token estimate', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/estimate.js']);
+  runContentBundle(ctx);
 
   const englishText = 'hello '.repeat(100);
   const japaneseText = 'こんにちは'.repeat(100);
@@ -133,7 +133,7 @@ test('Estimate: CJK-heavy text has different token estimate', () => {
 // Format boundary tests
 test('Format: empty string fails validation', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const r = ctx.AS.Format.validate('BULLETS_3', '');
   assert.equal(r.ok, false);
@@ -141,7 +141,7 @@ test('Format: empty string fails validation', () => {
 
 test('Format: whitespace-only string fails validation', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const r = ctx.AS.Format.validate('BULLETS_3', '   \n\n  ');
   assert.equal(r.ok, false);
@@ -149,7 +149,7 @@ test('Format: whitespace-only string fails validation', () => {
 
 test('Format: bullets with various markers (*, -, •)', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const dashBullets = '- a\n\n- b\n\n- c';
   const r1 = ctx.AS.Format.validate('BULLETS_3', dashBullets);
@@ -162,7 +162,7 @@ test('Format: bullets with various markers (*, -, •)', () => {
 
 test('Format: mixed bullet markers fails', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const mixed = '- a\n\n* b\n\n- c';
   const r = ctx.AS.Format.validate('BULLETS_3', mixed);
@@ -173,7 +173,7 @@ test('Format: mixed bullet markers fails', () => {
 
 test('Format: bullets with trailing newlines', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const withTrailing = '- a\n\n- b\n\n- c\n\n\n';
   const r = ctx.AS.Format.validate('BULLETS_3', withTrailing);
@@ -182,7 +182,7 @@ test('Format: bullets with trailing newlines', () => {
 
 test('Format: bullets without blank line between them fail', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const noBlank = '- a\n- b\n- c';
   const r = ctx.AS.Format.validate('BULLETS_3', noBlank);
@@ -191,7 +191,7 @@ test('Format: bullets without blank line between them fail', () => {
 
 test('Format: full-width characters in bullets', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
 
   const japanese = '- ポイント一\n\n- ポイント二\n\n- ポイント三';
   const r = ctx.AS.Format.validate('BULLETS_3', japanese);
@@ -201,7 +201,7 @@ test('Format: full-width characters in bullets', () => {
 // State machine boundary tests
 test('StateMachine: initial state has expected defaults', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
 
   const state = ctx.AS.StateMachine.initialState('auto', 'BULLETS_5');
   assert.equal(state.phase, 'IDLE');
@@ -212,7 +212,7 @@ test('StateMachine: initial state has expected defaults', () => {
 
 test('StateMachine: RESET from any state returns to IDLE', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
 
   let state = ctx.AS.StateMachine.initialState('auto', 'BULLETS_5');
   state = ctx.AS.StateMachine.reduce(state, { type: 'START_RUN', runId: 'r1' });
@@ -224,7 +224,7 @@ test('StateMachine: RESET from any state returns to IDLE', () => {
 
 test('StateMachine: RESET with banner preserves banner message', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
 
   let state = ctx.AS.StateMachine.initialState('auto', 'BULLETS_5');
   state = ctx.AS.StateMachine.reduce(state, { type: 'START_RUN', runId: 'r1' });
@@ -236,7 +236,7 @@ test('StateMachine: RESET with banner preserves banner message', () => {
 
 test('StateMachine: MODE_CHANGED updates selected mode', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
 
   let state = ctx.AS.StateMachine.initialState('auto', 'BULLETS_5');
   state = ctx.AS.StateMachine.reduce(state, { type: 'MODE_CHANGED', mode: 'BULLETS_10' });
@@ -246,7 +246,7 @@ test('StateMachine: MODE_CHANGED updates selected mode', () => {
 
 test('StateMachine: LANGUAGE_CHANGED updates selected language', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
 
   let state = ctx.AS.StateMachine.initialState('auto', 'BULLETS_5');
   state = ctx.AS.StateMachine.reduce(state, { type: 'LANGUAGE_CHANGED', language: 'ja' });

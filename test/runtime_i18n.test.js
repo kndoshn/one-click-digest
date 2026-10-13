@@ -1,11 +1,11 @@
-// Content runtime helpers (dist/content/runtime.js) and UI i18n (dist/content/i18n.js).
+// Content runtime helpers (src/content/runtime.ts) and UI i18n (src/content/i18n.ts).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { CustomEventPolyfill, createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { CustomEventPolyfill, createClassicContext, runContentBundle } from './helpers/classic_context.js';
 import { FakeDocument } from './helpers/fake_dom.js';
 
 function load(globals = {}) {
@@ -16,7 +16,7 @@ function load(globals = {}) {
     CustomEvent: CustomEventPolyfill,
     ...globals
   });
-  runClassicScripts(ctx, ['dist/content/runtime.js', 'dist/content/i18n.js']);
+  runContentBundle(ctx);
   return ctx;
 }
 

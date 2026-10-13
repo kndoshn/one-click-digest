@@ -1,11 +1,13 @@
 // Characterization tests for the background service worker.
 //
-// dist/background/index.js registers chrome listeners at import time, so we install a stubbed
+// src/background/index.ts registers chrome listeners at import time, so we install a stubbed
 // `chrome` and `fetch` on globalThis before importing it, then drive it through the message
 // listener and inspect the exact requests it sends to the Anthropic API.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const storage = {};
 const listeners = { onClicked: [], onChanged: [], onMessage: [] };
@@ -65,7 +67,7 @@ globalThis.fetch = async (url, init) => {
   return typeof next === 'function' ? next(url, init) : next;
 };
 
-await import('../dist/background/index.js');
+await import('../src/background/index.ts');
 
 function send(msg) {
   return new Promise((resolve) => {
@@ -648,21 +650,12 @@ test('action click injects content scripts only into regular pages', async () =>
   assert.equal(injected.length, 1);
   assert.deepEqual(injected[0], {
     target: { tabId: 7, allFrames: false },
-    files: [
-      'third_party/readability/Readability.js',
-      'content/runtime.js',
-      'content/i18n.js',
-      'content/models.js',
-      'content/state_machine.js',
-      'content/chunk.js',
-      'content/format.js',
-      'content/extract.js',
-      'content/estimate.js',
-      'content/overlay.js',
-      'content/controller.js',
-      'content/bootstrap.js'
-    ]
+    files: ['third_party/readability/Readability.js', 'content/main.js']
   });
+  // Every injected file is part of the build.
+  for (const f of injected[0].files) {
+    assert.ok(fs.existsSync(path.join(process.cwd(), 'dist', f)), `dist/${f} must exist (run build first)`);
+  }
 
   for (const url of [
     'chrome://settings',

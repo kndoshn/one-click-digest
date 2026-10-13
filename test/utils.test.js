@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseNumberOr } from '../dist/shared/utils.js';
+import { parseNumberOr } from '../src/shared/utils.ts';
 
 test('parseNumberOr: returns number when given valid number', () => {
   assert.equal(parseNumberOr(42, 0), 42);

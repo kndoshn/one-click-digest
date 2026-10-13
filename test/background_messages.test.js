@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STORAGE_KEYS } from '../dist/shared/constants.js';
-import { DEFAULT_SETTINGS } from '../dist/shared/types.js';
-import { createAbortRegistry } from '../dist/background/abort_registry.js';
+import { STORAGE_KEYS } from '../src/shared/constants.ts';
+import { DEFAULT_SETTINGS } from '../src/shared/types.ts';
+import { createAbortRegistry } from '../src/background/abort_registry.ts';
 
 test('Background: STORAGE_KEYS exports expected keys', () => {
   assert.ok(STORAGE_KEYS.CLAUDE_API_KEY, 'CLAUDE_API_KEY should exist');

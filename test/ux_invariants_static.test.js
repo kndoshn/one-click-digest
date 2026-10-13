@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 test('UX invariants (static): 4 modes are defined', () => {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js']);
+  runContentBundle(ctx);
   assert.ok(ctx.AS?.MODE_OPTIONS, 'MODE_OPTIONS should exist');
   assert.equal(ctx.AS.MODE_OPTIONS.length, 4);
 });

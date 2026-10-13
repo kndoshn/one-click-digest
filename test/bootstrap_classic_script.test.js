@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// chrome.scripting.executeScript runs files as classic scripts, so the content bundle must be
+// self-contained (an IIFE). The bundler normally guarantees this; the check guards the build config.
 test('dist/content/*.js must be classic-script friendly (no import/export)', () => {
   const dir = path.join(process.cwd(), 'dist', 'content');
   assert.ok(fs.existsSync(dir), 'dist/content must exist (run build first)');
