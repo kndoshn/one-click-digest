@@ -110,9 +110,15 @@ let settingsLoaded = false;
 async function refreshSettingsCache(): Promise<void> {
   const res = await chrome.storage.local.get([...SETTINGS_STORAGE_KEYS]);
   const { settings, migration } = parseStoredSettings(res);
-  if (migration) await chrome.storage.local.set(migration);
   settingsCache = settings;
   settingsLoaded = true;
+  if (migration) {
+    try {
+      await chrome.storage.local.set(migration);
+    } catch {
+      // Best-effort write-back; the migrated values are already in use.
+    }
+  }
 }
 
 async function ensureSettingsLoaded(): Promise<void> {
@@ -120,8 +126,8 @@ async function ensureSettingsLoaded(): Promise<void> {
   try {
     await refreshSettingsCache();
   } catch {
-    // Keep defaults.
-    settingsLoaded = true;
+    // Use the defaults for this request and read storage again on the next one
+    // (do not cache a transient failure for the worker's lifetime).
   }
 }
 
@@ -153,10 +159,11 @@ async function getApiKey(): Promise<string | undefined> {
     try {
       const result = await chrome.storage.local.get([STORAGE_KEY_API_KEY]);
       apiKeyCache = normalizeApiKey(result?.[STORAGE_KEY_API_KEY]);
+      apiKeyLoaded = true;
     } catch {
-      apiKeyCache = undefined;
+      // Treat as missing for this request only; read storage again on the next one.
+      return undefined;
     }
-    apiKeyLoaded = true;
   }
   return apiKeyCache;
 }

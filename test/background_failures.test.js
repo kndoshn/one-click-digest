@@ -59,15 +59,18 @@ test('unreadable storage: defaults are used and no API key is reported', async (
   });
 });
 
-test('settings are re-read on a storage change once storage works again', async () => {
+test('a transient storage failure is retried on the next request instead of being cached', async () => {
   state.storageFails = false;
-  for (const fn of listeners.onChanged) fn({ hardCostLimitUsd: { newValue: 3 } }, 'local');
-  // Changes in other storage areas are ignored.
-  for (const fn of listeners.onChanged) fn({ claudeApiKey: { newValue: 'sk-sync' } }, 'sync');
-  await new Promise((r) => setTimeout(r, 10));
-
   const r = await send({ type: 'GET_SETTINGS' });
   assert.equal(r.settings.hardCostLimitUsd, 3);
+  assert.equal(r.apiKeySet, true);
+});
+
+test('API key changes in local storage are picked up; other storage areas are ignored', async () => {
+  for (const fn of listeners.onChanged) fn({ claudeApiKey: { newValue: '' } }, 'sync');
+  assert.equal((await send({ type: 'GET_SETTINGS' })).apiKeySet, true);
+  for (const fn of listeners.onChanged) fn({ claudeApiKey: { newValue: '   ' } }, 'local');
+  assert.equal((await send({ type: 'GET_SETTINGS' })).apiKeySet, false);
   for (const fn of listeners.onChanged) fn({ claudeApiKey: { newValue: '  sk-ant-y ' } }, 'local');
   assert.equal((await send({ type: 'GET_SETTINGS' })).apiKeySet, true);
 });

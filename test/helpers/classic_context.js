@@ -16,6 +16,8 @@ export function createClassicContext(extraGlobals = {}) {
     clearTimeout,
     setInterval,
     clearInterval,
+    EventTarget,
+    Event,
     ...extraGlobals
   };
   return vm.createContext(base);

@@ -166,3 +166,29 @@ test('a UI language change in storage re-renders the overlay; other changes are 
   await waitFor(() => inst.renders > renders);
   assert.equal(inst.languageOptionsSet, optionsSet + 1);
 });
+
+test('UI events dispatched by a page script on the overlay host are ignored', async () => {
+  const env = createEnv({
+    settings: { minArticleChars: 50, approvalThresholdChars: 1000 },
+    respond: (m) => (m.type === 'COUNT_TOKENS' ? { ok: true, inputTokens: 700 } : { ok: false, code: 'unhandled' })
+  });
+  const inst = await injectAndWaitIdle(env);
+
+  // A page cannot start a (paid) run...
+  env.dispatchFromPage(inst, 'as:mode', { mode: 'BULLETS_3' });
+  await tick();
+  assert.equal(inst.lastState.phase, 'IDLE');
+  assert.deepEqual(env.sent, []);
+
+  // ...nor approve one on the user's behalf.
+  env.dispatch(inst, 'as:mode', { mode: 'BULLETS_3' });
+  await waitFor(() => inst.lastState.phase === 'PREFLIGHT' && inst.lastState.refining === false);
+  env.dispatchFromPage(inst, 'as:proceed');
+  env.dispatchFromPage(inst, 'as:run');
+  await tick();
+  assert.equal(inst.lastState.phase, 'PREFLIGHT');
+  assert.deepEqual(
+    env.sent.map((m) => m.type),
+    ['COUNT_TOKENS']
+  );
+});

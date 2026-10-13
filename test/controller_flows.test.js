@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 
 import {
   createControllerEnv,
+  deferred,
   injectAndWaitIdle,
   lastError,
   phaseOf,
@@ -287,4 +288,131 @@ test('a bootstrap failure is logged instead of thrown', async () => {
   await waitFor(() => env.errors.length > 0);
   assert.equal(env.errors[0][0], '[ArticleSummarizer] bootstrap failed');
   assert.equal(env.errors[0][1].message, 'mount failed');
+});
+
+test('settings changed in the options page apply to the next run without reopening the overlay', async () => {
+  // The blocked screen sends the user to the options page to raise the limit.
+  let current = { minArticleChars: 50, hardCostLimitUsd: 0.000001 };
+  const env = createControllerEnv({
+    settingsResponse: () => ({ ok: true, apiKeySet: true, settings: current }),
+    respond: (m) => (m.type === 'RUN_SUMMARY_SINGLE' ? { ok: true, text: VALID_3 } : { ok: false, code: 'unhandled' })
+  });
+  const inst = await injectAndWaitIdle(env);
+  await runToPhase(env, inst, 'BULLETS_3', 'BLOCKED');
+
+  current = { minArticleChars: 50, hardCostLimitUsd: 1, modelMap: 'claude-haiku-4-5' };
+  env.dispatch(inst, 'as:reset');
+  await runToPhase(env, inst, 'BULLETS_3', 'DONE');
+  assert.equal(env.sent.find((m) => m.type === 'RUN_SUMMARY_SINGLE').payload.model, 'claude-haiku-4-5');
+});
+
+test('a run keeps the settings it started with', async () => {
+  let current = { minArticleChars: 50, approvalThresholdChars: 1000, modelMap: 'claude-haiku-5-5' };
+  const env = createControllerEnv({
+    settingsResponse: () => ({ ok: true, apiKeySet: true, settings: current }),
+    respond: (m) => {
+      if (m.type === 'COUNT_TOKENS') return { ok: true, inputTokens: 700 };
+      if (m.type === 'RUN_SUMMARY_SINGLE') return { ok: true, text: VALID_3 };
+      return { ok: false, code: 'unhandled' };
+    }
+  });
+  const inst = await injectAndWaitIdle(env);
+  await runToPhase(env, inst, 'BULLETS_3', 'PREFLIGHT');
+  // Changed while waiting for approval: the approved run is not switched to another model.
+  current = { ...current, modelMap: 'claude-sonnet-4-5' };
+  for (const fn of env.storageListeners) fn({ modelMap: { newValue: 'claude-sonnet-4-5' } }, 'local');
+  await tick();
+  env.dispatch(inst, 'as:proceed');
+  env.dispatch(inst, 'as:run');
+  await waitFor(() => phaseOf(inst) === 'DONE');
+  assert.deepEqual(
+    env.sent.map((m) => m.payload.model),
+    ['claude-haiku-5-5', 'claude-haiku-5-5']
+  );
+});
+
+test('saving an API key in the options page clears the missing-key warning', async () => {
+  let apiKeySet = false;
+  let failSettings = false;
+  const env = createControllerEnv({
+    settingsResponse: () => (failSettings ? lastError('gone') : { ok: true, apiKeySet, settings: { minArticleChars: 50 } })
+  });
+  env.inject();
+  const inst = await waitFor(() => (env.overlays[0]?.lastState?.phase === 'IDLE' && env.storageListeners.size ? env.overlays[0] : null));
+  await tick();
+  assert.equal(inst.lastState.apiKeySet, false);
+
+  apiKeySet = true;
+  for (const fn of env.storageListeners) fn({ claudeApiKey: { newValue: 'sk-ant-x' } }, 'local');
+  await waitFor(() => inst.lastState.apiKeySet === true);
+
+  // A messaging failure does not flip the state back to "missing".
+  failSettings = true;
+  for (const fn of env.storageListeners) fn({ claudeApiKey: { newValue: 'sk-ant-y' } }, 'local');
+  await tick();
+  assert.equal(inst.lastState.apiKeySet, true);
+});
+
+test('a token count that lands after the run started and exceeds the hard limit stops the run', async () => {
+  const count = deferred();
+  const single = deferred();
+  const env = createControllerEnv({
+    settings: { minArticleChars: 50, approvalThresholdChars: 1000, hardCostLimitUsd: 0.05 },
+    respond: (m) => {
+      if (m.type === 'COUNT_TOKENS') return count.promise;
+      if (m.type === 'RUN_SUMMARY_SINGLE') return single.promise;
+      if (m.type === 'ABORT_RUN') return { ok: true, aborted: true };
+      return { ok: false, code: 'unhandled' };
+    }
+  });
+  const inst = await injectAndWaitIdle(env);
+  await runToPhase(env, inst, 'BULLETS_3', 'PREFLIGHT');
+  assert.equal(inst.lastState.refining, true);
+
+  // The user approves on the rough estimate before the exact count arrives.
+  env.dispatch(inst, 'as:proceed');
+  env.dispatch(inst, 'as:run');
+  await waitFor(() => env.sent.some((m) => m.type === 'RUN_SUMMARY_SINGLE'));
+  const runId = env.sent[0].payload.runId;
+
+  count.resolve({ ok: true, inputTokens: 2_000_000 });
+  await waitFor(() => phaseOf(inst) === 'BLOCKED');
+  assert.equal(inst.lastState.reason, 'reasonHardLimit');
+  assert.equal(inst.lastState.estimate.tokenExact, 2_000_000 + 256);
+  assert.deepEqual(env.sent[env.sent.length - 1], { type: 'ABORT_RUN', payload: { runId } });
+
+  // The summary response that was already in flight does not resume the run.
+  single.resolve({ ok: true, text: 'not valid\n- x' });
+  await tick();
+  assert.equal(phaseOf(inst), 'BLOCKED');
+  assert.deepEqual(
+    env.sent.map((m) => m.type),
+    ['COUNT_TOKENS', 'RUN_SUMMARY_SINGLE', 'ABORT_RUN']
+  );
+
+  // Back returns to the start screen.
+  env.dispatch(inst, 'as:reset');
+  assert.equal(phaseOf(inst), 'IDLE');
+});
+
+test('a token count that lands after the run started but stays under the hard limit changes nothing', async () => {
+  const count = deferred();
+  const env = createControllerEnv({
+    settings: { minArticleChars: 50, approvalThresholdChars: 1000 },
+    respond: (m) => {
+      if (m.type === 'COUNT_TOKENS') return count.promise;
+      if (m.type === 'RUN_SUMMARY_SINGLE') return count.promise.then(() => ({ ok: true, text: VALID_3 }));
+      return { ok: false, code: 'unhandled' };
+    }
+  });
+  const inst = await injectAndWaitIdle(env);
+  await runToPhase(env, inst, 'BULLETS_3', 'PREFLIGHT');
+  env.dispatch(inst, 'as:proceed');
+  env.dispatch(inst, 'as:run');
+  count.resolve({ ok: true, inputTokens: 700 });
+  await waitFor(() => phaseOf(inst) === 'DONE');
+  assert.deepEqual(
+    env.sent.map((m) => m.type),
+    ['COUNT_TOKENS', 'RUN_SUMMARY_SINGLE']
+  );
 });

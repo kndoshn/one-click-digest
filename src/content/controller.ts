@@ -1,5 +1,9 @@
 namespace AS {
   export namespace Controller {
+    // Keep in sync with STORAGE_KEYS.CLAUDE_API_KEY in src/shared/constants.ts (content scripts are
+    // classic scripts, so the shared module is not available here).
+    const API_KEY_STORAGE_KEY = 'claudeApiKey';
+
     type StorageChanges = { [key: string]: { newValue?: unknown; oldValue?: unknown } };
     type StorageListener = (changes: StorageChanges, areaName: string) => void;
 
@@ -157,8 +161,13 @@ namespace AS {
           const updated = Estimate.applyExactTokens(estimate, resp.inputTokens);
           reduce({ type: 'TOKENS_REFINED', runId, estimate: updated }, true);
 
-          // If refinement pushes us over the hard limit, block immediately.
+          // If refinement pushes us over the hard limit, block immediately. The user may already
+          // have started the run on the rough estimate; stop it so no further requests are made.
           if (Estimate.isOverHardLimit(updated)) {
+            if (ctx.state.phase === 'SUMMARIZING') {
+              abortInFlight();
+              ctx.activeRunId = undefined;
+            }
             reduce({ type: 'BLOCKED', runId, estimate: updated, reason: t('reasonHardLimit') }, true);
           }
 
@@ -359,7 +368,19 @@ namespace AS {
       UNKNOWN: 'errorExtractionFailed'
     };
 
+    // Re-reads settings so that changes made in the options page while the overlay is open (e.g.
+    // a higher cost limit after a block) apply to the next run. Keeps the current values when the
+    // background cannot be reached.
+    async function refreshRuntimeSettings(): Promise<void> {
+      const resp = await getSettings();
+      applyRuntimeSettings(resp.settings);
+    }
+
     async function doExtractAndMaybeRun(runId: string): Promise<void> {
+      if (!isRunActive(runId)) return;
+
+      // Settings are fixed for the rest of the run.
+      await refreshRuntimeSettings();
       if (!isRunActive(runId)) return;
 
       const r = Extract.extractArticle();
@@ -589,18 +610,19 @@ namespace AS {
       // Initial render.
       Overlay.render(ctx.overlay, ctx.state);
 
-      // Wire events.
+      // Wire events. Only the dispose notification comes through the page-visible host (it can only
+      // stop this controller); UI events come through overlay.events, which page scripts cannot reach.
       overlay.host.addEventListener(OVERLAY_DISPOSE_EVENT, () => dispose());
-      overlay.host.addEventListener('as:close', () => handleClose());
-      overlay.host.addEventListener('as:openOptions', () => openOptionsPage());
-      overlay.host.addEventListener('as:cancel', () => handleCancel());
-      overlay.host.addEventListener('as:reset', () => handleReset());
-      overlay.host.addEventListener('as:copy', () => handleCopy());
-      overlay.host.addEventListener('as:proceed', () => handleProceed());
-      overlay.host.addEventListener('as:run', () => handleRun());
-      overlay.host.addEventListener('as:runLight', () => handleRunLight());
+      overlay.events.addEventListener('as:close', () => handleClose());
+      overlay.events.addEventListener('as:openOptions', () => openOptionsPage());
+      overlay.events.addEventListener('as:cancel', () => handleCancel());
+      overlay.events.addEventListener('as:reset', () => handleReset());
+      overlay.events.addEventListener('as:copy', () => handleCopy());
+      overlay.events.addEventListener('as:proceed', () => handleProceed());
+      overlay.events.addEventListener('as:run', () => handleRun());
+      overlay.events.addEventListener('as:runLight', () => handleRunLight());
 
-      overlay.host.addEventListener('as:language', (ev: any) => {
+      overlay.events.addEventListener('as:language', (ev: any) => {
         const next = String(ev?.detail?.language || 'auto');
         reduce({ type: 'LANGUAGE_CHANGED', language: next }, true);
 
@@ -610,7 +632,7 @@ namespace AS {
         }
       });
 
-      overlay.host.addEventListener('as:mode', (ev: any) => {
+      overlay.events.addEventListener('as:mode', (ev: any) => {
         const mode = ev?.detail?.mode as SummaryMode;
         if (!mode) return;
         startRun(mode);
@@ -625,9 +647,23 @@ namespace AS {
       try {
         if (chrome?.storage?.onChanged?.addListener) {
           const listener: StorageListener = (changes, areaName) => {
-            if (areaName !== 'local') return;
-            if (!changes || !Object.prototype.hasOwnProperty.call(changes, 'uiLanguage')) return;
-            if (!ctx.overlay) return;
+            if (areaName !== 'local' || !changes || !ctx.overlay) return;
+            const has = (key: string) => Object.prototype.hasOwnProperty.call(changes, key);
+
+            // The API key was saved or cleared in the options page: update the missing-key warning.
+            if (has(API_KEY_STORAGE_KEY)) {
+              getSettings()
+                .then((resp) => {
+                  // No settings means the background could not be reached; keep the current state.
+                  if (ctx.disposed || !resp.settings) return;
+                  reduce({ type: 'SETTINGS_LOADED', apiKeySet: resp.apiKeySet }, true);
+                })
+                .catch(() => {
+                  // ignore
+                });
+            }
+
+            if (!has('uiLanguage')) return;
             const next = changes.uiLanguage?.newValue;
             setUiLanguage(typeof next === 'string' ? next : 'auto')
               .then(() => {

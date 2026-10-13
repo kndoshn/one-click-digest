@@ -17,11 +17,15 @@ namespace AS {
       let n = 0;
       for (let i = 0; i < text.length; i++) {
         const code = text.charCodeAt(i);
-        // Rough CJK ranges: Hiragana, Katakana, CJK Unified Ideographs.
+        // Rough CJK ranges: Hiragana, Katakana, CJK Unified Ideographs (+ Extension A), and Korean
+        // Hangul (syllables, conjoining and compatibility jamo).
         if (
           (code >= 0x3040 && code <= 0x30ff) ||
           (code >= 0x4e00 && code <= 0x9fff) ||
-          (code >= 0x3400 && code <= 0x4dbf)
+          (code >= 0x3400 && code <= 0x4dbf) ||
+          (code >= 0xac00 && code <= 0xd7af) ||
+          (code >= 0x1100 && code <= 0x11ff) ||
+          (code >= 0x3130 && code <= 0x318f)
         ) {
           n++;
         }

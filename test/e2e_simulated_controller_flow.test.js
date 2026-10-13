@@ -47,6 +47,7 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
   const host = makeEventTarget();
   const overlay = {
     host,
+    events: host,
     lastState: null,
     renders: [],
     toast: null,
@@ -140,7 +141,7 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
 test('Simulated E2E: long article triggers approval → map-reduce → repair', async () => {
   const sent = [];
   const host = makeEventTarget();
-  const overlay = { host, lastState: null, renders: [] };
+  const overlay = { host, events: host, lastState: null, renders: [] };
 
   const chrome = {
     i18n: {
@@ -258,7 +259,7 @@ test('Simulated E2E: long article triggers approval → map-reduce → repair', 
 test('Simulated E2E: token refinement clears even when API key is missing (no stuck "refining")', async () => {
   const sent = [];
   const host = makeEventTarget();
-  const overlay = { host, lastState: null, renders: [] };
+  const overlay = { host, events: host, lastState: null, renders: [] };
 
   const chrome = {
     i18n: {
@@ -350,7 +351,7 @@ test('Simulated E2E: token refinement clears even when API key is missing (no st
 test('Simulated E2E: cancel aborts and resets without confirm', async () => {
   const sent = [];
   const host = makeEventTarget();
-  const overlay = { host, lastState: null, renders: [], banner: null };
+  const overlay = { host, events: host, lastState: null, renders: [], banner: null };
 
   const chrome = {
     i18n: {
@@ -440,7 +441,7 @@ test('Simulated E2E: cancel aborts and resets without confirm', async () => {
 test('Simulated E2E: truncation repair runs when last bullet is cut off', async () => {
   const sent = [];
   const host = makeEventTarget();
-  const overlay = { host, lastState: null, renders: [] };
+  const overlay = { host, events: host, lastState: null, renders: [] };
 
   const chrome = {
     i18n: {
@@ -532,7 +533,7 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
 test('Simulated E2E: Japanese bullet ending without trailing "。" is not treated as truncated', async () => {
   const sent = [];
   const host = makeEventTarget();
-  const overlay = { host, lastState: null, renders: [] };
+  const overlay = { host, events: host, lastState: null, renders: [] };
 
   const chrome = {
     i18n: {

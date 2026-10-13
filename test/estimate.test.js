@@ -190,3 +190,17 @@ test('Estimate: a stored model ID without pricing is priced at the highest known
     assert.ok(exact.costLowUsd >= known.costLowUsd, model);
   }
 });
+
+test('Estimate: Korean (Hangul) counts as CJK, like Japanese and Chinese', () => {
+  const { AS } = loadEstimate();
+  const korean = '한국어 문장은 이렇게 작성됩니다. '.repeat(200);
+  const japanese = '日本語の文章はこのように書かれます。'.repeat(200);
+  assert.ok(AS.Estimate.countCjkChars('한글') === 2);
+  assert.ok(AS.Estimate.countCjkChars('ㅎㅏㄴ') === 3, 'compatibility jamo');
+  assert.ok(AS.Estimate.countCjkChars('한') === 3, 'conjoining jamo');
+  assert.equal(AS.Estimate.countCjkChars('abc, 123.'), 0);
+
+  // Same dense-script ratio as Japanese, not the Latin one.
+  const perChar = (text) => AS.Estimate.estimateTokens(text).high / text.length;
+  assert.ok(Math.abs(perChar(korean) - perChar(japanese)) < 0.01, `${perChar(korean)} vs ${perChar(japanese)}`);
+});

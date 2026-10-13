@@ -1,7 +1,11 @@
 namespace AS {
   export namespace Overlay {
     export type Instance = {
+      // In the page DOM: page scripts can see it and dispatch events on it.
       host: HTMLDivElement;
+      // UI events (as:*) for the controller. Not reachable from the page, unlike the host element:
+      // with the closed shadow root this keeps page scripts from starting or approving runs.
+      events: EventTarget;
       shadow: ShadowRoot;
       modeBar: HTMLDivElement;
       body: HTMLDivElement;
@@ -17,8 +21,8 @@ namespace AS {
 
     const ANIM_DOTS_INTERVAL_MS = 450;
 
-    function dispatch(host: HTMLDivElement, type: string, detail?: any): void {
-      host.dispatchEvent(new CustomEvent(type, { detail, bubbles: true }));
+    function dispatch(target: EventTarget, type: string, detail?: any): void {
+      target.dispatchEvent(new CustomEvent(type, { detail }));
     }
 
     function css(): string {
@@ -326,7 +330,9 @@ namespace AS {
       host.style.right = '12px';
       host.style.zIndex = '2147483647';
 
-      const shadow = host.attachShadow({ mode: 'open' });
+      const events = new EventTarget();
+      // Closed: page scripts cannot reach the controls through host.shadowRoot.
+      const shadow = host.attachShadow({ mode: 'closed' });
 
       const style = document.createElement('style');
       style.textContent = css();
@@ -343,13 +349,13 @@ namespace AS {
       settingsButton.id = 'as-settings';
       settingsButton.setAttribute('aria-label', t('buttonSettings'));
       settingsButton.textContent = '⚙';
-      settingsButton.addEventListener('click', () => dispatch(host, 'as:openOptions'));
+      settingsButton.addEventListener('click', () => dispatch(events, 'as:openOptions'));
 
       const closeButton = el('button', 'close') as HTMLButtonElement;
       closeButton.id = 'as-close';
       closeButton.setAttribute('aria-label', t('closeAria'));
       closeButton.textContent = '×';
-      closeButton.addEventListener('click', () => dispatch(host, 'as:close'));
+      closeButton.addEventListener('click', () => dispatch(events, 'as:close'));
 
       titleRow.appendChild(titleLabel);
       titleRow.appendChild(settingsButton);
@@ -384,7 +390,7 @@ namespace AS {
       toast.id = 'as-toast';
 
       const backdrop = el('div', 'backdrop') as HTMLDivElement;
-      backdrop.addEventListener('click', () => dispatch(host, 'as:close'));
+      backdrop.addEventListener('click', () => dispatch(events, 'as:close'));
 
       panel.appendChild(header);
       panel.appendChild(meta);
@@ -403,6 +409,7 @@ namespace AS {
 
       return {
         host,
+        events,
         shadow,
         modeBar,
         body,
@@ -510,7 +517,7 @@ namespace AS {
       }
 
       // Make this idempotent (avoid duplicate listeners if setLanguageOptions is called again).
-      select.onchange = () => dispatch(inst.host, 'as:language', { language: select.value });
+      select.onchange = () => dispatch(inst.events, 'as:language', { language: select.value });
     }
 
     export function setBanner(inst: Instance, text?: string): void {
@@ -585,7 +592,7 @@ namespace AS {
         if (state.selectedMode === opt.mode) {
           btn.classList.add('selected');
         }
-        btn.addEventListener('click', () => dispatch(inst.host, 'as:mode', { mode: opt.mode }));
+        btn.addEventListener('click', () => dispatch(inst.events, 'as:mode', { mode: opt.mode }));
         inst.modeBar.appendChild(btn);
       }
     }
@@ -596,7 +603,7 @@ namespace AS {
         const btn = el('button', b.primary ? 'primary' : '') as HTMLButtonElement;
         setText(btn, t(b.key));
         if (b.disabled) btn.disabled = true;
-        btn.addEventListener('click', () => dispatch(inst.host, b.event));
+        btn.addEventListener('click', () => dispatch(inst.events, b.event));
         inst.footer.appendChild(btn);
       }
     }
@@ -618,7 +625,7 @@ namespace AS {
         setText(desc, t(opt.descKey));
         btn.appendChild(label);
         btn.appendChild(desc);
-        btn.addEventListener('click', () => dispatch(inst.host, 'as:mode', { mode: opt.mode }));
+        btn.addEventListener('click', () => dispatch(inst.events, 'as:mode', { mode: opt.mode }));
         modes.appendChild(btn);
       }
       inst.body.appendChild(modes);

@@ -131,7 +131,8 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
         if (env.mountError) throw env.mountError;
         const host = new EventTarget();
         host.parentNode = root;
-        const inst = { host, lastState: null, states: [], renders: 0, unmounted: false, languageOptionsSet: 0 };
+        // `host` is the page-visible element; `events` carries the overlay's UI events.
+        const inst = { host, events: new EventTarget(), lastState: null, states: [], renders: 0, unmounted: false, languageOptionsSet: 0 };
         overlays.push(inst);
         page.overlayHost = host;
         return inst;
@@ -160,7 +161,10 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
     ctx.AS.Controller.bootstrap();
   };
 
-  env.dispatch = (inst, type, detail = {}) => inst.host.dispatchEvent(new CustomEventPolyfill(type, { detail }));
+  // A UI event from the overlay's own controls.
+  env.dispatch = (inst, type, detail = {}) => inst.events.dispatchEvent(new CustomEventPolyfill(type, { detail }));
+  // An event a page script dispatches on the overlay host element (which is in the page DOM).
+  env.dispatchFromPage = (inst, type, detail = {}) => inst.host.dispatchEvent(new CustomEventPolyfill(type, { detail }));
   env.ctx = ctx;
   return env;
 }

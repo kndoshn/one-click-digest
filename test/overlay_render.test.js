@@ -57,9 +57,13 @@ function setup() {
   const inst = AS.Overlay.mount();
   const events = [];
   for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language']) {
-    inst.host.addEventListener(type, (ev) => events.push([type, ev.detail == null ? null : JSON.parse(JSON.stringify(ev.detail))]));
+    inst.events.addEventListener(type, (ev) => events.push([type, ev.detail == null ? null : JSON.parse(JSON.stringify(ev.detail))]));
   }
-  return { AS, doc, inst, timers, events };
+  const hostEvents = [];
+  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language']) {
+    inst.host.addEventListener(type, () => hostEvents.push(type));
+  }
+  return { AS, doc, inst, timers, events, hostEvents };
 }
 
 const footerButtons = (inst) => inst.footer.children.map((b) => b.textContent);
@@ -382,4 +386,19 @@ test('the progress animation stops by itself once the overlay is detached withou
   timers.tickIntervals();
   assert.equal(timers.intervals.size, 0);
   assert.equal(msg.textContent, 'statusSummarizing.');
+});
+
+test('page scripts cannot reach the controls: closed shadow root, and no UI events on the host element', () => {
+  const { AS, inst, events, hostEvents } = setup();
+  assert.equal(inst.host.shadowRoot, null, 'the shadow root is closed');
+
+  AS.Overlay.render(inst, { ...base, phase: 'CONFIRM', runId: 'r', article: ARTICLE, estimate: ESTIMATE });
+  clickFooter(inst, 'buttonRun');
+  inst.closeButton.click();
+  assert.deepEqual(events, [
+    ['as:run', null],
+    ['as:close', null]
+  ]);
+  // A page script can observe or dispatch events on the host, so nothing is sent through it.
+  assert.deepEqual(hostEvents, []);
 });

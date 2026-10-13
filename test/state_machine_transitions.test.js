@@ -102,9 +102,9 @@ test('TOKENS_REFINED: clears refining in PREFLIGHT, updates CONFIRM, ignored els
   assert.equal(reduce(idle, { type: 'TOKENS_REFINED', runId: 'r1', estimate: refined }), idle);
 });
 
-test('BLOCKED is accepted from PREFLIGHT and CONFIRM only', () => {
+test('BLOCKED is accepted before the run (PREFLIGHT/CONFIRM) and while summarizing', () => {
   const over = estimate({ costWorstUsd: 5 });
-  for (const s of [preflight(), confirm()]) {
+  for (const s of [preflight(), confirm(), summarizing()]) {
     const b = reduce({ ...s, banner: 'b' }, { type: 'BLOCKED', runId: 'r1', estimate: over, reason: 'limit' });
     assert.deepEqual(plain(b), {
       phase: 'BLOCKED',
@@ -117,8 +117,10 @@ test('BLOCKED is accepted from PREFLIGHT and CONFIRM only', () => {
       reason: 'limit'
     });
   }
+  const done = reduce(summarizing(), { type: 'SUMMARY_DONE', runId: 'r1', summaryText: '- A' });
+  assert.equal(reduce(done, { type: 'BLOCKED', runId: 'r1', estimate: over, reason: 'limit' }), done);
   const s = summarizing();
-  assert.equal(reduce(s, { type: 'BLOCKED', runId: 'r1', estimate: over, reason: 'limit' }), s);
+  assert.equal(reduce(s, { type: 'BLOCKED', runId: 'stale', estimate: over, reason: 'limit' }), s);
   const p = preflight();
   assert.equal(reduce(p, { type: 'BLOCKED', runId: 'stale', estimate: over, reason: 'limit' }), p);
 });
