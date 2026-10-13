@@ -21,7 +21,7 @@ Do everything else yourself (branching, changes, tests, commits, pushes, the PR,
 ## Before opening a PR
 
 - Use the Node.js version pinned in `mise.toml` (`mise install`).
-- Run `npm run typecheck` and `npm test`. `npm test` builds first.
+- Run `npm run typecheck`, `npm run lint` and `npm test`. `npm test` builds first.
 - `dist/` is build output and is not committed.
 - Add or update tests for behavior changes (see `CONTRIBUTING.md`). For a bug fix, add a test that fails without the fix.
 - Content scripts (`src/content/*.ts`) are injected as classic scripts. `dist/content/*.js` must not contain `import` or `export`, not even in comments (a test checks this).

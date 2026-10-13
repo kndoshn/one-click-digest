@@ -20,7 +20,6 @@ function makeEventTarget() {
 
 async function waitFor(fn, { timeoutMs = 2500, intervalMs = 10 } = {}) {
   const start = Date.now();
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const v = fn();
     if (v) return v;

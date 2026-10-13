@@ -7,7 +7,6 @@
   try {
     AS.Controller.bootstrap();
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('[ArticleSummarizer] Content bootstrap failed', err);
   }
 })();

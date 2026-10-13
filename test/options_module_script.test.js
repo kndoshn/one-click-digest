@@ -9,5 +9,5 @@ test("options page loads options/index.js as a module", () => {
   const html = fs.readFileSync(htmlPath, "utf-8");
 
   // If options/index.js uses ESM imports, options.html must load it as type=module.
-  assert.match(html, /<script[^>]*type=\"module\"[^>]*src=\"options\/index\.js\"/);
+  assert.match(html, /<script[^>]*type="module"[^>]*src="options\/index\.js"/);
 });

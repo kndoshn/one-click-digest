@@ -12,6 +12,8 @@ Common commands:
 ```bash
 npm install
 npm run build
+npm run typecheck
+npm run lint
 npm test
 ```
 

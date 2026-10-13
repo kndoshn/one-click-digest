@@ -209,7 +209,8 @@ async function readPrefsFromStorage(): Promise<{ prefs: Preferences; apiKeySet: 
     chrome.storage.local.get(keys, (res: any) => {
       const apiKeySet = Boolean(res?.[STORAGE_KEYS.CLAUDE_API_KEY]);
       const { settings, migration } = parseStoredSettings(res);
-      if (migration) chrome.storage.local.set(migration);
+      // Best-effort write-back; reading lastError marks a failure as handled.
+      if (migration) chrome.storage.local.set(migration, () => void chrome.runtime.lastError);
       resolve({ prefs: settings, apiKeySet });
     });
   });
@@ -303,56 +304,71 @@ function renderUiLanguageOptions(setting: string, displayLang: UiLang): void {
   select.value = setting && setting !== 'auto' ? setting : 'auto';
 }
 
+// Runs an async event handler. Failures are logged instead of becoming unhandled rejections.
+function runAsync(task: () => Promise<void>): void {
+  task().catch((err: unknown) => {
+    console.error('[ArticleSummarizer] Options page action failed', err);
+  });
+}
+
 function wireUi(initialUiLanguage: string): void {
   const saveBtn = $('save') as HTMLButtonElement | null;
   const clearBtn = $('clear') as HTMLButtonElement | null;
   const resetBtn = $('reset') as HTMLButtonElement | null;
 
-  saveBtn?.addEventListener('click', async () => {
-    const apiKey = getInputValue('api-key');
-    const prefs = readPrefsFromUi();
-    await savePreferences(prefs, apiKey);
+  saveBtn?.addEventListener('click', () =>
+    runAsync(async () => {
+      const apiKey = getInputValue('api-key');
+      const prefs = readPrefsFromUi();
+      await savePreferences(prefs, apiKey);
 
-    if (apiKey) setInputValue('api-key', '');
+      if (apiKey) setInputValue('api-key', '');
 
-    const reloadNeeded = (prefs.uiLanguage || 'auto') !== (initialUiLanguage || 'auto');
-    if (reloadNeeded) {
-      setStatus(t('statusReloading'));
-      setTimeout(() => location.reload(), 250);
-      return;
-    }
+      const reloadNeeded = (prefs.uiLanguage || 'auto') !== (initialUiLanguage || 'auto');
+      if (reloadNeeded) {
+        setStatus(t('statusReloading'));
+        setTimeout(() => location.reload(), 250);
+        return;
+      }
 
-    const { prefs: stored, apiKeySet } = await readPrefsFromStorage();
-    applyPrefsToUi(stored);
-    setApiKeyInputState(apiKeySet);
-    setStatus(apiKeySet ? t('statusSavedKeySet') : t('statusSavedKeyMissing'));
-  });
+      const { prefs: stored, apiKeySet } = await readPrefsFromStorage();
+      applyPrefsToUi(stored);
+      setApiKeyInputState(apiKeySet);
+      setStatus(apiKeySet ? t('statusSavedKeySet') : t('statusSavedKeyMissing'));
+    })
+  );
 
-  clearBtn?.addEventListener('click', async () => {
-    if (!confirm(t('confirmClearApiKey'))) return;
-    await clearApiKey();
-    setInputValue('api-key', '');
-    setApiKeyInputState(false);
-    setStatus(t('statusClearedKey'));
-  });
+  clearBtn?.addEventListener('click', () =>
+    runAsync(async () => {
+      if (!confirm(t('confirmClearApiKey'))) return;
+      await clearApiKey();
+      setInputValue('api-key', '');
+      setApiKeyInputState(false);
+      setStatus(t('statusClearedKey'));
+    })
+  );
 
-  resetBtn?.addEventListener('click', async () => {
-    if (!confirm(t('confirmResetDefaults'))) return;
-    applyPrefsToUi(DEFAULT_PREFS);
-    await savePreferences(DEFAULT_PREFS, '');
-    const { apiKeySet } = await readPrefsFromStorage();
-    setApiKeyInputState(apiKeySet);
-    setStatus(t('statusResetDefaults'));
-  });
+  resetBtn?.addEventListener('click', () =>
+    runAsync(async () => {
+      if (!confirm(t('confirmResetDefaults'))) return;
+      applyPrefsToUi(DEFAULT_PREFS);
+      await savePreferences(DEFAULT_PREFS, '');
+      const { apiKeySet } = await readPrefsFromStorage();
+      setApiKeyInputState(apiKeySet);
+      setStatus(t('statusResetDefaults'));
+    })
+  );
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const { prefs, apiKeySet } = await readPrefsFromStorage();
-  const displayLang = await loadMessagesForUi(prefs.uiLanguage || 'auto');
-  applyI18n();
-  renderUiLanguageOptions(prefs.uiLanguage || 'auto', displayLang);
-  applyPrefsToUi(prefs);
-  wireUi(prefs.uiLanguage || 'auto');
-  setApiKeyInputState(apiKeySet);
-  setStatus(apiKeySet ? t('statusKeySet') : t('statusKeyMissing'));
-});
+document.addEventListener('DOMContentLoaded', () =>
+  runAsync(async () => {
+    const { prefs, apiKeySet } = await readPrefsFromStorage();
+    const displayLang = await loadMessagesForUi(prefs.uiLanguage || 'auto');
+    applyI18n();
+    renderUiLanguageOptions(prefs.uiLanguage || 'auto', displayLang);
+    applyPrefsToUi(prefs);
+    wireUi(prefs.uiLanguage || 'auto');
+    setApiKeyInputState(apiKeySet);
+    setStatus(apiKeySet ? t('statusKeySet') : t('statusKeyMissing'));
+  })
+);
