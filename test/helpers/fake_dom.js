@@ -267,8 +267,9 @@ export class FakeDocument extends FakeNode {
 }
 
 // Supports compound selectors made of: tag, *, #id, .class, [attr], [attr="value"].
+// Unquoted values exclude quotes so that the regex has one way to match (no exponential backtracking).
 function compileSelector(selector) {
-  const re = /^([a-zA-Z][\w-]*|\*)?((?:#[\w-]+|\.[\w-]+|\[[\w-]+(?:=(?:"[^"]*"|'[^']*'|[^\]]*))?\])*)$/;
+  const re = /^([a-zA-Z][\w-]*|\*)?((?:#[\w-]+|\.[\w-]+|\[[\w-]+(?:=(?:"[^"]*"|'[^']*'|[^\]"']*))?\])*)$/;
   const m = selector.match(re);
   if (!m) throw new Error(`fake_dom: unsupported selector "${selector}"`);
   const tag = m[1] && m[1] !== '*' ? m[1].toUpperCase() : null;
@@ -291,10 +292,11 @@ const RAW_TEXT_TAGS = new Set(['style', 'script']);
 // <html>, <head> and <body> map onto the document's existing elements; other top-level content
 // goes into <body>.
 export function loadHtml(doc, html) {
+  // Unquoted attribute values exclude quotes, as in HTML, so attribute runs parse one way only.
   const stack = [doc.body];
   const top = () => stack[stack.length - 1];
   const tokenRe =
-    /<!--[\s\S]*?-->|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s=>]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>|([^<]+)/gi;
+    /<!--[\s\S]*?-->|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s=>]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*\/?>|([^<]+)/gi;
   let m;
   while ((m = tokenRe.exec(html))) {
     const [token, closeTag, openTag, attrText, text] = m;
