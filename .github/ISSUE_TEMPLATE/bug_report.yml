@@ -1,0 +1,73 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Do not paste your Claude API key**, and avoid URLs of private pages (intranet, logged-in pages).
+        For security issues, use [private reporting](https://github.com/kndoshn/one-click-digest/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open https://example.com/some-article
+        2. Click the toolbar button
+        3. Choose "5 bullets"
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page URL or type of page
+      description: A public URL if possible, otherwise describe the page (news article, blog, documentation, PDF viewer, ...).
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Summary mode
+      options:
+        - 3 bullets
+        - 5 bullets
+        - 10 bullets
+        - With conclusion
+        - Not relevant
+  - type: input
+    id: models
+    attributes:
+      label: Models
+      description: The models selected on the settings page, if you changed them.
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: Shown on `chrome://extensions`.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 141.0.7390.54
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 26.1
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors
+      description: |
+        Errors from the page's DevTools console, and from the service worker
+        (`chrome://extensions` → OneClickDigest → "service worker"). Remove anything that looks like a key.
+      render: text
