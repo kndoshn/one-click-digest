@@ -49,18 +49,16 @@ function bulletStyleNoteFor(language: string): string {
   return '';
 }
 
-// The pipeline lays out the blank lines itself (Format.tidyLayout), so the bullet modes only ask for
-// one bullet per line. The TL;DR wording is kept as measured: a line-by-line template made the model
-// write 13 or 14 bullets far more often (eval, 2026-10-13).
+// The pipeline also lays out the blank lines itself (Format.tidyLayout), so the wording below matters
+// for the content, not the spacing. Shorter instructions were measured worse (eval, 2026-10-13): a
+// line-by-line TL;DR template made the model write 13 or 14 bullets far more often, and "one per line,
+// nothing else" for the bullet modes made it keep the article's language (Japanese) when asked for
+// English.
 function formatHintFor(mode: SummaryMode, language: string): string {
   const bulletNote = bulletStyleNoteFor(language);
   const bulletCount = BULLET_MODE_COUNTS[mode];
   if (bulletCount !== undefined) {
-    return (
-      `Return exactly ${bulletCount} bullet points, one per line, each starting with "- ".\n` +
-      'Write nothing else: no title, no introduction, no closing note.' +
-      bulletNote
-    );
+    return `Return exactly ${bulletCount} bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${bulletNote}`;
   }
 
   const labels = headerLabelsFor(language);
