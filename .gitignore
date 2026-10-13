@@ -28,6 +28,9 @@ build/
 test-results/
 playwright-report/
 
+# Eval results (eval/run.ts)
+eval/results/
+
 # Coverage
 coverage/
 .nyc_output/

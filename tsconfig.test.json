@@ -9,5 +9,13 @@
     "noImplicitAny": false,
     "types": ["chrome", "node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.js", "test/**/*.ts", "scripts/**/*.mjs", "e2e/**/*.ts", "playwright.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.js",
+    "test/**/*.ts",
+    "scripts/**/*.mjs",
+    "e2e/**/*.ts",
+    "eval/**/*.ts",
+    "playwright.config.ts"
+  ]
 }

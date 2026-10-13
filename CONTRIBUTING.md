@@ -37,6 +37,10 @@ npm test
 
 The E2E build differs from `dist/` only where tests need it: Playwright cannot click the toolbar button, so the worker exposes the injection as `__e2e.injectContentScripts`; the overlay's shadow root is open so locators can reach it; and the manifest also allows the test origin. A unit test checks that none of this is in `dist/`.
 
+## Summary eval
+
+Before changing models, prompts or the summarization pipeline, run the eval in `eval/` before and after the change (`npm run eval`, needs `ANTHROPIC_API_KEY`; see `eval/README.md`) and include both reports in the PR. It runs the extension's own pipeline on fictional articles and costs a few cents, or about $1–3 with `--judge`.
+
 ## Models and prices
 
 The models offered in the settings, their prices, tokenizer and caching details, and their extra request parameters are listed in one place: `MODELS` in `src/shared/models.ts`. When Anthropic changes prices or releases or retires a model, update that list (and `PRICING_CHECKED_ON`). A monthly workflow compares it with the Models API and opens an issue when they differ; prices still have to be checked on the [pricing page](https://platform.claude.com/docs/en/about-claude/pricing).
