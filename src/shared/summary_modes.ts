@@ -5,8 +5,10 @@ export const SUMMARY_MODES = ['BULLETS_3', 'BULLETS_5', 'BULLETS_10', 'TLDR_12_C
 
 export type SummaryMode = (typeof SUMMARY_MODES)[number];
 
-// max_tokens for one map-stage chunk summary.
-export const MAP_CHUNK_MAX_OUTPUT_TOKENS = 220;
+// max_tokens for one map-stage chunk summary (five bullets from a chunk of up to
+// CHUNK_TARGET_INPUT_TOKENS). Claude Haiku 5.5 needs about 330+ tokens for that, so a smaller budget
+// cuts the summary off and the reduce step loses the rest of the chunk.
+export const MAP_CHUNK_MAX_OUTPUT_TOKENS = 800;
 
 const MODE_MAX_OUTPUT_TOKENS: Record<SummaryMode, number> = {
   BULLETS_3: 450,
