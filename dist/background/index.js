@@ -8,8 +8,8 @@
 //   - Call Anthropic Token Count API (preflight refinement)
 //   - Call Anthropic Messages API (summarization pipeline)
 import { STORAGE_KEYS } from '../shared/constants.js';
-import { DEFAULT_SETTINGS } from '../shared/types.js';
-import { SETTINGS_STORAGE_KEYS, parseStoredSettings } from '../shared/settings.js';
+import { DEFAULT_BULLET_STYLE, DEFAULT_SETTINGS } from '../shared/types.js';
+import { SETTINGS_STORAGE_KEYS, isBulletStyle, parseBulletStyle, parseStoredSettings } from '../shared/settings.js';
 import { createAbortRegistry } from './abort_registry.js';
 import { countTokens, runMessagesWithRetry } from './anthropic.js';
 import { MAP_CHUNK_MAX_OUTPUT_TOKENS, buildMapPrompt, buildMapSystem, buildReducePrompt, buildRepairPrompt, buildSinglePrompt, buildTokenCountPrompt, modeMaxOutputTokens } from './prompts.js';
@@ -146,6 +146,16 @@ async function getApiKey() {
     }
     return apiKeyCache;
 }
+// Read on demand: only GET_SETTINGS needs it, and only the overlay changes it.
+async function getBulletStyle() {
+    try {
+        const result = await chrome.storage.local.get([STORAGE_KEYS.BULLET_STYLE]);
+        return parseBulletStyle(result?.[STORAGE_KEYS.BULLET_STYLE]);
+    }
+    catch {
+        return DEFAULT_BULLET_STYLE;
+    }
+}
 function currentCacheControl() {
     if (!settingsCache.promptCachingEnabled)
         return undefined;
@@ -251,7 +261,20 @@ async function handleMessage(msg) {
     await ensureSettingsLoaded();
     if (msg.type === 'GET_SETTINGS') {
         const key = await getApiKey();
-        return { ok: true, apiKeySet: Boolean(key), settings: settingsCache };
+        return { ok: true, apiKeySet: Boolean(key), settings: settingsCache, bulletStyle: await getBulletStyle() };
+    }
+    if (msg.type === 'SET_BULLET_STYLE') {
+        const style = msg.payload?.style;
+        if (!isBulletStyle(style)) {
+            return { ok: false, code: 'bad_request', message: 'Invalid bullet style' };
+        }
+        try {
+            await chrome.storage.local.set({ [STORAGE_KEYS.BULLET_STYLE]: style });
+            return { ok: true };
+        }
+        catch {
+            return { ok: false, code: 'storage_failed', message: 'Failed to save the bullet style.' };
+        }
     }
     if (msg.type === 'OPEN_OPTIONS') {
         try {

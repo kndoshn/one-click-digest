@@ -11,6 +11,20 @@ var AS;
         { mode: 'TLDR_12_CONCLUSION', labelKey: 'modeDLabel', descKey: 'modeDDesc' }
     ];
     AS.DEFAULT_MODE = 'BULLETS_5';
+    AS.BULLET_STYLE_OPTIONS = [
+        { style: 'dash', marker: '-', labelKey: 'bulletStyleDash' },
+        { style: 'dot', marker: '・', labelKey: 'bulletStyleDot' },
+        { style: 'number', marker: '1.', labelKey: 'bulletStyleNumber' }
+    ];
+    AS.DEFAULT_BULLET_STYLE = 'dash';
+    function isBulletStyle(value) {
+        return AS.BULLET_STYLE_OPTIONS.some((o) => o.style === value);
+    }
+    AS.isBulletStyle = isBulletStyle;
+    function parseBulletStyle(value) {
+        return isBulletStyle(value) ? value : AS.DEFAULT_BULLET_STYLE;
+    }
+    AS.parseBulletStyle = parseBulletStyle;
     function getModeRuntimeSpec(mode) {
         switch (mode) {
             case 'BULLETS_3':

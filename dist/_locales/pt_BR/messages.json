@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "Copiar"
   },
+  "labelBulletStyle": {
+    "message": "Estilo dos marcadores"
+  },
+  "bulletStyleDash": {
+    "message": "Hífen (-)"
+  },
+  "bulletStyleDot": {
+    "message": "Ponto médio (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "Numerada (1.)"
+  },
   "buttonBack": {
     "message": "Voltar"
   },

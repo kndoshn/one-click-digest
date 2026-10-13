@@ -144,7 +144,8 @@ namespace AS {
           font-size: 14px;
           text-align: center;
         }
-        .modebarBtn.selected {
+        .modebarBtn.selected,
+        .bulletStyleBtn.selected {
           border-color: rgba(255,255,255,0.45);
           box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
           font-weight: 700;
@@ -231,6 +232,15 @@ namespace AS {
           border-top: 1px solid rgba(255,255,255,0.08);
         }
         .footer .spacer { flex: 1; }
+        .bulletStyles {
+          display: flex;
+          gap: 4px;
+        }
+        .bulletStyleBtn {
+          min-width: 36px;
+          padding: 6px 8px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
         .toast {
           position: absolute;
           bottom: 10px;
@@ -597,7 +607,12 @@ namespace AS {
       }
     }
 
-    function renderFooterButtons(inst: Instance, buttons: Array<{ key: string; primary?: boolean; disabled?: boolean; event: string }>): void {
+    // `trailing` is pushed to the right edge of the footer.
+    function renderFooterButtons(
+      inst: Instance,
+      buttons: Array<{ key: string; primary?: boolean; disabled?: boolean; event: string }>,
+      trailing?: HTMLElement
+    ): void {
       inst.footer.innerHTML = '';
       for (const b of buttons) {
         const btn = el('button', b.primary ? 'primary' : '') as HTMLButtonElement;
@@ -606,6 +621,28 @@ namespace AS {
         btn.addEventListener('click', () => dispatch(inst.events, b.event));
         inst.footer.appendChild(btn);
       }
+      if (trailing) {
+        inst.footer.appendChild(el('div', 'spacer'));
+        inst.footer.appendChild(trailing);
+      }
+    }
+
+    function bulletStyleBar(inst: Instance, selected: BulletStyle): HTMLElement {
+      const bar = el('div', 'bulletStyles');
+      bar.setAttribute('role', 'group');
+      bar.setAttribute('aria-label', t('labelBulletStyle'));
+      for (const opt of BULLET_STYLE_OPTIONS) {
+        const btn = el('button', 'bulletStyleBtn') as HTMLButtonElement;
+        setText(btn, opt.marker);
+        btn.title = t(opt.labelKey);
+        btn.setAttribute('aria-label', t(opt.labelKey));
+        const isSelected = opt.style === selected;
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        if (isSelected) btn.classList.add('selected');
+        btn.addEventListener('click', () => dispatch(inst.events, 'as:bulletStyle', { style: opt.style }));
+        bar.appendChild(btn);
+      }
+      return bar;
     }
 
     function renderIdle(inst: Instance, state: IdleState): void {
@@ -728,11 +765,12 @@ namespace AS {
     function renderDone(inst: Instance, state: DoneState): void {
       clear(inst);
 
+      const bulletStyle = parseBulletStyle(state.bulletStyle);
       const pre = el('div', 'summary');
-      pre.textContent = state.summaryText;
+      pre.textContent = Format.applyBulletStyle(state.summaryText, bulletStyle);
       inst.body.appendChild(pre);
 
-      renderFooterButtons(inst, [{ key: 'buttonCopy', primary: true, event: 'as:copy' }]);
+      renderFooterButtons(inst, [{ key: 'buttonCopy', primary: true, event: 'as:copy' }], bulletStyleBar(inst, bulletStyle));
     }
 
     function renderError(inst: Instance, state: ErrorState): void {

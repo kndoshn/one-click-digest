@@ -416,3 +416,52 @@ test('a token count that lands after the run started but stays under the hard li
     ['COUNT_TOKENS', 'RUN_SUMMARY_SINGLE']
   );
 });
+
+test('the bullet style picked in the result screen restyles the summary and Copy, without re-running, and is saved', async () => {
+  const env = createControllerEnv({
+    respond: (m) => {
+      if (m.type === 'RUN_SUMMARY_SINGLE') return { ok: true, text: VALID_3 };
+      if (m.type === 'SET_BULLET_STYLE') return { ok: true };
+      return { ok: false, code: 'unhandled' };
+    }
+  });
+  const inst = await injectAndWaitIdle(env);
+  assert.equal(inst.lastState.bulletStyle, 'dash');
+  await runToPhase(env, inst, 'BULLETS_3', 'DONE');
+  const sentBefore = env.sent.length;
+
+  env.dispatch(inst, 'as:bulletStyle', { style: 'number' });
+  assert.equal(phaseOf(inst), 'DONE');
+  assert.equal(inst.lastState.bulletStyle, 'number');
+  assert.equal(inst.lastState.summaryText, VALID_3, 'the stored summary keeps the model output');
+  await waitFor(() => env.sent.length > sentBefore);
+  assert.deepEqual(env.sent.slice(sentBefore), [{ type: 'SET_BULLET_STYLE', payload: { style: 'number' } }]);
+
+  env.dispatch(inst, 'as:copy');
+  await waitFor(() => env.toasts.length === 1);
+  assert.equal(env.copied, '1. A.\n\n2. B.\n\n3. C.');
+
+  // The same style again, or an unknown one, changes and saves nothing.
+  const renders = inst.renders;
+  env.dispatch(inst, 'as:bulletStyle', { style: 'number' });
+  env.dispatch(inst, 'as:bulletStyle', { style: 'bogus' });
+  await tick();
+  assert.equal(inst.renders, renders);
+  assert.equal(env.sent.length, sentBefore + 1);
+
+  // The next run keeps the style.
+  const firstRunId = inst.lastState.runId;
+  env.dispatch(inst, 'as:mode', { mode: 'BULLETS_3' });
+  await waitFor(() => phaseOf(inst) === 'DONE' && inst.lastState.runId !== firstRunId);
+  assert.equal(inst.lastState.bulletStyle, 'number');
+});
+
+test('a new overlay starts with the saved bullet style; an unknown saved value means dash', async () => {
+  for (const [saved, expected] of [['dot', 'dot'], ['bogus', 'dash'], [undefined, 'dash']]) {
+    const env = createControllerEnv({
+      settingsResponse: () => ({ ok: true, apiKeySet: true, settings: { minArticleChars: 50 }, bulletStyle: saved })
+    });
+    const inst = await injectAndWaitIdle(env);
+    assert.equal(inst.lastState.bulletStyle, expected, String(saved));
+  }
+});

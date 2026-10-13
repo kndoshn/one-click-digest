@@ -500,9 +500,17 @@ namespace AS {
     function handleCopy(): void {
       const s = ctx.state;
       if (s.phase !== 'DONE') return;
-      copyToClipboard(s.summaryText).then((ok) => {
+      copyToClipboard(Format.applyBulletStyle(s.summaryText, s.bulletStyle)).then((ok) => {
         Overlay.showToast(ctx.overlay, ok ? t('toastCopied') : t('toastCopyFailed'));
       });
+    }
+
+    // Only changes how the finished summary is shown and copied (no re-run). The style is
+    // remembered for the next summary.
+    function handleBulletStyle(style: unknown): void {
+      if (!isBulletStyle(style) || style === ctx.state.bulletStyle) return;
+      reduce({ type: 'BULLET_STYLE_CHANGED', bulletStyle: style }, true);
+      saveBulletStyle(style);
     }
 
     function handleRunLight(): void {
@@ -605,7 +613,7 @@ namespace AS {
 
       const initialLang = 'auto';
       const initialMode = DEFAULT_MODE;
-      ctx.state = StateMachine.initialState(initialLang, initialMode);
+      ctx.state = StateMachine.initialState(initialLang, initialMode, parseBulletStyle(settings.bulletStyle));
 
       // Initial render.
       Overlay.render(ctx.overlay, ctx.state);
@@ -618,6 +626,7 @@ namespace AS {
       overlay.events.addEventListener('as:cancel', () => handleCancel());
       overlay.events.addEventListener('as:reset', () => handleReset());
       overlay.events.addEventListener('as:copy', () => handleCopy());
+      overlay.events.addEventListener('as:bulletStyle', (ev: any) => handleBulletStyle(ev?.detail?.style));
       overlay.events.addEventListener('as:proceed', () => handleProceed());
       overlay.events.addEventListener('as:run', () => handleRun());
       overlay.events.addEventListener('as:runLight', () => handleRunLight());

@@ -9,8 +9,8 @@
 //   - Call Anthropic Messages API (summarization pipeline)
 
 import { STORAGE_KEYS } from '../shared/constants.js';
-import { RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
-import { SETTINGS_STORAGE_KEYS, parseStoredSettings } from '../shared/settings.js';
+import { BulletStyle, DEFAULT_BULLET_STYLE, RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
+import { SETTINGS_STORAGE_KEYS, isBulletStyle, parseBulletStyle, parseStoredSettings } from '../shared/settings.js';
 import { createAbortRegistry } from './abort_registry.js';
 import { MessagesRequest, countTokens, runMessagesWithRetry } from './anthropic.js';
 import {
@@ -168,6 +168,16 @@ async function getApiKey(): Promise<string | undefined> {
   return apiKeyCache;
 }
 
+// Read on demand: only GET_SETTINGS needs it, and only the overlay changes it.
+async function getBulletStyle(): Promise<BulletStyle> {
+  try {
+    const result = await chrome.storage.local.get([STORAGE_KEYS.BULLET_STYLE]);
+    return parseBulletStyle(result?.[STORAGE_KEYS.BULLET_STYLE]);
+  } catch {
+    return DEFAULT_BULLET_STYLE;
+  }
+}
+
 function currentCacheControl(): CacheControlEphemeral | undefined {
   if (!settingsCache.promptCachingEnabled) return undefined;
   // ttl defaults to 5m per docs, but we set it explicitly for clarity.
@@ -201,6 +211,7 @@ async function withRunAbort<T>(runId: unknown, fn: (signal: AbortSignal) => Prom
 
 type MsgGetSettings = { type: 'GET_SETTINGS' };
 type MsgOpenOptions = { type: 'OPEN_OPTIONS' };
+type MsgSetBulletStyle = { type: 'SET_BULLET_STYLE'; payload: { style: BulletStyle } };
 
 type MsgCountTokens = {
   type: 'COUNT_TOKENS';
@@ -275,6 +286,7 @@ type SummaryMsg = MsgRunSingle | MsgRunMap | MsgRunReduce | MsgRunRepair;
 type AnyMsg =
   | MsgGetSettings
   | MsgOpenOptions
+  | MsgSetBulletStyle
   | MsgCountTokens
   | MsgAbortRun
   | SummaryMsg
@@ -366,7 +378,20 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
 
   if (msg.type === 'GET_SETTINGS') {
     const key = await getApiKey();
-    return { ok: true, apiKeySet: Boolean(key), settings: settingsCache };
+    return { ok: true, apiKeySet: Boolean(key), settings: settingsCache, bulletStyle: await getBulletStyle() };
+  }
+
+  if (msg.type === 'SET_BULLET_STYLE') {
+    const style = (msg as MsgSetBulletStyle).payload?.style;
+    if (!isBulletStyle(style)) {
+      return { ok: false, code: 'bad_request', message: 'Invalid bullet style' };
+    }
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEYS.BULLET_STYLE]: style });
+      return { ok: true };
+    } catch {
+      return { ok: false, code: 'storage_failed', message: 'Failed to save the bullet style.' };
+    }
   }
 
   if (msg.type === 'OPEN_OPTIONS') {

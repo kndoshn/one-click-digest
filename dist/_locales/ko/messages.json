@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "복사"
   },
+  "labelBulletStyle": {
+    "message": "글머리 기호"
+  },
+  "bulletStyleDash": {
+    "message": "하이픈 (-)"
+  },
+  "bulletStyleDot": {
+    "message": "가운뎃점 (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "번호 (1.)"
+  },
   "buttonBack": {
     "message": "뒤로"
   },

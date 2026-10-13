@@ -196,3 +196,32 @@ test('Format: TLDR validation reports why the structure is wrong', () => {
   assert.match(reason(['Summary: s', '', bulletBlock(11), '', 'Conclusion: c']), /Expected 12 bullets/);
   assert.equal(reason(['Summary: s', '', bulletBlock(11), '', 'Summary: again', '', 'Conclusion: c']), 'Unexpected header in bullet block');
 });
+
+test('Format.applyBulletStyle: swaps the marker of bullet lines only', () => {
+  const AS = loadFormat();
+  const text = '- 一つ目\n\n- 二つ目\n\n- 三つ目';
+  assert.equal(AS.Format.applyBulletStyle(text, 'dash'), text);
+  assert.equal(AS.Format.applyBulletStyle(text, 'dot'), '・一つ目\n\n・二つ目\n\n・三つ目');
+  assert.equal(AS.Format.applyBulletStyle(text, 'number'), '1. 一つ目\n\n2. 二つ目\n\n3. 三つ目');
+});
+
+test('Format.applyBulletStyle: TL;DR numbering counts bullets only and leaves Summary/Conclusion as is', () => {
+  const AS = loadFormat();
+  const text = ['要約: 概要', '', bulletBlock(12), '', '結論: まとめ'].join('\n');
+  const lines = AS.Format.applyBulletStyle(text, 'number').split('\n');
+  assert.equal(lines[0], '要約: 概要');
+  assert.equal(lines[2], '1. bullet 1');
+  assert.equal(lines[24], '12. bullet 12');
+  assert.equal(lines[26], '結論: まとめ');
+  assert.equal(lines.length, text.split('\n').length);
+});
+
+test('Format.applyBulletStyle: other markers the model may write are rewritten too', () => {
+  const AS = loadFormat();
+  const text = '* a\n\n• b\n\n3) c\n\n・ d\n\n7. e';
+  assert.equal(AS.Format.applyBulletStyle(text, 'dash'), '- a\n\n- b\n\n- c\n\n- d\n\n- e');
+  assert.equal(AS.Format.applyBulletStyle(text, 'number'), '1. a\n\n2. b\n\n3. c\n\n4. d\n\n5. e');
+  // Switching styles back and forth is lossless.
+  const numbered = AS.Format.applyBulletStyle('- a\n\n- b', 'number');
+  assert.equal(AS.Format.applyBulletStyle(numbered, 'dash'), '- a\n\n- b');
+});

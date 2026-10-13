@@ -186,7 +186,8 @@ test('GET_SETTINGS: normalizes stored values and migrates legacy approval thresh
       minArticleChars: 700,
       maxArticleCharsToSend: 200_000,
       uiLanguage: 'auto'
-    }
+    },
+    bulletStyle: 'dash'
   });
   assert.equal(storage.approvalThresholdUsd, 1.0);
   assert.equal(storage.approvalThresholdChars, 100_000);
@@ -581,6 +582,28 @@ test('completed requests are unregistered from the abort registry', async () => 
     payload: { ...BASE, runId, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU }
   });
   assert.deepEqual(await send({ type: 'ABORT_RUN', payload: { runId } }), { ok: true, aborted: false });
+});
+
+test('SET_BULLET_STYLE: saves a known style for GET_SETTINGS, rejects anything else, needs no API key', async () => {
+  const apiKey = storage.claudeApiKey;
+  delete storage.claudeApiKey;
+  try {
+    assert.deepEqual(await send({ type: 'SET_BULLET_STYLE', payload: { style: 'number' } }), { ok: true });
+    assert.equal(storage.bulletStyle, 'number');
+    assert.equal((await send({ type: 'GET_SETTINGS' })).bulletStyle, 'number');
+
+    const bad = { ok: false, code: 'bad_request', message: 'Invalid bullet style' };
+    assert.deepEqual(await send({ type: 'SET_BULLET_STYLE', payload: { style: 'bogus' } }), bad);
+    assert.deepEqual(await send({ type: 'SET_BULLET_STYLE' }), bad);
+    assert.equal(storage.bulletStyle, 'number');
+
+    // A value written by something else is not trusted as is.
+    storage.bulletStyle = 'bogus';
+    assert.equal((await send({ type: 'GET_SETTINGS' })).bulletStyle, 'dash');
+  } finally {
+    storage.claudeApiKey = apiKey;
+    delete storage.bulletStyle;
+  }
 });
 
 test('OPEN_OPTIONS and unknown message types', async () => {

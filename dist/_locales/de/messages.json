@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "Kopieren"
   },
+  "labelBulletStyle": {
+    "message": "Aufzählungszeichen"
+  },
+  "bulletStyleDash": {
+    "message": "Bindestrich (-)"
+  },
+  "bulletStyleDot": {
+    "message": "Mittelpunkt (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "Nummeriert (1.)"
+  },
   "buttonBack": {
     "message": "Zurück"
   },

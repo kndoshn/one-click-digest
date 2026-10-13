@@ -11,5 +11,7 @@ export const STORAGE_KEYS = {
     APPROVAL_THRESHOLD_CHARS: 'approvalThresholdChars',
     MIN_ARTICLE_CHARS: 'minArticleChars',
     MAX_ARTICLE_CHARS_TO_SEND: 'maxArticleCharsToSend',
-    UI_LANGUAGE: 'uiLanguage'
+    UI_LANGUAGE: 'uiLanguage',
+    // Last bullet style picked in the overlay (see BulletStyle in types.ts)
+    BULLET_STYLE: 'bulletStyle'
 };

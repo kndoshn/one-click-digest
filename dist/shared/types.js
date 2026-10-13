@@ -11,3 +11,5 @@ export const DEFAULT_SETTINGS = {
     maxArticleCharsToSend: 200_000,
     uiLanguage: 'auto'
 };
+export const BULLET_STYLES = ['dash', 'dot', 'number'];
+export const DEFAULT_BULLET_STYLE = 'dash';

@@ -62,7 +62,7 @@ var AS;
         try {
             const resp = await sendMessage({ type: 'GET_SETTINGS' });
             if (resp && resp.ok === true) {
-                return { apiKeySet: Boolean(resp.apiKeySet), settings: resp.settings };
+                return { apiKeySet: Boolean(resp.apiKeySet), settings: resp.settings, bulletStyle: resp.bulletStyle };
             }
         }
         catch {
@@ -88,6 +88,16 @@ var AS;
         });
     }
     AS.sendMessage = sendMessage;
+    // Remembers the bullet style picked in the result screen for the next summary (best-effort).
+    async function saveBulletStyle(style) {
+        try {
+            await sendMessage({ type: 'SET_BULLET_STYLE', payload: { style } });
+        }
+        catch {
+            // ignore
+        }
+    }
+    AS.saveBulletStyle = saveBulletStyle;
     async function openOptionsPage() {
         try {
             await sendMessage({ type: 'OPEN_OPTIONS' });

@@ -1,10 +1,11 @@
 namespace AS {
   export namespace StateMachine {
-    export function initialState(language: string, mode: SummaryMode): UiState {
+    export function initialState(language: string, mode: SummaryMode, bulletStyle: BulletStyle = DEFAULT_BULLET_STYLE): UiState {
       return {
         phase: 'IDLE',
         selectedLanguage: language,
         selectedMode: mode,
+        bulletStyle,
         apiKeySet: false
       };
     }
@@ -13,7 +14,7 @@ namespace AS {
       switch (event.type) {
         case 'BOOTSTRAP': {
           return {
-            ...initialState(event.language, event.mode),
+            ...initialState(event.language, event.mode, state.bulletStyle),
             banner: state.banner
           };
         }
@@ -26,12 +27,16 @@ namespace AS {
         case 'MODE_CHANGED': {
           return { ...state, selectedMode: event.mode } as UiState;
         }
+        case 'BULLET_STYLE_CHANGED': {
+          return { ...state, bulletStyle: event.bulletStyle } as UiState;
+        }
         case 'START_RUN': {
           return {
             phase: 'EXTRACTING',
             runId: event.runId,
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet
           };
         }
@@ -42,6 +47,7 @@ namespace AS {
             runId: event.runId,
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             banner: state.banner,
             article: event.article,
@@ -71,6 +77,7 @@ namespace AS {
             phase: 'ERROR',
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             banner: state.banner,
             message: event.message
@@ -109,6 +116,7 @@ namespace AS {
             runId: event.runId,
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             banner: state.banner,
             article: state.article,
@@ -125,6 +133,7 @@ namespace AS {
             runId: event.runId,
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             banner: state.banner,
             estimate: event.estimate,
@@ -140,6 +149,7 @@ namespace AS {
               runId: event.runId,
               selectedLanguage: state.selectedLanguage,
               selectedMode: state.selectedMode,
+              bulletStyle: state.bulletStyle,
               apiKeySet: state.apiKeySet,
               banner: state.banner,
               article: state.article,
@@ -171,6 +181,7 @@ namespace AS {
             runId: event.runId,
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             article: state.article,
             summaryText: event.summaryText,
@@ -184,6 +195,7 @@ namespace AS {
             phase: 'ERROR',
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             banner: state.banner,
             message: event.message
@@ -194,6 +206,7 @@ namespace AS {
             phase: 'IDLE',
             selectedLanguage: state.selectedLanguage,
             selectedMode: state.selectedMode,
+            bulletStyle: state.bulletStyle,
             apiKeySet: state.apiKeySet,
             banner: event.banner
           };

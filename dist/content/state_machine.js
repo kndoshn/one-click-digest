@@ -3,11 +3,12 @@ var AS;
 (function (AS) {
     let StateMachine;
     (function (StateMachine) {
-        function initialState(language, mode) {
+        function initialState(language, mode, bulletStyle = AS.DEFAULT_BULLET_STYLE) {
             return {
                 phase: 'IDLE',
                 selectedLanguage: language,
                 selectedMode: mode,
+                bulletStyle,
                 apiKeySet: false
             };
         }
@@ -16,7 +17,7 @@ var AS;
             switch (event.type) {
                 case 'BOOTSTRAP': {
                     return {
-                        ...initialState(event.language, event.mode),
+                        ...initialState(event.language, event.mode, state.bulletStyle),
                         banner: state.banner
                     };
                 }
@@ -29,12 +30,16 @@ var AS;
                 case 'MODE_CHANGED': {
                     return { ...state, selectedMode: event.mode };
                 }
+                case 'BULLET_STYLE_CHANGED': {
+                    return { ...state, bulletStyle: event.bulletStyle };
+                }
                 case 'START_RUN': {
                     return {
                         phase: 'EXTRACTING',
                         runId: event.runId,
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet
                     };
                 }
@@ -46,6 +51,7 @@ var AS;
                         runId: event.runId,
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         banner: state.banner,
                         article: event.article,
@@ -76,6 +82,7 @@ var AS;
                         phase: 'ERROR',
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         banner: state.banner,
                         message: event.message
@@ -117,6 +124,7 @@ var AS;
                         runId: event.runId,
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         banner: state.banner,
                         article: state.article,
@@ -135,6 +143,7 @@ var AS;
                         runId: event.runId,
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         banner: state.banner,
                         estimate: event.estimate,
@@ -151,6 +160,7 @@ var AS;
                             runId: event.runId,
                             selectedLanguage: state.selectedLanguage,
                             selectedMode: state.selectedMode,
+                            bulletStyle: state.bulletStyle,
                             apiKeySet: state.apiKeySet,
                             banner: state.banner,
                             article: state.article,
@@ -183,6 +193,7 @@ var AS;
                         runId: event.runId,
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         article: state.article,
                         summaryText: event.summaryText,
@@ -197,6 +208,7 @@ var AS;
                         phase: 'ERROR',
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         banner: state.banner,
                         message: event.message
@@ -207,6 +219,7 @@ var AS;
                         phase: 'IDLE',
                         selectedLanguage: state.selectedLanguage,
                         selectedMode: state.selectedMode,
+                        bulletStyle: state.bulletStyle,
                         apiKeySet: state.apiKeySet,
                         banner: event.banner
                     };

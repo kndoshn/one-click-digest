@@ -425,9 +425,17 @@ var AS;
             const s = ctx.state;
             if (s.phase !== 'DONE')
                 return;
-            AS.copyToClipboard(s.summaryText).then((ok) => {
+            AS.copyToClipboard(AS.Format.applyBulletStyle(s.summaryText, s.bulletStyle)).then((ok) => {
                 AS.Overlay.showToast(ctx.overlay, ok ? AS.t('toastCopied') : AS.t('toastCopyFailed'));
             });
+        }
+        // Only changes how the finished summary is shown and copied (no re-run). The style is
+        // remembered for the next summary.
+        function handleBulletStyle(style) {
+            if (!AS.isBulletStyle(style) || style === ctx.state.bulletStyle)
+                return;
+            reduce({ type: 'BULLET_STYLE_CHANGED', bulletStyle: style }, true);
+            AS.saveBulletStyle(style);
         }
         function handleRunLight() {
             // Convenience: in CONFIRM, allow running a lightweight mode (3 bullets) to reduce cost/time.
@@ -519,7 +527,7 @@ var AS;
             ctx.overlay = overlay;
             const initialLang = 'auto';
             const initialMode = AS.DEFAULT_MODE;
-            ctx.state = AS.StateMachine.initialState(initialLang, initialMode);
+            ctx.state = AS.StateMachine.initialState(initialLang, initialMode, AS.parseBulletStyle(settings.bulletStyle));
             // Initial render.
             AS.Overlay.render(ctx.overlay, ctx.state);
             // Wire events. Only the dispose notification comes through the page-visible host (it can only
@@ -530,6 +538,7 @@ var AS;
             overlay.events.addEventListener('as:cancel', () => handleCancel());
             overlay.events.addEventListener('as:reset', () => handleReset());
             overlay.events.addEventListener('as:copy', () => handleCopy());
+            overlay.events.addEventListener('as:bulletStyle', (ev) => handleBulletStyle(ev?.detail?.style));
             overlay.events.addEventListener('as:proceed', () => handleProceed());
             overlay.events.addEventListener('as:run', () => handleRun());
             overlay.events.addEventListener('as:runLight', () => handleRunLight());

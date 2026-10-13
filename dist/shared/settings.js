@@ -1,7 +1,7 @@
 // Reading/writing runtime settings in chrome.storage.local (shared by background and options).
 import { STORAGE_KEYS } from './constants.js';
 import { normalizeApprovalThresholds } from './approval.js';
-import { DEFAULT_SETTINGS } from './types.js';
+import { BULLET_STYLES, DEFAULT_BULLET_STYLE, DEFAULT_SETTINGS } from './types.js';
 import { parseNumberOr } from './utils.js';
 // Storage keys backing RuntimeSettings (the API key is stored separately).
 export const SETTINGS_STORAGE_KEYS = [
@@ -61,4 +61,10 @@ export function settingsToStorage(settings) {
         [STORAGE_KEYS.MAX_ARTICLE_CHARS_TO_SEND]: settings.maxArticleCharsToSend,
         [STORAGE_KEYS.UI_LANGUAGE]: settings.uiLanguage || 'auto'
     };
+}
+export function isBulletStyle(value) {
+    return BULLET_STYLES.includes(value);
+}
+export function parseBulletStyle(value) {
+    return isBulletStyle(value) ? value : DEFAULT_BULLET_STYLE;
 }

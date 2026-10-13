@@ -71,11 +71,11 @@ namespace AS {
     uiLanguage: string;
   };
 
-  export async function getSettings(): Promise<{ apiKeySet: boolean; settings?: Partial<RuntimeSettings> }> {
+  export async function getSettings(): Promise<{ apiKeySet: boolean; settings?: Partial<RuntimeSettings>; bulletStyle?: unknown }> {
     try {
       const resp = await sendMessage({ type: 'GET_SETTINGS' });
       if (resp && resp.ok === true) {
-        return { apiKeySet: Boolean(resp.apiKeySet), settings: resp.settings };
+        return { apiKeySet: Boolean(resp.apiKeySet), settings: resp.settings, bulletStyle: resp.bulletStyle };
       }
     } catch {
       // ignore
@@ -95,6 +95,15 @@ namespace AS {
         reject(e);
       }
     });
+  }
+
+  // Remembers the bullet style picked in the result screen for the next summary (best-effort).
+  export async function saveBulletStyle(style: string): Promise<void> {
+    try {
+      await sendMessage({ type: 'SET_BULLET_STYLE', payload: { style } });
+    } catch {
+      // ignore
+    }
   }
 
   export async function openOptionsPage(): Promise<void> {

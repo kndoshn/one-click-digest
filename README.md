@@ -52,13 +52,15 @@ Download the latest ZIP from [Releases](../../releases) and unzip it.
 1. Open an article page you want to summarize
 2. Click the OneClickDigest icon
 3. Choose a summary mode (3 / 5 / 10 bullets or With Conclusion)
-4. Click **Copy** to copy the summary to your clipboard
+4. Optionally switch the bullet marker (`-` / `・` / `1.`) next to **Copy**
+5. Click **Copy** to copy the summary to your clipboard
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
 | **4 Summary Modes** | 3, 5, or 10 bullet points, or summary with conclusion |
+| **Bullet Styles** | Show and copy bullets as `-`, `・`, or `1.` without re-running; the last choice is remembered |
 | **Cost Estimation** | Shows character count, tokens, estimated cost, and time before running |
 | **Long Article Support** | Automatic chunked map-reduce summarization for lengthy content |
 | **Multi-language** | Output language can be set independently from UI language |

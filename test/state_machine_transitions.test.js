@@ -36,7 +36,8 @@ const estimate = (over = {}) => ({
 });
 
 function preflight(runId = 'r1') {
-  let s = AS.StateMachine.initialState('auto', 'BULLETS_5');
+  // A non-default bullet style shows that every transition carries it over.
+  let s = AS.StateMachine.initialState('auto', 'BULLETS_5', 'number');
   s = reduce(s, { type: 'SETTINGS_LOADED', apiKeySet: true });
   s = reduce(s, { type: 'START_RUN', runId });
   s = reduce(s, { type: 'EXTRACT_OK', runId, article: ARTICLE });
@@ -63,12 +64,26 @@ test('EXTRACT_OK seeds a placeholder estimate from the selected mode', () => {
 
 test('START_RUN keeps selections but drops the banner and previous run data', () => {
   const s = reduce({ ...confirm(), banner: 'old', selectedLanguage: 'ja' }, { type: 'START_RUN', runId: 'r2' });
-  assert.deepEqual(plain(s), { phase: 'EXTRACTING', runId: 'r2', selectedLanguage: 'ja', selectedMode: 'BULLETS_5', apiKeySet: true });
+  assert.deepEqual(plain(s), {
+    phase: 'EXTRACTING',
+    runId: 'r2',
+    selectedLanguage: 'ja',
+    selectedMode: 'BULLETS_5',
+    bulletStyle: 'number',
+    apiKeySet: true
+  });
 });
 
 test('BOOTSTRAP resets to IDLE with the given selections and keeps the banner', () => {
   const s = reduce({ ...confirm(), banner: 'kept' }, { type: 'BOOTSTRAP', language: 'fr', mode: 'BULLETS_3' });
-  assert.deepEqual(plain(s), { phase: 'IDLE', selectedLanguage: 'fr', selectedMode: 'BULLETS_3', apiKeySet: false, banner: 'kept' });
+  assert.deepEqual(plain(s), {
+    phase: 'IDLE',
+    selectedLanguage: 'fr',
+    selectedMode: 'BULLETS_3',
+    bulletStyle: 'number',
+    apiKeySet: false,
+    banner: 'kept'
+  });
 });
 
 test('EXTRACT_FAIL only applies to the extracting run', () => {
@@ -111,6 +126,7 @@ test('BLOCKED is accepted before the run (PREFLIGHT/CONFIRM) and while summarizi
       runId: 'r1',
       selectedLanguage: 'auto',
       selectedMode: 'BULLETS_5',
+      bulletStyle: 'number',
       apiKeySet: true,
       banner: 'b',
       estimate: over,
@@ -156,6 +172,7 @@ test('SUMMARY_PROGRESS / SUMMARY_DONE / SUMMARY_ERROR apply only while summarizi
   assert.equal(done.phase, 'DONE');
   assert.equal(done.summaryText, '- A');
   assert.equal(done.article, ARTICLE);
+  assert.equal(done.bulletStyle, 'number');
   assert.equal(reduce(done, { type: 'SUMMARY_PROGRESS', runId: 'r1', stage: 'MAP' }), done);
   assert.equal(reduce(done, { type: 'SUMMARY_ERROR', runId: 'r1', message: 'late' }), done);
   assert.equal(reduce(s, { type: 'SUMMARY_DONE', runId: 'stale', summaryText: 'x' }), s);
@@ -165,10 +182,25 @@ test('SUMMARY_PROGRESS / SUMMARY_DONE / SUMMARY_ERROR apply only while summarizi
     phase: 'ERROR',
     selectedLanguage: 'auto',
     selectedMode: 'BULLETS_5',
+    bulletStyle: 'number',
     apiKeySet: true,
     banner: 'b',
     message: 'boom'
   });
+});
+
+test('the bullet style defaults to dash, changes in any phase, and survives RESET', () => {
+  assert.equal(AS.StateMachine.initialState('auto', 'BULLETS_5').bulletStyle, 'dash');
+
+  const done = reduce(summarizing(), { type: 'SUMMARY_DONE', runId: 'r1', summaryText: '- A' });
+  const changed = reduce(done, { type: 'BULLET_STYLE_CHANGED', bulletStyle: 'dot' });
+  assert.deepEqual(plain(changed), { ...plain(done), bulletStyle: 'dot' });
+
+  const busy = reduce(preflight(), { type: 'BULLET_STYLE_CHANGED', bulletStyle: 'dash' });
+  assert.equal(busy.phase, 'PREFLIGHT');
+  assert.equal(busy.bulletStyle, 'dash');
+
+  assert.equal(reduce(changed, { type: 'RESET' }).bulletStyle, 'dot');
 });
 
 test('PREFLIGHT_READY applies only to PREFLIGHT of the same run', () => {
