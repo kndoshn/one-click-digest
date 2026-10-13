@@ -13,7 +13,7 @@ var AS;
         .panel {
           font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
           background: #141414;
-          border: 1px solid rgba(200,200,200,0.7);
+          border: 1px solid rgba(255,255,255,0.9);
           border-radius: 12px;
           box-shadow: 0 8px 30px rgba(0,0,0,0.45);
           width: 380px;
