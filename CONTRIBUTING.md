@@ -29,6 +29,10 @@ npm test
 - Do not move API calls or API keys into the content script.
 - Tests import `src/**/*.ts` directly (Node.js type stripping). Content script tests run a test bundle (`build/test/content.js`, built by `npm test`) in a VM context; see `test/helpers/classic_context.js`.
 
+## Models and prices
+
+The models offered in the settings, their prices, tokenizer and caching details, and their extra request parameters are listed in one place: `MODELS` in `src/shared/models.ts`. When Anthropic changes prices or releases or retires a model, update that list (and `PRICING_CHECKED_ON`). A monthly workflow compares it with the Models API and opens an issue when they differ; prices still have to be checked on the [pricing page](https://platform.claude.com/docs/en/about-claude/pricing).
+
 ## Pull requests
 
 - Include a clear description of the change.

@@ -1,3 +1,4 @@
+import type { ModelPricing } from '../shared/models.ts';
 import { MAP_CHUNK_MAX_OUTPUT_TOKENS, type SummaryMode } from '../shared/summary_modes.ts';
 import {
   applyPricingTier,
@@ -9,7 +10,6 @@ import {
   getModeRuntimeSpec,
   HARD_COST_LIMIT_USD,
   MODEL_CACHE_MIN_TOKENS,
-  type ModelPricing,
   PRICING,
   PROMPT_CACHING_ENABLED,
   PROMPT_CACHING_TTL,

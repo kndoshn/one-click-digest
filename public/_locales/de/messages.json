@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "API-Schlüssel ist nicht gesetzt."
   },
+  "statusModelUnavailable": {
+    "message": "Das gespeicherte Modell $1 ist nicht mehr verfügbar, daher ist das Standardmodell ausgewählt. Klicken Sie auf „Speichern“, um diese Auswahl zu übernehmen."
+  },
   "statusReloading": {
     "message": "Gespeichert. Neu laden, um die UI-Sprache anzuwenden."
   },

@@ -4,6 +4,7 @@
 
 import { STORAGE_KEYS } from '../shared/constants.ts';
 import { type CacheTtl, type RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.ts';
+import { DEFAULT_FINAL_MODEL, DEFAULT_MAP_MODEL, MODELS } from '../shared/models.ts';
 import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../shared/settings.ts';
 import { SUPPORTED_UI_LANGS, type UiLang, toUiLang } from '../shared/ui_lang.ts';
 import { parseNumberOr } from '../shared/utils.ts';
@@ -190,16 +191,20 @@ function applyPrefsToUi(p: Preferences): void {
   setSelectValue('ui-language', p.uiLanguage || 'auto');
 }
 
-async function readPrefsFromStorage(): Promise<{ prefs: Preferences; apiKeySet: boolean }> {
+async function readPrefsFromStorage(): Promise<{
+  prefs: Preferences;
+  apiKeySet: boolean;
+  unavailableModels: string[];
+}> {
   const keys = [STORAGE_KEYS.CLAUDE_API_KEY, ...SETTINGS_STORAGE_KEYS];
 
   return await new Promise((resolve) => {
     chrome.storage.local.get(keys, (res: any) => {
       const apiKeySet = Boolean(res?.[STORAGE_KEYS.CLAUDE_API_KEY]);
-      const { settings, migration } = parseStoredSettings(res);
+      const { settings, migration, unavailableModels = [] } = parseStoredSettings(res);
       // Best-effort write-back; reading lastError marks a failure as handled.
       if (migration) chrome.storage.local.set(migration, () => void chrome.runtime.lastError);
-      resolve({ prefs: settings, apiKeySet });
+      resolve({ prefs: settings, apiKeySet, unavailableModels });
     });
   });
 }
@@ -236,6 +241,20 @@ function applyI18n(): void {
     const key = el.dataset.i18nHtml;
     if (!key) continue;
     el.innerHTML = t(key);
+  }
+}
+
+// Fills a model select from the catalog: the role's default first, then the rest in catalog order.
+function renderModelOptions(id: string, defaultModel: string): void {
+  const select = $(id) as HTMLSelectElement | null;
+  if (!select) return;
+  select.innerHTML = '';
+  const ordered = [...MODELS].sort((a, b) => Number(b.id === defaultModel) - Number(a.id === defaultModel));
+  for (const m of ordered) {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `${m.name} (${m.id})`;
+    select.appendChild(opt);
   }
 }
 
@@ -350,13 +369,19 @@ function wireUi(initialUiLanguage: string): void {
 
 document.addEventListener('DOMContentLoaded', () =>
   runAsync(async () => {
-    const { prefs, apiKeySet } = await readPrefsFromStorage();
+    const { prefs, apiKeySet, unavailableModels } = await readPrefsFromStorage();
     const displayLang = await loadMessagesForUi(prefs.uiLanguage || 'auto');
     applyI18n();
     renderUiLanguageOptions(prefs.uiLanguage || 'auto', displayLang);
+    renderModelOptions('model-map', DEFAULT_MAP_MODEL);
+    renderModelOptions('model-final', DEFAULT_FINAL_MODEL);
     applyPrefsToUi(prefs);
     wireUi(prefs.uiLanguage || 'auto');
     setApiKeyInputState(apiKeySet);
-    setStatus(apiKeySet ? t('statusKeySet') : t('statusKeyMissing'));
+    if (unavailableModels.length > 0) {
+      setStatus(t('statusModelUnavailable', unavailableModels.join(', ')), 'danger');
+    } else {
+      setStatus(apiKeySet ? t('statusKeySet') : t('statusKeyMissing'));
+    }
   })
 );

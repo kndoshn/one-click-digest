@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "La clave API no está configurada."
   },
+  "statusModelUnavailable": {
+    "message": "El modelo guardado $1 ya no está disponible, así que se ha seleccionado el predeterminado. Haz clic en Guardar para conservar esta selección."
+  },
   "statusReloading": {
     "message": "Guardado. Recargando para aplicar el idioma de la interfaz."
   },

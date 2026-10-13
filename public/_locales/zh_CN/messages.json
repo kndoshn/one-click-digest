@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "API密钥未设置。"
   },
+  "statusModelUnavailable": {
+    "message": "已保存的模型 $1 已不可用，因此已选择默认模型。点击“保存”即可保留此选择。"
+  },
   "statusReloading": {
     "message": "已保存。正在重载以应用界面语言。"
   },

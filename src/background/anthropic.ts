@@ -1,6 +1,6 @@
 // Minimal Anthropic API client (Token Count API and Messages API) for the background worker.
 
-import { modelRequestParams } from '../shared/model_params.ts';
+import { modelRequestParams } from '../shared/models.ts';
 import { type UserContent } from './prompts.ts';
 
 const ANTHROPIC_API_BASE = 'https://api.anthropic.com';

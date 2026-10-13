@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "A chave de API não está definida."
   },
+  "statusModelUnavailable": {
+    "message": "O modelo salvo $1 não está mais disponível, então o padrão foi selecionado. Clique em Salvar para manter esta escolha."
+  },
   "statusReloading": {
     "message": "Salvo. Recarregando para aplicar o idioma da interface."
   },

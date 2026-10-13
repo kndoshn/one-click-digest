@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "API 키가 설정되어 있지 않습니다."
   },
+  "statusModelUnavailable": {
+    "message": "저장된 모델 $1을(를) 더 이상 사용할 수 없어 기본 모델을 선택했습니다. 이대로 사용하려면 저장을 누르세요."
+  },
   "statusReloading": {
     "message": "저장됨. UI 언어를 적용하기 위해 다시 로드합니다."
   },

@@ -2,6 +2,7 @@
 
 import { STORAGE_KEYS } from './constants.ts';
 import { normalizeApprovalThresholds } from './approval.ts';
+import { isKnownModel } from './models.ts';
 import {
   BULLET_STYLES,
   type BulletStyle,
@@ -27,6 +28,9 @@ export const SETTINGS_STORAGE_KEYS = [
 
 export type StoredSettings = {
   settings: RuntimeSettings;
+  // Stored model IDs that are no longer offered (see src/shared/models.ts); the defaults are used
+  // instead until the settings are saved again.
+  unavailableModels?: string[];
   // Values to write back when legacy defaults were migrated; undefined when nothing changed.
   migration?: Record<string, number>;
 };
@@ -40,9 +44,14 @@ export function parseStoredSettings(res: Record<string, any> | undefined): Store
   });
 
   const ttl = res?.[STORAGE_KEYS.PROMPT_CACHING_TTL];
+  const storedMap = res?.[STORAGE_KEYS.MODEL_MAP];
+  const storedFinal = res?.[STORAGE_KEYS.MODEL_FINAL];
+  const unavailableModels = [storedMap, storedFinal].filter(
+    (m): m is string => typeof m === 'string' && m !== '' && !isKnownModel(m)
+  );
   const settings: RuntimeSettings = {
-    modelMap: (res?.[STORAGE_KEYS.MODEL_MAP] as string) || DEFAULT_SETTINGS.modelMap,
-    modelFinal: (res?.[STORAGE_KEYS.MODEL_FINAL] as string) || DEFAULT_SETTINGS.modelFinal,
+    modelMap: isKnownModel(storedMap) ? storedMap : DEFAULT_SETTINGS.modelMap,
+    modelFinal: isKnownModel(storedFinal) ? storedFinal : DEFAULT_SETTINGS.modelFinal,
     promptCachingEnabled:
       typeof res?.[STORAGE_KEYS.PROMPT_CACHING_ENABLED] === 'boolean'
         ? res[STORAGE_KEYS.PROMPT_CACHING_ENABLED]
@@ -58,9 +67,11 @@ export function parseStoredSettings(res: Record<string, any> | undefined): Store
     uiLanguage: (res?.[STORAGE_KEYS.UI_LANGUAGE] as string) || DEFAULT_SETTINGS.uiLanguage
   };
 
-  if (!migratedUsd && !migratedChars) return { settings };
+  const extra = unavailableModels.length > 0 ? { unavailableModels } : {};
+  if (!migratedUsd && !migratedChars) return { settings, ...extra };
   return {
     settings,
+    ...extra,
     migration: {
       ...(migratedUsd ? { [STORAGE_KEYS.APPROVAL_THRESHOLD_USD]: approvalThresholdUsd } : {}),
       ...(migratedChars ? { [STORAGE_KEYS.APPROVAL_THRESHOLD_CHARS]: approvalThresholdChars } : {})
