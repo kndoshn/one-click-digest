@@ -1,4 +1,5 @@
-import type { RuntimeSettings } from '../shared/types.ts';
+import type { Request, ResponseFor } from '../shared/messages.ts';
+import type { BulletStyle, RuntimeSettings } from '../shared/types.ts';
 
 // A single overlay instance per tab injection.
 export const OVERLAY_CONTAINER_ID = '__article_summarizer_overlay__';
@@ -72,10 +73,12 @@ export async function getSettings(): Promise<{
   return { apiKeySet: false };
 }
 
-export async function sendMessage(msg: any): Promise<any> {
-  return await new Promise<any>((resolve, reject) => {
+// Sends a request to the background worker. Rejects when the worker cannot be reached; failures
+// reported by the worker resolve to an ErrorResponse ({ ok: false, ... }).
+export async function sendMessage<T extends Request>(msg: T): Promise<ResponseFor<T['type']>> {
+  return await new Promise<ResponseFor<T['type']>>((resolve, reject) => {
     try {
-      chrome.runtime.sendMessage(msg, (resp: any) => {
+      chrome.runtime.sendMessage(msg, (resp: ResponseFor<T['type']>) => {
         const err = chrome.runtime.lastError;
         if (err) reject(new Error(err.message));
         else resolve(resp);
@@ -87,7 +90,7 @@ export async function sendMessage(msg: any): Promise<any> {
 }
 
 // Remembers the bullet style picked in the result screen for the next summary (best-effort).
-export async function saveBulletStyle(style: string): Promise<void> {
+export async function saveBulletStyle(style: BulletStyle): Promise<void> {
   try {
     await sendMessage({ type: 'SET_BULLET_STYLE', payload: { style } });
   } catch {

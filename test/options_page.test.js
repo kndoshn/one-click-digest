@@ -9,6 +9,9 @@ import path from 'node:path';
 import { MODELS } from '../src/shared/models.ts';
 import { FakeDocument, loadHtml } from './helpers/fake_dom.js';
 
+// Browser globals are replaced with partial stubs, so they are assigned without their DOM/chrome types.
+const globals = /** @type {any} */ (globalThis);
+
 const OPTIONS_HTML = fs.readFileSync(path.join(process.cwd(), 'public', 'options.html'), 'utf-8');
 
 function messages(folder) {
@@ -45,12 +48,13 @@ async function waitFor(fn, { timeoutMs = 2000, intervalMs = 5 } = {}) {
 let importCount = 0;
 
 async function openOptionsPage({ stored = {}, uiLanguage = 'en-US' } = {}) {
+  /** @type {Record<string, any>} */
   const storage = { ...stored };
   const doc = loadHtml(new FakeDocument(), OPTIONS_HTML);
   const env = { storage, doc, writes: [], fetched: [], reloads: 0, confirmResult: true, confirmCalls: [] };
 
-  globalThis.document = doc;
-  globalThis.chrome = {
+  globals.document = doc;
+  globals.chrome = {
     i18n: { getUILanguage: () => uiLanguage, getMessage: () => '' },
     runtime: { getURL: (p) => `chrome-extension://test/${p}` },
     storage: {
@@ -72,16 +76,16 @@ async function openOptionsPage({ stored = {}, uiLanguage = 'en-US' } = {}) {
       }
     }
   };
-  globalThis.fetch = async (url) => {
+  globals.fetch = async (url) => {
     env.fetched.push(url);
     const rel = String(url).replace('chrome-extension://test/', '');
     return { json: async () => JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public', rel), 'utf-8')) };
   };
-  globalThis.confirm = (text) => {
+  globals.confirm = (text) => {
     env.confirmCalls.push(text);
     return env.confirmResult;
   };
-  globalThis.location = {
+  globals.location = {
     reload: () => {
       env.reloads += 1;
     }

@@ -33,8 +33,8 @@ export const DEFAULT_SETTINGS: RuntimeSettings = {
 // How the result screen marks bullet points. The model always writes "- "; the overlay swaps the
 // marker for display and copy. Stored on its own (STORAGE_KEYS.BULLET_STYLE), outside
 // RuntimeSettings, so saving the options page never overwrites the style picked in the overlay.
-export type BulletStyle = 'dash' | 'dot' | 'number';
+export const BULLET_STYLES = ['dash', 'dot', 'number'] as const;
 
-export const BULLET_STYLES: readonly BulletStyle[] = ['dash', 'dot', 'number'];
+export type BulletStyle = (typeof BULLET_STYLES)[number];
 
 export const DEFAULT_BULLET_STYLE: BulletStyle = 'dash';

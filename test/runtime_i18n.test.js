@@ -48,7 +48,7 @@ test('getPageTitle prefers og:title, then document.title, then a placeholder', (
   doc.title = '  Doc title  ';
   assert.equal(AS.getPageTitle(), 'Doc title');
 
-  const og = doc.createElement('meta');
+  const og = /** @type {any} */ (doc.createElement('meta'));
   og.setAttribute('property', 'og:title');
   og.content = 'OG title';
   doc.head.appendChild(og);
@@ -134,6 +134,7 @@ test('getSettings reports no API key when the background fails or answers not-ok
 test('openOptionsPage falls back to chrome.runtime.openOptionsPage when messaging fails', async () => {
   let opened = 0;
   const sent = [];
+  /** @type {any} */
   const chrome = {
     runtime: {
       lastError: null,
@@ -178,7 +179,7 @@ test('copyToClipboard uses the async clipboard API, then falls back to execComma
   assert.deepEqual(written, ['hello']);
 
   // Clipboard API rejected (e.g. no focus): execCommand fallback with a temporary textarea.
-  const doc = new FakeDocument();
+  const doc = /** @type {any} */ (new FakeDocument());
   const copiedValues = [];
   doc.execCommand = (cmd) => {
     const ta = doc.querySelector('textarea');

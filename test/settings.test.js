@@ -89,6 +89,7 @@ test('parseStoredSettings: reports legacy approval defaults for write-back', () 
 });
 
 test('settingsToStorage round-trips through parseStoredSettings', () => {
+  /** @type {import('../src/shared/types.ts').RuntimeSettings} */
   const settings = { ...DEFAULT_SETTINGS, modelMap: 'claude-haiku-4-5', promptCachingTtl: '1h', uiLanguage: 'fr' };
   assert.deepEqual(parseStoredSettings(settingsToStorage(settings)), { settings });
 });

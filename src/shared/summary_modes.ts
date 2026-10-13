@@ -1,7 +1,9 @@
 // Summary modes and their output token budgets (shared by the content scripts' cost estimate and
 // the background prompt builders, so the estimate matches what is requested).
 
-export type SummaryMode = 'BULLETS_3' | 'BULLETS_5' | 'BULLETS_10' | 'TLDR_12_CONCLUSION';
+export const SUMMARY_MODES = ['BULLETS_3', 'BULLETS_5', 'BULLETS_10', 'TLDR_12_CONCLUSION'] as const;
+
+export type SummaryMode = (typeof SUMMARY_MODES)[number];
 
 // max_tokens for one map-stage chunk summary.
 export const MAP_CHUNK_MAX_OUTPUT_TOKENS = 220;

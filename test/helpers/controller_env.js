@@ -38,11 +38,11 @@ export function shortArticle(text = 'Hello world. '.repeat(200)) {
 }
 
 /**
- * @param {object} opts
- * @param {(msg: any) => any} opts.respond Response (or promise of one) for each non-GET_SETTINGS message.
+ * @param {object} [opts]
+ * @param {(msg: any) => any} [opts.respond] Response (or promise of one) for each non-GET_SETTINGS message.
  * @param {object} [opts.settings] Settings returned by GET_SETTINGS.
  * @param {() => any} [opts.settingsResponse] Overrides the whole GET_SETTINGS response.
- * @param {() => any} [opts.extract] AS.Extract.extractArticle stub.
+ * @param {() => any} [opts.extract] extractArticle stub.
  */
 export function createControllerEnv({ respond, settings = { minArticleChars: 50 }, settingsResponse, extract } = {}) {
   const sent = [];
@@ -129,7 +129,7 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
     ctx.deps.overlay = {
       mount: () => {
         if (env.mountError) throw env.mountError;
-        const host = new EventTarget();
+        const host = /** @type {EventTarget & { parentNode?: unknown }} */ (new EventTarget());
         host.parentNode = root;
         // `host` is the page-visible element; `events` carries the overlay's UI events.
         const inst = {

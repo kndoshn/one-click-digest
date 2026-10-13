@@ -8,12 +8,21 @@
 //   - Call Anthropic Token Count API (preflight refinement)
 //   - Call Anthropic Messages API (summarization pipeline)
 
+import * as v from 'valibot';
 import { STORAGE_KEYS } from '../shared/constants.ts';
+import {
+  type ErrorResponse,
+  REQUEST_TYPES,
+  RequestSchema,
+  type RequestType,
+  type ResponseFor,
+  type SummaryRequestMessage
+} from '../shared/messages.ts';
 import { type BulletStyle, DEFAULT_BULLET_STYLE, type RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.ts';
-import { SETTINGS_STORAGE_KEYS, isBulletStyle, parseBulletStyle, parseStoredSettings } from '../shared/settings.ts';
+import { SETTINGS_STORAGE_KEYS, parseBulletStyle, parseStoredSettings } from '../shared/settings.ts';
 import { createAbortRegistry } from './abort_registry.ts';
 import { type MessagesRequest, countTokens, runMessagesWithRetry } from './anthropic.ts';
-import { MAP_CHUNK_MAX_OUTPUT_TOKENS, type SummaryMode, modeMaxOutputTokens } from '../shared/summary_modes.ts';
+import { MAP_CHUNK_MAX_OUTPUT_TOKENS, modeMaxOutputTokens } from '../shared/summary_modes.ts';
 import {
   type CacheControlEphemeral,
   buildMapPrompt,
@@ -197,96 +206,13 @@ async function withRunAbort<T>(runId: string, fn: (signal: AbortSignal) => Promi
 // Messaging
 // -----------------------------
 
-type MsgGetSettings = { type: 'GET_SETTINGS' };
-type MsgOpenOptions = { type: 'OPEN_OPTIONS' };
-type MsgSetBulletStyle = { type: 'SET_BULLET_STYLE'; payload: { style: BulletStyle } };
-
-type MsgCountTokens = {
-  type: 'COUNT_TOKENS';
-  payload: {
-    runId: string;
-    title: string;
-    url: string;
-    articleText: string;
-    model: string;
-  };
-};
-
-type MsgAbortRun = { type: 'ABORT_RUN'; payload: { runId: string } };
-
-type MsgRunSingle = {
-  type: 'RUN_SUMMARY_SINGLE';
-  payload: {
-    runId: string;
-    title: string;
-    url: string;
-    language: string;
-    mode: SummaryMode;
-    articleText: string;
-    model: string;
-  };
-};
-
-type MsgRunMap = {
-  type: 'RUN_SUMMARY_MAP';
-  payload: {
-    runId: string;
-    title: string;
-    url: string;
-    language: string;
-    chunkIndex: number;
-    chunkCount: number;
-    chunkText: string;
-    model: string;
-  };
-};
-
-type MsgRunReduce = {
-  type: 'RUN_SUMMARY_REDUCE';
-  payload: {
-    runId: string;
-    title: string;
-    url: string;
-    language: string;
-    mode: SummaryMode;
-    chunkSummaries: string[];
-    model: string;
-  };
-};
-
-type MsgRunRepair = {
-  type: 'RUN_SUMMARY_REPAIR';
-  payload: {
-    runId: string;
-    language: string;
-    mode: SummaryMode;
-    badOutput: string;
-    model: string;
-    title?: string;
-    url?: string;
-    chunkSummaries?: string[];
-    fixTruncation?: boolean;
-  };
-};
-
-type SummaryMsg = MsgRunSingle | MsgRunMap | MsgRunReduce | MsgRunRepair;
-
-type AnyMsg =
-  | MsgGetSettings
-  | MsgOpenOptions
-  | MsgSetBulletStyle
-  | MsgCountTokens
-  | MsgAbortRun
-  | SummaryMsg
-  | { type: string; payload?: any };
-
 // A Messages API call for one summarization step (everything except the API key and abort signal).
 type SummaryRequest = Omit<MessagesRequest, 'apiKey' | 'abortSignal'> & { maxRetries: number; maxTokensCap?: number };
 
-function buildSummaryRequest(msg: AnyMsg): SummaryRequest | undefined {
+function buildSummaryRequest(msg: SummaryRequestMessage): SummaryRequest {
   switch (msg.type) {
     case 'RUN_SUMMARY_SINGLE': {
-      const p = (msg as MsgRunSingle).payload;
+      const p = msg.payload;
       return {
         model: p.model,
         maxTokens: modeMaxOutputTokens(p.mode),
@@ -303,7 +229,7 @@ function buildSummaryRequest(msg: AnyMsg): SummaryRequest | undefined {
       };
     }
     case 'RUN_SUMMARY_MAP': {
-      const p = (msg as MsgRunMap).payload;
+      const p = msg.payload;
       return {
         model: p.model,
         maxTokens: MAP_CHUNK_MAX_OUTPUT_TOKENS,
@@ -320,7 +246,7 @@ function buildSummaryRequest(msg: AnyMsg): SummaryRequest | undefined {
       };
     }
     case 'RUN_SUMMARY_REDUCE': {
-      const p = (msg as MsgRunReduce).payload;
+      const p = msg.payload;
       return {
         model: p.model,
         maxTokens: modeMaxOutputTokens(p.mode),
@@ -338,7 +264,7 @@ function buildSummaryRequest(msg: AnyMsg): SummaryRequest | undefined {
       };
     }
     case 'RUN_SUMMARY_REPAIR': {
-      const p = (msg as MsgRunRepair).payload;
+      const p = msg.payload;
       return {
         model: p.model,
         maxTokens: modeMaxOutputTokens(p.mode),
@@ -357,15 +283,25 @@ function buildSummaryRequest(msg: AnyMsg): SummaryRequest | undefined {
         maxTokensCap: 6000
       };
     }
-    default:
-      return undefined;
   }
 }
 
-async function handleMessage(msg: AnyMsg): Promise<unknown> {
-  if (!msg || typeof msg.type !== 'string') {
-    return { ok: false, code: 'bad_request', message: 'Invalid message' };
+function badRequest(message: string): ErrorResponse {
+  return { ok: false, code: 'bad_request', message };
+}
+
+// Messages come from content scripts running in web pages, so they are validated before use.
+async function handleMessage(raw: unknown): Promise<ResponseFor<RequestType>> {
+  const type = (raw as { type?: unknown } | null)?.type;
+  if (typeof type !== 'string') return badRequest('Invalid message');
+  if (!(REQUEST_TYPES as readonly string[]).includes(type)) {
+    return { ok: false, code: 'unknown_type', message: `Unknown message type: ${type}` };
   }
+  const parsed = v.safeParse(RequestSchema, raw);
+  if (!parsed.success) {
+    return badRequest(type === 'SET_BULLET_STYLE' ? 'Invalid bullet style' : `Invalid ${type} message`);
+  }
+  const msg = parsed.output;
 
   // Load cached preferences (best-effort). This avoids hitting storage on every request.
   await ensureSettingsLoaded();
@@ -376,10 +312,7 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
   }
 
   if (msg.type === 'SET_BULLET_STYLE') {
-    const style = (msg as MsgSetBulletStyle).payload?.style;
-    if (!isBulletStyle(style)) {
-      return { ok: false, code: 'bad_request', message: 'Invalid bullet style' };
-    }
+    const style = msg.payload.style;
     try {
       await chrome.storage.local.set({ [STORAGE_KEYS.BULLET_STYLE]: style });
       return { ok: true };
@@ -401,8 +334,7 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
   }
 
   if (msg.type === 'ABORT_RUN') {
-    const runId = String((msg as MsgAbortRun).payload?.runId || '');
-    return { ok: true, aborted: abortRegistry.abortRun(runId) };
+    return { ok: true, aborted: abortRegistry.abortRun(msg.payload.runId) };
   }
 
   // All API calls require an API key.
@@ -412,7 +344,7 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
   }
 
   if (msg.type === 'COUNT_TOKENS') {
-    const p = (msg as MsgCountTokens).payload;
+    const p = msg.payload;
     const userPrompt = buildTokenCountPrompt({ title: p.title, url: p.url, articleText: p.articleText });
     const r = await withRunAbort(p.runId, (abortSignal) =>
       countTokens({ apiKey, model: p.model, userPrompt, abortSignal })
@@ -421,17 +353,14 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
   }
 
   const request = buildSummaryRequest(msg);
-  if (request) {
-    const runId = (msg as SummaryMsg).payload.runId;
-    const r = await withRunAbort(runId, (abortSignal) => runMessagesWithRetry({ ...request, apiKey, abortSignal }));
-    return r.ok ? { ok: true, text: r.text, usage: r.usage } : r;
-  }
-
-  return { ok: false, code: 'unknown_type', message: `Unknown message type: ${msg.type}` };
+  const r = await withRunAbort(msg.payload.runId, (abortSignal) =>
+    runMessagesWithRetry({ ...request, apiKey, abortSignal })
+  );
+  return r.ok ? { ok: true, text: r.text, usage: r.usage } : r;
 }
 
 chrome.runtime.onMessage.addListener(
-  (msg: AnyMsg, _sender: chrome.runtime.MessageSender, sendResponse: (resp: unknown) => void) => {
+  (msg: unknown, _sender: chrome.runtime.MessageSender, sendResponse: (resp: unknown) => void) => {
     void (async () => {
       try {
         sendResponse(await handleMessage(msg));

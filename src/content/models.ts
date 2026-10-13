@@ -1,4 +1,5 @@
 import { modeMaxOutputTokens, type SummaryMode } from '../shared/summary_modes.ts';
+import type { Usage } from '../shared/messages.ts';
 import { DEFAULT_FINAL_MODEL, DEFAULT_MAP_MODEL, MODELS, type ModelPricing } from '../shared/models.ts';
 import type { BulletStyle, CacheTtl, RuntimeSettings } from '../shared/types.ts';
 
@@ -277,14 +278,7 @@ export type DoneState = UiStateBase & {
   runId: string;
   article: ExtractOk;
   summaryText: string;
-  // Messages API usage object. When prompt caching is in play, Claude may also
-  // return cache_* token counters.
-  usage?: {
-    input_tokens?: number;
-    output_tokens?: number;
-    cache_creation_input_tokens?: number;
-    cache_read_input_tokens?: number;
-  };
+  usage?: Usage;
 };
 
 export type ErrorState = UiStateBase & {
@@ -373,7 +367,7 @@ export type UiEvent =
       current?: number;
       total?: number;
     }
-  | { type: 'SUMMARY_DONE'; runId: string; summaryText: string; usage?: any }
+  | { type: 'SUMMARY_DONE'; runId: string; summaryText: string; usage?: Usage }
   | { type: 'SUMMARY_ERROR'; runId: string; message: string }
   | { type: 'RESET'; banner?: string };
 

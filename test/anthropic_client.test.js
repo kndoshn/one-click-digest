@@ -6,9 +6,12 @@ import assert from 'node:assert/strict';
 
 import { countTokens, runMessagesWithRetry } from '../src/background/anthropic.ts';
 
+// Browser globals are replaced with partial stubs, so they are assigned without their DOM/chrome types.
+const globals = /** @type {any} */ (globalThis);
+
 let fetchImpl;
 const fetchCalls = [];
-globalThis.fetch = async (url, init) => {
+globals.fetch = async (url, init) => {
   fetchCalls.push({ url, init, body: JSON.parse(init.body), abortedAtCall: init.signal.aborted });
   return fetchImpl(url, init);
 };
@@ -170,7 +173,7 @@ test('only text blocks make up the summary (thinking and other blocks are skippe
 test('max_tokens retries never exceed the cap', async () => {
   reset(() => messages('- cut', 'max_tokens'));
   const r = await runMessagesWithRetry({ ...REQUEST, maxTokens: 1000, maxTokensCap: 1200, maxRetries: 3 });
-  assert.equal(r.stopReason, 'max_tokens');
+  assert.equal(r.ok === true ? r.stopReason : undefined, 'max_tokens');
   // 1000 -> 1200 (capped); the next step cannot grow, so the capped result is returned.
   assert.deepEqual(
     fetchCalls.map((c) => c.body.max_tokens),
@@ -189,7 +192,7 @@ test('max_tokens retries never exceed the cap', async () => {
 test('the abort listener on the caller signal is removed after every attempt', async () => {
   let added = 0;
   let removed = 0;
-  const signal = {
+  const signal = /** @type {any} */ ({
     aborted: false,
     addEventListener: () => {
       added += 1;
@@ -197,7 +200,7 @@ test('the abort listener on the caller signal is removed after every attempt', a
     removeEventListener: () => {
       removed += 1;
     }
-  };
+  });
   reset(() => messages('- cut', 'max_tokens'));
   await runMessagesWithRetry({ ...REQUEST, abortSignal: signal, maxRetries: 1 });
   assert.equal(fetchCalls.length, 3);

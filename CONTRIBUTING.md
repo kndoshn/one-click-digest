@@ -27,6 +27,8 @@ npm test
 - `src/` is TypeScript, built with esbuild (`scripts/build.mjs`) and type-checked with `tsc --noEmit`. Imports use `.ts` extensions, and type-only imports use `import type` (or inline `type`).
 - Content scripts are bundled into a single classic script, `dist/content/main.js`, injected after the unmodified `third_party/readability/Readability.js`. They may import from `src/shared/`, but not from `src/background/`.
 - Do not move API calls or API keys into the content script.
+- Messages between the content script and the background worker are defined once, as valibot schemas in `src/shared/messages.ts`. The worker validates every message; senders get typed responses (`ResponseFor<type>`).
+- `npm run typecheck` also checks the tests (JavaScript with `checkJs`, not strict yet; `tsconfig.test.json`).
 - Tests import `src/**/*.ts` directly (Node.js type stripping). Content script tests run a test bundle (`build/test/content.js`, built by `npm test`) in a VM context; see `test/helpers/classic_context.js`.
 
 ## Models and prices

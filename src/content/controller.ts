@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '../shared/constants.ts';
+import type { ErrorResponse, ResponseFor, SummaryRequestMessage, Usage } from '../shared/messages.ts';
 import type { SummaryMode } from '../shared/summary_modes.ts';
 import { isBulletStyle, parseBulletStyle } from '../shared/settings.ts';
 import { setUiLanguage, t } from './i18n.ts';
@@ -123,7 +124,8 @@ function adjustModeForContentLength(selected: SummaryMode, textToSend: string): 
   return 'BULLETS_3';
 }
 
-function formatBackgroundError(resp: any): string {
+// `resp` is undefined when the worker sent no response.
+function formatBackgroundError(resp: Partial<ErrorResponse> | undefined): string {
   const status = typeof resp?.status === 'number' && resp.status > 0 ? resp.status : undefined;
   const code = resp?.code ? String(resp.code) : '';
   const msg = resp?.message ? String(resp.message) : '';
@@ -166,7 +168,9 @@ function isRunActive(runId: string): boolean {
   return ctx.activeRunId === runId;
 }
 
-function isTextResponse(resp: any): resp is { ok: true; text: string; usage?: any } {
+type SummaryResponse = ResponseFor<SummaryRequestMessage['type']>;
+
+function isTextResponse(resp: SummaryResponse | undefined): resp is SummaryResponse & { ok: true } {
   return Boolean(resp && resp.ok === true && typeof resp.text === 'string');
 }
 
@@ -279,7 +283,7 @@ async function finishSummary(
   draft: string,
   repairModel: string,
   repairContext: RepairContext,
-  usage: any
+  usage: Usage | undefined
 ): Promise<void> {
   let text = draft;
   if (!Format.validate(mode, text).ok) {
@@ -439,7 +443,7 @@ async function doExtractAndMaybeRun(runId: string): Promise<void> {
   const r = deps.extract.extractArticle();
   if (!isRunActive(runId)) return;
 
-  if (!r.ok) {
+  if (r.ok === false) {
     reduce({ type: 'EXTRACT_FAIL', runId, message: t(EXTRACT_ERROR_KEYS[r.code] || 'errorExtractionFailed') }, true);
     return;
   }
