@@ -1,16 +1,23 @@
 namespace AS {
   export namespace Controller {
+    type StorageChanges = { [key: string]: { newValue?: unknown; oldValue?: unknown } };
+    type StorageListener = (changes: StorageChanges, areaName: string) => void;
+
     type ControllerCtx = {
       overlay: Overlay.Instance;
       state: UiState;
       acceptLanguages: string[];
       activeRunId?: string;
+      // Set once the overlay is closed or replaced; the controller then stops for good.
+      disposed: boolean;
+      storageListener?: StorageListener;
     };
 
     const ctx: ControllerCtx = {
       overlay: null as any,
       state: null as any,
-      acceptLanguages: []
+      acceptLanguages: [],
+      disposed: false
     };
 
     // Output languages offered in the overlay's language select.
@@ -514,26 +521,47 @@ namespace AS {
       });
     }
 
+    function detachStorageListener(): void {
+      const listener = ctx.storageListener;
+      ctx.storageListener = undefined;
+      if (!listener) return;
+      try {
+        chrome.storage.onChanged.removeListener(listener);
+      } catch {
+        // ignore
+      }
+    }
+
+    // Stops this controller: aborts the in-flight run and removes the chrome.storage listener.
+    // Called when the overlay is closed, or replaced by a re-injected copy (OVERLAY_DISPOSE_EVENT).
+    function dispose(): void {
+      if (ctx.disposed) return;
+      ctx.disposed = true;
+      if (ctx.state && isBusy(ctx.state)) abortInFlight();
+      ctx.activeRunId = undefined;
+      detachStorageListener();
+    }
+
+    function closeOverlay(): void {
+      dispose();
+      Overlay.unmount(ctx.overlay);
+    }
+
     function handleCancel(): void {
       // If nothing is running, just close.
       if (!isBusy(ctx.state)) {
-        Overlay.unmount(ctx.overlay);
+        closeOverlay();
         return;
       }
       cancelActiveRun(t('bannerCancelled'));
     }
 
     function handleClose(): void {
-      if (!isBusy(ctx.state)) {
-        Overlay.unmount(ctx.overlay);
-        return;
+      if (isBusy(ctx.state)) {
+        const ok = confirm(t('confirmCloseWhileRunning'));
+        if (!ok) return;
       }
-
-      const ok = confirm(t('confirmCloseWhileRunning'));
-      if (!ok) return;
-      abortInFlight();
-      ctx.activeRunId = undefined;
-      Overlay.unmount(ctx.overlay);
+      closeOverlay();
     }
 
     function handleReset(): void {
@@ -549,6 +577,8 @@ namespace AS {
       await setUiLanguage(settings.settings?.uiLanguage || 'auto');
       applyRuntimeSettings(settings.settings);
 
+      // A second click on the toolbar button may have mounted an overlay while we were waiting.
+      removeExistingOverlay();
       const overlay = Overlay.mount();
       ctx.overlay = overlay;
 
@@ -560,6 +590,7 @@ namespace AS {
       Overlay.render(ctx.overlay, ctx.state);
 
       // Wire events.
+      overlay.host.addEventListener(OVERLAY_DISPOSE_EVENT, () => dispose());
       overlay.host.addEventListener('as:close', () => handleClose());
       overlay.host.addEventListener('as:openOptions', () => openOptionsPage());
       overlay.host.addEventListener('as:cancel', () => handleCancel());
@@ -587,24 +618,29 @@ namespace AS {
 
       // Populate languages.
       ctx.acceptLanguages = await getAcceptLanguages();
+      // The overlay may have been closed or replaced while we were waiting.
+      if (ctx.disposed) return;
       Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
 
       try {
         if (chrome?.storage?.onChanged?.addListener) {
-          chrome.storage.onChanged.addListener((changes: { [key: string]: { newValue?: unknown; oldValue?: unknown } }, areaName: string) => {
+          const listener: StorageListener = (changes, areaName) => {
             if (areaName !== 'local') return;
             if (!changes || !Object.prototype.hasOwnProperty.call(changes, 'uiLanguage')) return;
             if (!ctx.overlay) return;
             const next = changes.uiLanguage?.newValue;
             setUiLanguage(typeof next === 'string' ? next : 'auto')
               .then(() => {
+                if (ctx.disposed) return;
                 Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
                 Overlay.render(ctx.overlay, ctx.state);
               })
               .catch(() => {
                 // ignore
               });
-          });
+          };
+          chrome.storage.onChanged.addListener(listener);
+          ctx.storageListener = listener;
         }
       } catch {
         // ignore

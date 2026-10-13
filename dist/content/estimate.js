@@ -129,11 +129,19 @@ var AS;
             const repairInput = reduceInput + outMax + REPAIR_PROMPT_OVERHEAD_TOKENS;
             return costUsdInOut(repairInput, outMax, AS.applyPricingTier(args.finalPricing, repairInput));
         }
-        // Unknown models fall back to the default models' pricing.
+        // Highest known rates, for models without a pricing entry (e.g. a stored model ID that is no
+        // longer offered). Over-estimating keeps the approval and hard-limit checks on the safe side.
+        function conservativePricing() {
+            const all = Object.values(AS.PRICING);
+            return {
+                inputUsdPerMTok: Math.max(...all.map((p) => p.longContext?.inputUsdPerMTok ?? p.inputUsdPerMTok)),
+                outputUsdPerMTok: Math.max(...all.map((p) => p.longContext?.outputUsdPerMTok ?? p.outputUsdPerMTok))
+            };
+        }
         function pricingFor(mapModel, finalModel) {
             return {
-                mapPricing: AS.PRICING[mapModel] || AS.PRICING[AS.MODEL_MAP],
-                finalPricing: AS.PRICING[finalModel] || AS.PRICING[AS.MODEL_FINAL]
+                mapPricing: AS.PRICING[mapModel] || conservativePricing(),
+                finalPricing: AS.PRICING[finalModel] || conservativePricing()
             };
         }
         function modelLabel(chunkCount, mapModel, finalModel) {

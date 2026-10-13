@@ -5,6 +5,7 @@
 import { STORAGE_KEYS } from '../shared/constants.js';
 import { CacheTtl, RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
 import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../shared/settings.js';
+import { parseNumberOr } from '../shared/utils.js';
 
 type Preferences = RuntimeSettings;
 
@@ -101,7 +102,8 @@ function setCheckboxValue(id: string, checked: boolean): void {
 }
 
 function parseNum(input: string, fallback: number, opts?: { min?: number; max?: number }): number {
-  const n = Number(input);
+  // Blank or non-numeric input falls back (an emptied field must not be saved as 0).
+  const n = parseNumberOr(input, NaN);
   if (!Number.isFinite(n)) return fallback;
   const min = opts?.min;
   const max = opts?.max;

@@ -19,8 +19,9 @@ test('parseNumberOr: returns number when given valid numeric string', () => {
 test('parseNumberOr: returns fallback for invalid inputs', () => {
   assert.equal(parseNumberOr(null, 99), 99);
   assert.equal(parseNumberOr(undefined, 99), 99);
-  // Note: Number('') returns 0, which is finite, so returns 0 not fallback
-  assert.equal(parseNumberOr('', 99), 0);
+  // Blank strings are "no value", not 0 (Number('') would be 0).
+  assert.equal(parseNumberOr('', 99), 99);
+  assert.equal(parseNumberOr('   ', 99), 99);
   assert.equal(parseNumberOr('abc', 99), 99);
   assert.equal(parseNumberOr({}, 99), 99);
   // Note: [] is not a string or number, so returns fallback

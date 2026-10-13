@@ -6,7 +6,8 @@ var AS;
         const ctx = {
             overlay: null,
             state: null,
-            acceptLanguages: []
+            acceptLanguages: [],
+            disposed: false
         };
         // Output languages offered in the overlay's language select.
         const OUTPUT_LANGUAGES = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
@@ -440,25 +441,48 @@ var AS;
                 }
             });
         }
+        function detachStorageListener() {
+            const listener = ctx.storageListener;
+            ctx.storageListener = undefined;
+            if (!listener)
+                return;
+            try {
+                chrome.storage.onChanged.removeListener(listener);
+            }
+            catch {
+                // ignore
+            }
+        }
+        // Stops this controller: aborts the in-flight run and removes the chrome.storage listener.
+        // Called when the overlay is closed, or replaced by a re-injected copy (OVERLAY_DISPOSE_EVENT).
+        function dispose() {
+            if (ctx.disposed)
+                return;
+            ctx.disposed = true;
+            if (ctx.state && AS.isBusy(ctx.state))
+                abortInFlight();
+            ctx.activeRunId = undefined;
+            detachStorageListener();
+        }
+        function closeOverlay() {
+            dispose();
+            AS.Overlay.unmount(ctx.overlay);
+        }
         function handleCancel() {
             // If nothing is running, just close.
             if (!AS.isBusy(ctx.state)) {
-                AS.Overlay.unmount(ctx.overlay);
+                closeOverlay();
                 return;
             }
             cancelActiveRun(AS.t('bannerCancelled'));
         }
         function handleClose() {
-            if (!AS.isBusy(ctx.state)) {
-                AS.Overlay.unmount(ctx.overlay);
-                return;
+            if (AS.isBusy(ctx.state)) {
+                const ok = confirm(AS.t('confirmCloseWhileRunning'));
+                if (!ok)
+                    return;
             }
-            const ok = confirm(AS.t('confirmCloseWhileRunning'));
-            if (!ok)
-                return;
-            abortInFlight();
-            ctx.activeRunId = undefined;
-            AS.Overlay.unmount(ctx.overlay);
+            closeOverlay();
         }
         function handleReset() {
             cancelActiveRun();
@@ -470,6 +494,8 @@ var AS;
             const settings = await AS.getSettings();
             await AS.setUiLanguage(settings.settings?.uiLanguage || 'auto');
             AS.applyRuntimeSettings(settings.settings);
+            // A second click on the toolbar button may have mounted an overlay while we were waiting.
+            AS.removeExistingOverlay();
             const overlay = AS.Overlay.mount();
             ctx.overlay = overlay;
             const initialLang = 'auto';
@@ -478,6 +504,7 @@ var AS;
             // Initial render.
             AS.Overlay.render(ctx.overlay, ctx.state);
             // Wire events.
+            overlay.host.addEventListener(AS.OVERLAY_DISPOSE_EVENT, () => dispose());
             overlay.host.addEventListener('as:close', () => handleClose());
             overlay.host.addEventListener('as:openOptions', () => AS.openOptionsPage());
             overlay.host.addEventListener('as:cancel', () => handleCancel());
@@ -502,10 +529,13 @@ var AS;
             });
             // Populate languages.
             ctx.acceptLanguages = await AS.getAcceptLanguages();
+            // The overlay may have been closed or replaced while we were waiting.
+            if (ctx.disposed)
+                return;
             AS.Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
             try {
                 if (chrome?.storage?.onChanged?.addListener) {
-                    chrome.storage.onChanged.addListener((changes, areaName) => {
+                    const listener = (changes, areaName) => {
                         if (areaName !== 'local')
                             return;
                         if (!changes || !Object.prototype.hasOwnProperty.call(changes, 'uiLanguage'))
@@ -515,13 +545,17 @@ var AS;
                         const next = changes.uiLanguage?.newValue;
                         AS.setUiLanguage(typeof next === 'string' ? next : 'auto')
                             .then(() => {
+                            if (ctx.disposed)
+                                return;
                             AS.Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
                             AS.Overlay.render(ctx.overlay, ctx.state);
                         })
                             .catch(() => {
                             // ignore
                         });
-                    });
+                    };
+                    chrome.storage.onChanged.addListener(listener);
+                    ctx.storageListener = listener;
                 }
             }
             catch {

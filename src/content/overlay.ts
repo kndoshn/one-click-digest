@@ -538,7 +538,16 @@ namespace AS {
     function startDots(base: string, targetEl: HTMLElement): void {
       stopDots();
       let dots = 0;
+      // Show the label right away; the interval only adds the dots.
+      targetEl.textContent = base;
       dotsTimer = setInterval(() => {
+        // The overlay can be removed without unmount() (removeExistingOverlay on re-injection,
+        // whose fresh Overlay functions cannot reach this timer); stop instead of animating a
+        // detached node forever.
+        if (!targetEl.isConnected) {
+          stopDots();
+          return;
+        }
         dots = (dots + 1) % 4;
         targetEl.textContent = base + '.'.repeat(dots);
       }, ANIM_DOTS_INTERVAL_MS);

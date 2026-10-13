@@ -159,3 +159,34 @@ test('Estimate: resolvePricing switches Haiku 5.5 to long-context rates above 10
   assert.equal(sonnet.inputUsdPerMTok, 2.0);
   assert.equal(sonnet.outputUsdPerMTok, 10.0);
 });
+
+test('Estimate: a stored model ID without pricing is priced at the highest known rates instead of throwing', () => {
+  const text = 'hello '.repeat(20_000);
+  const build = (AS, mapModel, finalModel) =>
+    AS.Estimate.buildEstimate({
+      extractedCharCount: text.length,
+      textToSend: text,
+      truncated: false,
+      mode: 'BULLETS_5',
+      mapModel,
+      finalModel
+    });
+
+  // Settings point at models this version does not price (e.g. retired from the options list).
+  // The fallback must not depend on MODEL_MAP/MODEL_FINAL, which are then the same unknown models.
+  const { AS } = loadEstimate();
+  AS.applyRuntimeSettings({ modelMap: 'claude-retired-map', modelFinal: 'claude-retired-final' });
+  assert.equal(AS.MODEL_MAP, 'claude-retired-map');
+  const est = build(AS, AS.MODEL_MAP, AS.MODEL_FINAL);
+  assert.ok(est.chunkCount > 1, 'exercise both map and final pricing');
+  assert.equal(est.model, 'map: claude-retired-map / final: claude-retired-final');
+  const exact = AS.Estimate.applyExactTokens(est, 30_000);
+  assert.ok(Number.isFinite(exact.costWorstUsd) && exact.costWorstUsd > 0);
+
+  // Conservative: never cheaper than any priced model for the same input.
+  for (const model of Object.keys(AS.PRICING)) {
+    const known = AS.Estimate.applyExactTokens(build(AS, model, model), 30_000);
+    assert.ok(exact.costWorstUsd >= known.costWorstUsd, `${model}: ${known.costWorstUsd} > ${exact.costWorstUsd}`);
+    assert.ok(exact.costLowUsd >= known.costLowUsd, model);
+  }
+});

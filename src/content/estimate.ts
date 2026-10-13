@@ -164,11 +164,20 @@ namespace AS {
       return costUsdInOut(repairInput, outMax, applyPricingTier(args.finalPricing, repairInput));
     }
 
-    // Unknown models fall back to the default models' pricing.
+    // Highest known rates, for models without a pricing entry (e.g. a stored model ID that is no
+    // longer offered). Over-estimating keeps the approval and hard-limit checks on the safe side.
+    function conservativePricing(): ModelPricing {
+      const all = Object.values(PRICING);
+      return {
+        inputUsdPerMTok: Math.max(...all.map((p) => p.longContext?.inputUsdPerMTok ?? p.inputUsdPerMTok)),
+        outputUsdPerMTok: Math.max(...all.map((p) => p.longContext?.outputUsdPerMTok ?? p.outputUsdPerMTok))
+      };
+    }
+
     function pricingFor(mapModel: string, finalModel: string): { mapPricing: ModelPricing; finalPricing: ModelPricing } {
       return {
-        mapPricing: PRICING[mapModel] || PRICING[MODEL_MAP],
-        finalPricing: PRICING[finalModel] || PRICING[MODEL_FINAL]
+        mapPricing: PRICING[mapModel] || conservativePricing(),
+        finalPricing: PRICING[finalModel] || conservativePricing()
       };
     }
 

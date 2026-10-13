@@ -25,7 +25,18 @@ export function runClassicScripts(ctx, relPaths) {
   for (const relPath of relPaths) {
     const abs = path.join(process.cwd(), relPath);
     const code = fs.readFileSync(abs, 'utf-8');
-    vm.runInContext(code, ctx, { filename: relPath });
+    // Use the absolute path so V8 coverage (c8) attributes the code to dist/content/*.js.
+    vm.runInContext(code, ctx, { filename: abs });
   }
   return ctx;
 }
+
+// Node 18 has no global CustomEvent (it is available from Node 19).
+export const CustomEventPolyfill =
+  globalThis.CustomEvent ||
+  class CustomEvent extends Event {
+    constructor(type, init = {}) {
+      super(type, init);
+      this.detail = init.detail ?? null;
+    }
+  };
