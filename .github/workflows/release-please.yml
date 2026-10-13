@@ -19,6 +19,8 @@ jobs:
   release-please:
     name: Release PR
     runs-on: ubuntu-latest
+    # The App's private key is an environment secret; the environment only allows main.
+    environment: release
     permissions: {}
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -57,9 +59,11 @@ jobs:
           ref: refs/tags/${{ needs.release-please.outputs.tag_name }}
           persist-credentials: false
 
+      # No cache: release artifacts are built only from fresh downloads.
       - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
           minimum_release_age: 7d
+          cache: false
 
       - name: Install dependencies
         run: npm ci
