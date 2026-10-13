@@ -34,3 +34,13 @@ test('UX invariants (static): DONE language change triggers full re-run', () => 
   // Language change handler should re-run when currently DONE.
   assert.ok(/if \(ctx\.state\.phase === 'DONE'\)\s*\{\s*startRun\(/s.test(text));
 });
+test('UX invariants (static): panel border stays visible on dark pages', () => {
+  const p = path.join(process.cwd(), 'src', 'content', 'overlay.ts');
+  const text = fs.readFileSync(p, 'utf-8');
+  const m = /\.panel\s*\{[^}]*border:\s*1px solid rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/s.exec(text);
+  assert.ok(m, '.panel should have a 1px rgba border');
+  const [r, g, b, a] = m.slice(1).map(Number);
+  // Composited over a black page, the darkest channel must stay near white
+  // so the panel edge is distinguishable from dark-mode sites.
+  assert.ok(Math.min(r, g, b) * a >= 220, `panel border too dark on black: rgba(${r},${g},${b},${a})`);
+});
