@@ -49,8 +49,9 @@ function bulletStyleNoteFor(language: string): string {
   return '';
 }
 
-// Line breaks only: the pipeline puts the blank lines between lines itself (Format.tidyLayout), so
-// the prompt does not ask for them.
+// The pipeline lays out the blank lines itself (Format.tidyLayout), so the bullet modes only ask for
+// one bullet per line. The TL;DR wording is kept as measured: a line-by-line template made the model
+// write 13 or 14 bullets far more often (eval, 2026-10-13).
 function formatHintFor(mode: SummaryMode, language: string): string {
   const bulletNote = bulletStyleNoteFor(language);
   const bulletCount = BULLET_MODE_COUNTS[mode];
@@ -63,13 +64,14 @@ function formatHintFor(mode: SummaryMode, language: string): string {
   }
 
   const labels = headerLabelsFor(language);
-  const bulletLines = Array.from({ length: 12 }, (_, i) => `- <bullet ${i + 1}>\n`).join('');
   return (
-    'Return exactly this structure and nothing else (no title, no introduction, no closing note):\n' +
-    `${labels.summary}: <one sentence>\n` +
-    bulletLines +
-    `${labels.conclusion}: <one sentence>\n` +
-    'There must be exactly 12 bullet points, one per line, each starting with "- ".' +
+    'Return EXACTLY this structure, with no other text (27 lines total):\n' +
+    `${labels.summary}: <one line>\n` +
+    '<blank line>\n' +
+    '12 bullet lines, each starting with "- ", with exactly one blank line between each pair of bullets\n' +
+    '<blank line>\n' +
+    `${labels.conclusion}: <one line>\n` +
+    'No headings, no extra text.' +
     bulletNote
   );
 }

@@ -117,11 +117,13 @@ const JA_NOTE = '\nWhen a bullet point is written in Japanese, do not end it wit
 
 function tldrHint(summary, conclusion, note = '') {
   return (
-    'Return exactly this structure and nothing else (no title, no introduction, no closing note):\n' +
-    `${summary}: <one sentence>\n` +
-    Array.from({ length: 12 }, (_, i) => `- <bullet ${i + 1}>\n`).join('') +
-    `${conclusion}: <one sentence>\n` +
-    'There must be exactly 12 bullet points, one per line, each starting with "- ".' +
+    'Return EXACTLY this structure, with no other text (27 lines total):\n' +
+    `${summary}: <one line>\n` +
+    '<blank line>\n' +
+    '12 bullet lines, each starting with "- ", with exactly one blank line between each pair of bullets\n' +
+    '<blank line>\n' +
+    `${conclusion}: <one line>\n` +
+    'No headings, no extra text.' +
     note
   );
 }
