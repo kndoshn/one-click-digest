@@ -36,9 +36,10 @@ export function languageOk(text: string, language: string): boolean | null {
   return null;
 }
 
-// Why `text` fails the extension's format validation, or null when it passes.
+// Why `text` fails the extension's format validation, or null when it passes. Like the pipeline,
+// validates the text after tidying its layout.
 export function formatFailure(mode: SummaryMode, text: string): string | null {
-  const r = Format.validate(mode, text);
+  const r = Format.validate(mode, Format.tidyLayout(text));
   return r.ok ? null : (r as Format.ValidationFail).reason;
 }
 

@@ -117,6 +117,28 @@ test('Format: TLDR mode rejects extra non-empty lines', () => {
   assert.equal(r.ok, false);
 });
 
+test('Format.tidyLayout: trims lines and puts exactly one blank line between non-empty lines', () => {
+  const AS = loadFormat();
+  assert.equal(AS.Format.tidyLayout('  - a\r\n- b\n\n\n- c  \n\n'), '- a\n\n- b\n\n- c');
+  assert.equal(AS.Format.tidyLayout('\n\n'), '');
+});
+
+test('Format.tidyLayout: bullets and TLDR lines without blank lines become valid', () => {
+  const AS = loadFormat();
+  assert.equal(AS.Format.validate('BULLETS_3', AS.Format.tidyLayout('- a\n- b\n- c')).ok, true);
+  const bullets = Array.from({ length: 12 }, (_, i) => `- bullet ${i + 1}`).join('\n');
+  const tldr = ['要約: 一行', bullets, '結論: 最後の一行'].join('\n');
+  assert.equal(AS.Format.validate('TLDR_12_CONCLUSION', AS.Format.tidyLayout(tldr)).ok, true);
+});
+
+test('Format.tidyLayout: does not merge lines, so stray text still fails validation', () => {
+  const AS = loadFormat();
+  const tidied = AS.Format.tidyLayout('Here is the summary:\n- a\n- b\n- c');
+  assert.equal(tidied, 'Here is the summary:\n\n- a\n\n- b\n\n- c');
+  assert.equal(AS.Format.validate('BULLETS_3', tidied).ok, false);
+  assert.equal(AS.Format.validate('BULLETS_3', AS.Format.tidyLayout('- a\ncontinued\n- b\n- c')).ok, false);
+});
+
 test('Format.normalizeSummaryText: trims lines and folds continuation lines into the previous bullet', () => {
   const AS = loadFormat();
   const n = AS.Format.normalizeSummaryText;

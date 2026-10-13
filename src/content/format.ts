@@ -140,6 +140,19 @@ export function validate(mode: SummaryMode, text: string): ValidationResult {
   return validateBulletBlock(lines, expected);
 }
 
+// Lay the output out the way validate() expects: every line trimmed, blank lines dropped, and exactly
+// one blank line between the remaining lines. Models often get the blank lines wrong while the
+// content is fine, and fixing that here saves a repair request. Lines are never merged, so stray
+// text (a preface, a note, a bullet split over two lines) still fails validation.
+export function tidyLayout(text: string): string {
+  return String(text || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join('\n\n');
+}
+
 // Tidy model output for display: trim every line and fold stray continuation lines into the
 // preceding bullet.
 export function normalizeSummaryText(input: string): string {

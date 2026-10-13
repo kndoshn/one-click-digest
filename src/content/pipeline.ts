@@ -157,12 +157,13 @@ export async function runPipeline(
     });
     if (!isActive()) return text;
     const ok = textOf(resp);
-    const accepted = Boolean(ok && Format.validate(mode, ok.text).ok);
+    const rewrite = ok ? Format.tidyLayout(ok.text) : '';
+    const accepted = Boolean(ok && Format.validate(mode, rewrite).ok);
     trace.repairs.push({ kind, accepted });
-    return accepted && ok ? ok.text : text;
+    return accepted ? rewrite : text;
   };
 
-  let text = draft.text;
+  let text = Format.tidyLayout(draft.text);
   trace.draftValid = Format.validate(mode, text).ok;
   if (!trace.draftValid) {
     text = await repair(text, 'format');
