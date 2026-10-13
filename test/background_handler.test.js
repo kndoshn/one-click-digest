@@ -348,8 +348,7 @@ test('RUN_SUMMARY_MAP: request body', async () => {
       'Output language: en.\n' +
       'Return 5 concise bullet points, each starting with "- ".\n' +
       'Focus on facts, claims, and important context. Avoid repetition.\n' +
-      faithful('chunk') +
-      '\nDo not add disclaimers or meta commentary.',
+      'Do not add disclaimers or meta commentary.',
     messages: [{ role: 'user', content: 'Title: T\nURL: https://e.com/a\nChunk: 2/3\n\nChunk text:\nChunk body' }],
     ...HAIKU_PARAMS
   });
