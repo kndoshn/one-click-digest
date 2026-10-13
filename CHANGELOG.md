@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/kndoshn/one-click-digest/compare/1.1.0...1.1.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* give map-stage chunk summaries room to finish ([#50](https://github.com/kndoshn/one-click-digest/issues/50)) ([512eaa4](https://github.com/kndoshn/one-click-digest/commit/512eaa4620ac8f6a6a48efa1e16f97af71287554))
+* tell the model to stay faithful to the article in every step ([#54](https://github.com/kndoshn/one-click-digest/issues/54)) ([4014905](https://github.com/kndoshn/one-click-digest/commit/4014905f0a23b55a506595da06a636852d7c8c46))
+* tidy blank lines in code and tell the repair pass the bullet count ([#53](https://github.com/kndoshn/one-click-digest/issues/53)) ([20e0db8](https://github.com/kndoshn/one-click-digest/commit/20e0db8c65335143094d50bb59033b3e86e47a83))
+
 ## [1.1.0](https://github.com/kndoshn/one-click-digest/compare/1.0.7...1.1.0) (2026-10-13)
 
 
