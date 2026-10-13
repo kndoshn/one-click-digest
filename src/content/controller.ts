@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from '../shared/constants.ts';
-import type { ErrorResponse, ResponseFor, SummaryRequestMessage, Usage } from '../shared/messages.ts';
+import type { ErrorResponse } from '../shared/messages.ts';
 import type { SummaryMode } from '../shared/summary_modes.ts';
 import { isBulletStyle, parseBulletStyle } from '../shared/settings.ts';
 import { setUiLanguage, t } from './i18n.ts';
@@ -31,11 +31,11 @@ import {
   saveBulletStyle,
   sendMessage
 } from './runtime.ts';
-import * as Chunker from './chunk.ts';
 import * as Estimate from './estimate.ts';
 import * as Extract from './extract.ts';
 import * as Format from './format.ts';
 import * as Overlay from './overlay.ts';
+import * as Pipeline from './pipeline.ts';
 import * as StateMachine from './state_machine.ts';
 
 const API_KEY_STORAGE_KEY = STORAGE_KEYS.CLAUDE_API_KEY;
@@ -168,12 +168,6 @@ function isRunActive(runId: string): boolean {
   return ctx.activeRunId === runId;
 }
 
-type SummaryResponse = ResponseFor<SummaryRequestMessage['type']>;
-
-function isTextResponse(resp: SummaryResponse | undefined): resp is SummaryResponse & { ok: true } {
-  return Boolean(resp && resp.ok === true && typeof resp.text === 'string');
-}
-
 function abortInFlight(): void {
   const runId = ctx.activeRunId;
   if (!runId) return;
@@ -234,183 +228,32 @@ async function refineTokensIfPossible(runId: string, estimate: CostEstimate, art
   }
 }
 
-type RepairContext = {
-  title: string;
-  url: string;
-  // Map-reduce runs pass the chunk summaries so the repair pass can reuse the reduce prompt cache.
-  chunkSummaries?: string[];
-};
-
-// Asks the background to rewrite `text`. Keeps `text` unless the rewrite passes format validation.
-async function requestRepair(
-  runId: string,
-  mode: SummaryMode,
-  language: string,
-  text: string,
-  repairModel: string,
-  repairContext: RepairContext,
-  fixTruncation: boolean
-): Promise<string> {
-  reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REPAIR' }, true);
-
-  const resp = await sendMessage({
-    type: 'RUN_SUMMARY_REPAIR',
-    payload: {
-      runId,
-      language,
-      mode,
-      badOutput: text,
-      model: repairModel,
-      title: repairContext.title,
-      url: repairContext.url,
-      chunkSummaries: repairContext.chunkSummaries,
-      ...(fixTruncation ? { fixTruncation: true } : {})
-    }
-  });
-
-  if (!isRunActive(runId)) return text;
-
-  if (isTextResponse(resp) && Format.validate(mode, resp.text).ok) return resp.text;
-  return text;
-}
-
-// Final step shared by single-pass and map-reduce runs: repair the format if invalid, then
-// repair a likely-truncated ending, then show the result.
-async function finishSummary(
-  runId: string,
-  mode: SummaryMode,
-  language: string,
-  draft: string,
-  repairModel: string,
-  repairContext: RepairContext,
-  usage: Usage | undefined
-): Promise<void> {
-  let text = draft;
-  if (!Format.validate(mode, text).ok) {
-    text = await requestRepair(runId, mode, language, text, repairModel, repairContext, false);
-    if (!isRunActive(runId)) return;
-  }
-  if (Format.isLikelyTruncatedOutput(text, language)) {
-    text = await requestRepair(runId, mode, language, text, repairModel, repairContext, true);
-  }
-  if (!isRunActive(runId)) return;
-  reduce({ type: 'SUMMARY_DONE', runId, summaryText: Format.normalizeSummaryText(text), usage }, true);
-}
-
-async function runMapReduce(
-  runId: string,
-  article: ExtractOk,
-  chunks: string[],
-  mode: SummaryMode,
-  language: string
-): Promise<void> {
-  const total = chunks.length;
-  const chunkSummaries: string[] = [];
-  for (let i = 0; i < total; i++) {
-    if (!isRunActive(runId)) return;
-    reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'MAP', current: i + 1, total }, true);
-
-    const resp = await sendMessage({
-      type: 'RUN_SUMMARY_MAP',
-      payload: {
-        runId,
-        title: article.title,
-        url: article.url,
-        language,
-        chunkText: chunks[i],
-        chunkIndex: i + 1,
-        chunkCount: total,
-        model: MODEL_MAP
-      }
-    });
-
-    if (!isRunActive(runId)) return;
-    if (!isTextResponse(resp)) {
-      reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
-      return;
-    }
-    chunkSummaries.push(resp.text);
-  }
-
-  if (!isRunActive(runId)) return;
-  reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REDUCE' }, true);
-
-  const reduced = await sendMessage({
-    type: 'RUN_SUMMARY_REDUCE',
-    payload: {
-      runId,
-      title: article.title,
-      url: article.url,
-      language,
-      mode,
-      chunkSummaries,
-      model: MODEL_FINAL
-    }
-  });
-
-  if (!isRunActive(runId)) return;
-  if (!isTextResponse(reduced)) {
-    reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(reduced) }, true);
-    return;
-  }
-
-  await finishSummary(
-    runId,
-    mode,
-    language,
-    reduced.text,
-    MODEL_FINAL,
-    { title: article.title, url: article.url, chunkSummaries },
-    reduced.usage
-  );
-}
-
-async function runSinglePass(runId: string, article: ExtractOk, mode: SummaryMode, language: string): Promise<void> {
-  reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
-  const resp = await sendMessage({
-    type: 'RUN_SUMMARY_SINGLE',
-    payload: {
-      runId,
-      title: article.title,
-      url: article.url,
-      language,
-      mode,
-      articleText: article.text,
-      // Must match our cost model assumptions: single-pass uses the map model.
-      model: MODEL_MAP
-    }
-  });
-
-  if (!isRunActive(runId)) return;
-  if (!isTextResponse(resp)) {
-    reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
-    return;
-  }
-
-  await finishSummary(
-    runId,
-    mode,
-    language,
-    resp.text,
-    MODEL_MAP,
-    { title: article.title, url: article.url },
-    resp.usage
-  );
-}
-
 async function runSummary(runId: string, article: ExtractOk): Promise<void> {
   if (!isRunActive(runId)) return;
 
-  const language = resolvedLanguage();
-  const mode = currentMode();
-
   try {
-    const chunks = Chunker.chunkText(article.text, CHUNK_TARGET_INPUT_TOKENS);
-    if (chunks.length > 1) {
-      await runMapReduce(runId, article, chunks, mode, language);
-    } else {
-      await runSinglePass(runId, article, mode, language);
+    const result = await Pipeline.runPipeline(
+      article,
+      {
+        runId,
+        mode: currentMode(),
+        language: resolvedLanguage(),
+        mapModel: MODEL_MAP,
+        finalModel: MODEL_FINAL,
+        chunkTargetTokens: CHUNK_TARGET_INPUT_TOKENS
+      },
+      sendMessage,
+      {
+        isActive: () => isRunActive(runId),
+        onProgress: (stage, current, total) => reduce({ type: 'SUMMARY_PROGRESS', runId, stage, current, total }, true)
+      }
+    );
+    if (result.status === 'cancelled' || !isRunActive(runId)) return;
+    if (result.status === 'error') {
+      reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(result.error) }, true);
+      return;
     }
+    reduce({ type: 'SUMMARY_DONE', runId, summaryText: result.text, usage: result.usage }, true);
   } catch (err: any) {
     if (!isRunActive(runId)) return;
     reduce({ type: 'SUMMARY_ERROR', runId, message: err?.message || t('errorUnknown') }, true);

@@ -18,7 +18,8 @@
     "test": "node scripts/build.mjs --test && node --test",
     "test:coverage": "node scripts/build.mjs --test && c8 node --test",
     "test:coverage:report": "npm run test:coverage && c8 report --reporter=html",
-    "test:e2e": "npm run build:e2e && playwright test"
+    "test:e2e": "npm run build:e2e && playwright test",
+    "eval": "node eval/run.ts"
   },
   "repository": {
     "type": "git",

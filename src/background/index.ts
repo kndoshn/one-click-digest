@@ -15,23 +15,14 @@ import {
   REQUEST_TYPES,
   RequestSchema,
   type RequestType,
-  type ResponseFor,
-  type SummaryRequestMessage
+  type ResponseFor
 } from '../shared/messages.ts';
 import { type BulletStyle, DEFAULT_BULLET_STYLE, type RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.ts';
 import { SETTINGS_STORAGE_KEYS, parseBulletStyle, parseStoredSettings } from '../shared/settings.ts';
 import { createAbortRegistry } from './abort_registry.ts';
-import { type MessagesRequest, countTokens, runMessagesWithRetry } from './anthropic.ts';
-import { MAP_CHUNK_MAX_OUTPUT_TOKENS, modeMaxOutputTokens } from '../shared/summary_modes.ts';
-import {
-  type CacheControlEphemeral,
-  buildMapPrompt,
-  buildMapSystem,
-  buildReducePrompt,
-  buildRepairPrompt,
-  buildSinglePrompt,
-  buildTokenCountPrompt
-} from './prompts.ts';
+import { countTokens, runMessagesWithRetry } from './anthropic.ts';
+import { type CacheControlEphemeral, buildTokenCountPrompt } from './prompts.ts';
+import { buildSummaryRequest } from './summary_requests.ts';
 
 // -----------------------------
 // Script injection
@@ -212,86 +203,6 @@ async function withRunAbort<T>(runId: string, fn: (signal: AbortSignal) => Promi
 // Messaging
 // -----------------------------
 
-// A Messages API call for one summarization step (everything except the API key and abort signal).
-type SummaryRequest = Omit<MessagesRequest, 'apiKey' | 'abortSignal'> & { maxRetries: number; maxTokensCap?: number };
-
-function buildSummaryRequest(msg: SummaryRequestMessage): SummaryRequest {
-  switch (msg.type) {
-    case 'RUN_SUMMARY_SINGLE': {
-      const p = msg.payload;
-      return {
-        model: p.model,
-        maxTokens: modeMaxOutputTokens(p.mode),
-        userPrompt: buildSinglePrompt({
-          title: p.title,
-          url: p.url,
-          language: p.language,
-          mode: p.mode,
-          articleText: p.articleText
-        }),
-        timeoutMs: 75_000,
-        maxRetries: 2,
-        maxTokensCap: 6000
-      };
-    }
-    case 'RUN_SUMMARY_MAP': {
-      const p = msg.payload;
-      return {
-        model: p.model,
-        maxTokens: MAP_CHUNK_MAX_OUTPUT_TOKENS,
-        system: buildMapSystem({ language: p.language }),
-        userPrompt: buildMapPrompt({
-          title: p.title,
-          url: p.url,
-          chunkIndex: p.chunkIndex,
-          chunkCount: p.chunkCount,
-          chunkText: p.chunkText
-        }),
-        timeoutMs: 75_000,
-        maxRetries: 0
-      };
-    }
-    case 'RUN_SUMMARY_REDUCE': {
-      const p = msg.payload;
-      return {
-        model: p.model,
-        maxTokens: modeMaxOutputTokens(p.mode),
-        userPrompt: buildReducePrompt({
-          title: p.title,
-          url: p.url,
-          language: p.language,
-          mode: p.mode,
-          chunkSummaries: p.chunkSummaries,
-          cacheControl: currentCacheControl()
-        }),
-        timeoutMs: 90_000,
-        maxRetries: 2,
-        maxTokensCap: 6000
-      };
-    }
-    case 'RUN_SUMMARY_REPAIR': {
-      const p = msg.payload;
-      return {
-        model: p.model,
-        maxTokens: modeMaxOutputTokens(p.mode),
-        userPrompt: buildRepairPrompt({
-          title: p.title,
-          url: p.url,
-          chunkSummaries: p.chunkSummaries,
-          language: p.language,
-          mode: p.mode,
-          badOutput: p.badOutput,
-          fixTruncation: p.fixTruncation,
-          cacheControl: currentCacheControl()
-        }),
-        timeoutMs: 60_000,
-        maxRetries: 2,
-        maxTokensCap: 6000
-      };
-    }
-  }
-}
-
 function badRequest(message: string): ErrorResponse {
   return { ok: false, code: 'bad_request', message };
 }
@@ -358,7 +269,7 @@ async function handleMessage(raw: unknown): Promise<ResponseFor<RequestType>> {
     return r.ok ? { ok: true, inputTokens: r.inputTokens } : r;
   }
 
-  const request = buildSummaryRequest(msg);
+  const request = buildSummaryRequest(msg, currentCacheControl());
   const r = await withRunAbort(msg.payload.runId, (abortSignal) =>
     runMessagesWithRetry({ ...request, apiKey, abortSignal })
   );
