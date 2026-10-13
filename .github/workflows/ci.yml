@@ -3,24 +3,30 @@ name: CI
 on:
   push:
     branches: [main]
+  # No branch filter, so stacked PRs (based on another PR's branch) are checked too.
   pull_request:
-    branches: [main]
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '22'
-          cache: 'npm'
+          persist-credentials: false
+
+      # Installs the Node.js version pinned in mise.toml.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          minimum_release_age: 7d
 
       - name: Install dependencies
         run: npm ci
@@ -29,38 +35,18 @@ jobs:
         run: npm run typecheck
 
   test:
-    name: Test (Node ${{ matrix.node-version }})
+    name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # Supported LTS lines (Node 18 and 20 are end-of-life, and the dev tooling needs 22.12+).
-        node-version: [22, 24]
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          persist-credentials: false
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-  coverage:
-    name: Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: '22'
-          cache: 'npm'
+          minimum_release_age: 7d
 
       - name: Install dependencies
         run: npm ci
@@ -78,23 +64,25 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage
           path: coverage/lcov.info
           if-no-files-found: error
 
-  security:
+  audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '22'
-          cache: 'npm'
+          persist-credentials: false
+
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          minimum_release_age: 7d
 
       - name: Install dependencies
         run: npm ci
@@ -105,15 +93,16 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [typecheck, test]
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '22'
-          cache: 'npm'
+          persist-credentials: false
+
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          minimum_release_age: 7d
 
       - name: Install dependencies
         run: npm ci
@@ -121,28 +110,34 @@ jobs:
       - name: Build
         run: npm run build
 
-      # dist/ is committed; it must match a fresh build of src/ and public/.
-      - name: Check that dist/ is up to date
-        run: |
-          if [ -n "$(git status --porcelain -- dist)" ]; then
-            git status --short -- dist
-            echo '::error::dist/ is out of date. Run `npm run build` and commit dist/.'
-            exit 1
-          fi
-
       - name: Create extension zip
         run: |
           cd dist
           zip -r ../one-click-digest.zip .
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: extension-dist
-          path: dist/
-
       - name: Upload extension zip
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: extension-zip
           path: one-click-digest.zip
+          if-no-files-found: error
+
+  # The single check required by the branch ruleset. Add a job to `needs` to make it required.
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [typecheck, test, audit, build]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != success ]; then
+              echo "::error::A required job did not succeed ($r)."
+              exit 1
+            fi
+          done

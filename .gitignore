@@ -19,7 +19,8 @@ Thumbs.db
 # Dependencies
 node_modules/
 
-# Build output
+# Build output (built by `npm run build`, shipped as a release zip)
+dist/
 
 # Coverage
 coverage/

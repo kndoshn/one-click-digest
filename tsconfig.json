@@ -6,6 +6,9 @@
       "ES2022",
       "DOM"
     ],
+    "types": [
+      "chrome"
+    ],
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
