@@ -1,6 +1,6 @@
 {
   "name": "one-click-digest",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Chrome extension that summarizes web articles with one click using your Claude API key",
   "private": true,
   "type": "module",
