@@ -11,6 +11,9 @@ const sentence = (n, word = 'Body') => `${word} sentence number ${n} with enough
 const paragraphs = (count, word) =>
   Array.from({ length: count }, (_, i) => `<p>${sentence(i + 1, word)}</p>`).join('\n');
 
+/**
+ * @param {{ html?: string, title?: string, readability?: any, minArticleChars?: number }} [opts]
+ */
 function load({ html = '', title = 'Page title', readability, minArticleChars = 200 } = {}) {
   const doc = loadHtml(new FakeDocument(), html);
   doc.title = title;

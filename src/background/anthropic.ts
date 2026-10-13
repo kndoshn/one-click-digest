@@ -1,5 +1,6 @@
 // Minimal Anthropic API client (Token Count API and Messages API) for the background worker.
 
+import type { ErrorResponse, Usage } from '../shared/messages.ts';
 import { modelRequestParams } from '../shared/models.ts';
 import { type UserContent } from './prompts.ts';
 
@@ -9,11 +10,7 @@ const ANTHROPIC_VERSION = '2023-06-01';
 // Required for direct browser/extension requests.
 const ANTHROPIC_BROWSER_ACCESS_HEADER = 'anthropic-dangerous-direct-browser-access';
 
-export type NormalizedApiError = { ok: false; code: string; message: string; status?: number };
-
-export type Usage = { input_tokens?: number; output_tokens?: number };
-
-export type MessagesResult = { ok: true; text: string; usage?: Usage; stopReason?: string } | NormalizedApiError;
+export type MessagesResult = { ok: true; text: string; usage?: Usage; stopReason?: string } | ErrorResponse;
 
 type FetchJsonResult = { ok: boolean; status: number; json: any };
 
@@ -92,7 +89,7 @@ async function postJsonWithTimeout(args: {
   }
 }
 
-function normalizeApiError(res: FetchJsonResult, fallback: string): NormalizedApiError {
+function normalizeApiError(res: FetchJsonResult, fallback: string): ErrorResponse {
   const msg = res.json?.error?.message || res.json?.message || fallback;
   const type = res.json?.error?.type || res.json?.error?.error_type || 'api_error';
   return { ok: false, code: String(type), message: String(msg), status: res.status };
@@ -114,7 +111,7 @@ export async function countTokens(args: {
   model: string;
   userPrompt: string;
   abortSignal?: AbortSignal;
-}): Promise<{ ok: true; inputTokens: number } | NormalizedApiError> {
+}): Promise<{ ok: true; inputTokens: number } | ErrorResponse> {
   const res = await postJsonWithTimeout({
     path: '/v1/messages/count_tokens',
     apiKey: args.apiKey,

@@ -1,0 +1,13 @@
+{
+  // Type-checks the tests (plain JavaScript, checked with checkJs) against src/.
+  // Not strict yet: untyped test helpers and stubs would need annotations everywhere.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "types": ["chrome", "node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.js", "test/**/*.ts", "scripts/**/*.mjs"]
+}

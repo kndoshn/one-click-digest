@@ -9,6 +9,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Browser globals are replaced with partial stubs, so they are assigned without their DOM/chrome types.
+const globals = /** @type {any} */ (globalThis);
+
 const storage = {};
 const listeners = { onClicked: [], onChanged: [], onMessage: [] };
 const injected = [];
@@ -38,7 +41,7 @@ function pick(obj, keys) {
   return out;
 }
 
-globalThis.chrome = {
+globals.chrome = {
   action: { onClicked: { addListener: (fn) => listeners.onClicked.push(fn) } },
   scripting: {
     executeScript: async (args) => {
@@ -60,7 +63,7 @@ globalThis.chrome = {
   }
 };
 
-globalThis.fetch = async (url, init) => {
+globals.fetch = async (url, init) => {
   fetchCalls.push({ url, init });
   const next = fetchQueue.shift();
   if (!next) throw new Error('unexpected fetch');
@@ -301,6 +304,7 @@ test('RUN_SUMMARY_SINGLE: header labels per language', async () => {
 });
 
 test('RUN_SUMMARY_SINGLE: max_tokens per mode, with the Japanese note on bullet modes', async () => {
+  /** @type {Array<[string, number, number]>} */
   const cases = [
     ['BULLETS_3', 450, 3],
     ['BULLETS_5', 700, 5],

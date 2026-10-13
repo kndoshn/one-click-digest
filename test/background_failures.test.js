@@ -1,15 +1,18 @@
-// Background worker failure paths: unreadable storage, a failing options page, and malformed
-// messages. (A separate file from background_handler.test.js because the worker keeps
+// Background worker failure paths: unreadable storage, a failing options page, malformed
+// messages and handler crashes. (A separate file from background_handler.test.js because the worker keeps
 // module-level caches.)
 
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 
+// Browser globals are replaced with partial stubs, so they are assigned without their DOM/chrome types.
+const globals = /** @type {any} */ (globalThis);
+
 const listeners = { onChanged: [], onMessage: [] };
 const state = { storageFails: true, openOptionsFails: true };
 const errors = [];
 
-globalThis.chrome = {
+globals.chrome = {
   action: { onClicked: { addListener: () => {} } },
   scripting: { executeScript: async () => {} },
   storage: {
@@ -29,7 +32,7 @@ globalThis.chrome = {
     }
   }
 };
-globalThis.fetch = async () => {
+globals.fetch = async () => {
   throw new Error('unexpected fetch');
 };
 const consoleError = console.error;
@@ -88,18 +91,32 @@ test('OPEN_OPTIONS reports a failure to open the options page', async () => {
   assert.deepEqual(await send({ type: 'OPEN_OPTIONS' }), { ok: true });
 });
 
-test('a message that crashes the handler gets an internal_error response without details', async () => {
-  // RUN_SUMMARY_SINGLE without a payload.
-  assert.deepEqual(await send({ type: 'RUN_SUMMARY_SINGLE' }), {
-    ok: false,
-    code: 'internal_error',
-    message: 'Internal error'
-  });
-  assert.equal(errors.length, 1);
-  assert.equal(errors[0][0], '[ArticleSummarizer] background message handler failed');
+test('malformed messages are rejected before they are used', async () => {
+  const invalid = (type) => ({ ok: false, code: 'bad_request', message: `Invalid ${type} message` });
+  assert.deepEqual(await send({ type: 'RUN_SUMMARY_SINGLE' }), invalid('RUN_SUMMARY_SINGLE'));
+  assert.deepEqual(
+    await send({ type: 'RUN_SUMMARY_MAP', payload: { runId: 'r', title: 't', url: 'u', language: 'en', model: 'm' } }),
+    invalid('RUN_SUMMARY_MAP')
+  );
+  assert.deepEqual(
+    await send({
+      type: 'RUN_SUMMARY_SINGLE',
+      payload: { runId: 'r', title: 't', url: 'u', language: 'en', mode: 'BULLETS_4', articleText: 'a', model: 'm' }
+    }),
+    invalid('RUN_SUMMARY_SINGLE')
+  );
+  assert.deepEqual(await send({ type: 'ABORT_RUN' }), invalid('ABORT_RUN'));
+  assert.deepEqual(await send({ type: 'ABORT_RUN', payload: {} }), invalid('ABORT_RUN'));
+  assert.equal(errors.length, 0);
 });
 
-test('ABORT_RUN without a run id aborts nothing', async () => {
-  assert.deepEqual(await send({ type: 'ABORT_RUN' }), { ok: true, aborted: false });
-  assert.deepEqual(await send({ type: 'ABORT_RUN', payload: {} }), { ok: true, aborted: false });
+test('a message that crashes the handler gets an internal_error response without details', async () => {
+  const exploding = {
+    get type() {
+      throw new Error('boom');
+    }
+  };
+  assert.deepEqual(await send(exploding), { ok: false, code: 'internal_error', message: 'Internal error' });
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0][0], '[ArticleSummarizer] background message handler failed');
 });

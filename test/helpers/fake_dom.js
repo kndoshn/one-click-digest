@@ -212,6 +212,7 @@ class FakeSelectElement extends FakeElement {
     this._selectedIndex = i;
   }
 
+  // @ts-expect-error -- FakeElement stores `value` as a plain property; <select> derives it.
   get value() {
     const opt = this.options[this.selectedIndex];
     return opt ? opt.value : '';

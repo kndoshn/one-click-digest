@@ -17,6 +17,7 @@ const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
 const testBuildDir = path.join(rootDir, 'build', 'test');
 
+/** @type {import('esbuild').BuildOptions} */
 const common = {
   bundle: true,
   target: 'es2022',
