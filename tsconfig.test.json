@@ -1,5 +1,5 @@
 {
-  // Type-checks the tests (plain JavaScript, checked with checkJs) against src/.
+  // Type-checks the tests (plain JavaScript, checked with checkJs), the E2E tests and scripts against src/.
   // Not strict yet: untyped test helpers and stubs would need annotations everywhere.
   "extends": "./tsconfig.json",
   "compilerOptions": {
@@ -9,5 +9,5 @@
     "noImplicitAny": false,
     "types": ["chrome", "node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.js", "test/**/*.ts", "scripts/**/*.mjs"]
+  "include": ["src/**/*.ts", "test/**/*.js", "test/**/*.ts", "scripts/**/*.mjs", "e2e/**/*.ts", "playwright.config.ts"]
 }

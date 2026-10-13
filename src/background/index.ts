@@ -86,6 +86,12 @@ chrome.action.onClicked.addListener((tab: chrome.tabs.Tab) => {
   void injectContentScripts(tab);
 });
 
+// Playwright cannot click the toolbar button, so the E2E build exposes the injection to tests.
+// Production builds drop this block (__E2E__ is false).
+if (typeof __E2E__ !== 'undefined' && __E2E__) {
+  (globalThis as { __e2e?: unknown }).__e2e = { injectContentScripts };
+}
+
 // -----------------------------
 // Settings storage
 // -----------------------------

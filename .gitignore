@@ -24,6 +24,10 @@ dist/
 # Test bundles (built by `npm test`)
 build/
 
+# Playwright (E2E) results
+test-results/
+playwright-report/
+
 # Coverage
 coverage/
 .nyc_output/

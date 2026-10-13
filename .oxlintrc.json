@@ -38,7 +38,14 @@
         "typescript/no-implied-eval": "off",
         "typescript/require-array-sort-compare": "off"
       }
+    },
+    {
+      "files": ["e2e/**"],
+      "rules": {
+        // Playwright fixtures without dependencies must still destructure their first argument.
+        "no-empty-pattern": "off"
+      }
     }
   ],
-  "ignorePatterns": ["dist/**", "build/**", "coverage/**", "third_party/**"]
+  "ignorePatterns": ["dist/**", "build/**", "coverage/**", "third_party/**", "test-results/**", "playwright-report/**"]
 }
