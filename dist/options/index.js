@@ -4,6 +4,7 @@
 import { STORAGE_KEYS } from '../shared/constants.js';
 import { DEFAULT_SETTINGS } from '../shared/types.js';
 import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../shared/settings.js';
+import { parseNumberOr } from '../shared/utils.js';
 const DEFAULT_PREFS = DEFAULT_SETTINGS;
 const SUPPORTED_UI_LANGS = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
 let messages = {};
@@ -86,7 +87,8 @@ function setCheckboxValue(id, checked) {
         el.checked = checked;
 }
 function parseNum(input, fallback, opts) {
-    const n = Number(input);
+    // Blank or non-numeric input falls back (an emptied field must not be saved as 0).
+    const n = parseNumberOr(input, NaN);
     if (!Number.isFinite(n))
         return fallback;
     const min = opts?.min;

@@ -3,10 +3,14 @@ var AS;
 (function (AS) {
     let Controller;
     (function (Controller) {
+        // Keep in sync with STORAGE_KEYS.CLAUDE_API_KEY in src/shared/constants.ts (content scripts are
+        // classic scripts, so the shared module is not available here).
+        const API_KEY_STORAGE_KEY = 'claudeApiKey';
         const ctx = {
             overlay: null,
             state: null,
-            acceptLanguages: []
+            acceptLanguages: [],
+            disposed: false
         };
         // Output languages offered in the overlay's language select.
         const OUTPUT_LANGUAGES = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
@@ -140,8 +144,13 @@ var AS;
                 if (resp && resp.ok === true && typeof resp.inputTokens === 'number') {
                     const updated = AS.Estimate.applyExactTokens(estimate, resp.inputTokens);
                     reduce({ type: 'TOKENS_REFINED', runId, estimate: updated }, true);
-                    // If refinement pushes us over the hard limit, block immediately.
+                    // If refinement pushes us over the hard limit, block immediately. The user may already
+                    // have started the run on the rough estimate; stop it so no further requests are made.
                     if (AS.Estimate.isOverHardLimit(updated)) {
+                        if (ctx.state.phase === 'SUMMARIZING') {
+                            abortInFlight();
+                            ctx.activeRunId = undefined;
+                        }
                         reduce({ type: 'BLOCKED', runId, estimate: updated, reason: AS.t('reasonHardLimit') }, true);
                     }
                     return;
@@ -298,7 +307,18 @@ var AS;
             NO_MAIN_TEXT: 'errorNoMainText',
             UNKNOWN: 'errorExtractionFailed'
         };
+        // Re-reads settings so that changes made in the options page while the overlay is open (e.g.
+        // a higher cost limit after a block) apply to the next run. Keeps the current values when the
+        // background cannot be reached.
+        async function refreshRuntimeSettings() {
+            const resp = await AS.getSettings();
+            AS.applyRuntimeSettings(resp.settings);
+        }
         async function doExtractAndMaybeRun(runId) {
+            if (!isRunActive(runId))
+                return;
+            // Settings are fixed for the rest of the run.
+            await refreshRuntimeSettings();
             if (!isRunActive(runId))
                 return;
             const r = AS.Extract.extractArticle();
@@ -440,25 +460,48 @@ var AS;
                 }
             });
         }
+        function detachStorageListener() {
+            const listener = ctx.storageListener;
+            ctx.storageListener = undefined;
+            if (!listener)
+                return;
+            try {
+                chrome.storage.onChanged.removeListener(listener);
+            }
+            catch {
+                // ignore
+            }
+        }
+        // Stops this controller: aborts the in-flight run and removes the chrome.storage listener.
+        // Called when the overlay is closed, or replaced by a re-injected copy (OVERLAY_DISPOSE_EVENT).
+        function dispose() {
+            if (ctx.disposed)
+                return;
+            ctx.disposed = true;
+            if (ctx.state && AS.isBusy(ctx.state))
+                abortInFlight();
+            ctx.activeRunId = undefined;
+            detachStorageListener();
+        }
+        function closeOverlay() {
+            dispose();
+            AS.Overlay.unmount(ctx.overlay);
+        }
         function handleCancel() {
             // If nothing is running, just close.
             if (!AS.isBusy(ctx.state)) {
-                AS.Overlay.unmount(ctx.overlay);
+                closeOverlay();
                 return;
             }
             cancelActiveRun(AS.t('bannerCancelled'));
         }
         function handleClose() {
-            if (!AS.isBusy(ctx.state)) {
-                AS.Overlay.unmount(ctx.overlay);
-                return;
+            if (AS.isBusy(ctx.state)) {
+                const ok = confirm(AS.t('confirmCloseWhileRunning'));
+                if (!ok)
+                    return;
             }
-            const ok = confirm(AS.t('confirmCloseWhileRunning'));
-            if (!ok)
-                return;
-            abortInFlight();
-            ctx.activeRunId = undefined;
-            AS.Overlay.unmount(ctx.overlay);
+            closeOverlay();
         }
         function handleReset() {
             cancelActiveRun();
@@ -470,6 +513,8 @@ var AS;
             const settings = await AS.getSettings();
             await AS.setUiLanguage(settings.settings?.uiLanguage || 'auto');
             AS.applyRuntimeSettings(settings.settings);
+            // A second click on the toolbar button may have mounted an overlay while we were waiting.
+            AS.removeExistingOverlay();
             const overlay = AS.Overlay.mount();
             ctx.overlay = overlay;
             const initialLang = 'auto';
@@ -477,16 +522,18 @@ var AS;
             ctx.state = AS.StateMachine.initialState(initialLang, initialMode);
             // Initial render.
             AS.Overlay.render(ctx.overlay, ctx.state);
-            // Wire events.
-            overlay.host.addEventListener('as:close', () => handleClose());
-            overlay.host.addEventListener('as:openOptions', () => AS.openOptionsPage());
-            overlay.host.addEventListener('as:cancel', () => handleCancel());
-            overlay.host.addEventListener('as:reset', () => handleReset());
-            overlay.host.addEventListener('as:copy', () => handleCopy());
-            overlay.host.addEventListener('as:proceed', () => handleProceed());
-            overlay.host.addEventListener('as:run', () => handleRun());
-            overlay.host.addEventListener('as:runLight', () => handleRunLight());
-            overlay.host.addEventListener('as:language', (ev) => {
+            // Wire events. Only the dispose notification comes through the page-visible host (it can only
+            // stop this controller); UI events come through overlay.events, which page scripts cannot reach.
+            overlay.host.addEventListener(AS.OVERLAY_DISPOSE_EVENT, () => dispose());
+            overlay.events.addEventListener('as:close', () => handleClose());
+            overlay.events.addEventListener('as:openOptions', () => AS.openOptionsPage());
+            overlay.events.addEventListener('as:cancel', () => handleCancel());
+            overlay.events.addEventListener('as:reset', () => handleReset());
+            overlay.events.addEventListener('as:copy', () => handleCopy());
+            overlay.events.addEventListener('as:proceed', () => handleProceed());
+            overlay.events.addEventListener('as:run', () => handleRun());
+            overlay.events.addEventListener('as:runLight', () => handleRunLight());
+            overlay.events.addEventListener('as:language', (ev) => {
                 const next = String(ev?.detail?.language || 'auto');
                 reduce({ type: 'LANGUAGE_CHANGED', language: next }, true);
                 // Spec decision: In DONE, language change triggers full re-run.
@@ -494,7 +541,7 @@ var AS;
                     startRun(currentMode());
                 }
             });
-            overlay.host.addEventListener('as:mode', (ev) => {
+            overlay.events.addEventListener('as:mode', (ev) => {
                 const mode = ev?.detail?.mode;
                 if (!mode)
                     return;
@@ -502,26 +549,45 @@ var AS;
             });
             // Populate languages.
             ctx.acceptLanguages = await AS.getAcceptLanguages();
+            // The overlay may have been closed or replaced while we were waiting.
+            if (ctx.disposed)
+                return;
             AS.Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
             try {
                 if (chrome?.storage?.onChanged?.addListener) {
-                    chrome.storage.onChanged.addListener((changes, areaName) => {
-                        if (areaName !== 'local')
+                    const listener = (changes, areaName) => {
+                        if (areaName !== 'local' || !changes || !ctx.overlay)
                             return;
-                        if (!changes || !Object.prototype.hasOwnProperty.call(changes, 'uiLanguage'))
-                            return;
-                        if (!ctx.overlay)
+                        const has = (key) => Object.prototype.hasOwnProperty.call(changes, key);
+                        // The API key was saved or cleared in the options page: update the missing-key warning.
+                        if (has(API_KEY_STORAGE_KEY)) {
+                            AS.getSettings()
+                                .then((resp) => {
+                                // No settings means the background could not be reached; keep the current state.
+                                if (ctx.disposed || !resp.settings)
+                                    return;
+                                reduce({ type: 'SETTINGS_LOADED', apiKeySet: resp.apiKeySet }, true);
+                            })
+                                .catch(() => {
+                                // ignore
+                            });
+                        }
+                        if (!has('uiLanguage'))
                             return;
                         const next = changes.uiLanguage?.newValue;
                         AS.setUiLanguage(typeof next === 'string' ? next : 'auto')
                             .then(() => {
+                            if (ctx.disposed)
+                                return;
                             AS.Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
                             AS.Overlay.render(ctx.overlay, ctx.state);
                         })
                             .catch(() => {
                             // ignore
                         });
-                    });
+                    };
+                    chrome.storage.onChanged.addListener(listener);
+                    ctx.storageListener = listener;
                 }
             }
             catch {

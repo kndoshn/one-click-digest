@@ -8,9 +8,21 @@ var AS;
         return `run_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
     }
     AS.makeRunId = makeRunId;
+    // Dispatched on an overlay host right before removeExistingOverlay() removes it. Clicking the
+    // toolbar button again re-runs every content script, and the new controller cannot reach the
+    // previous one's closures; this event lets the previous controller abort its run and clean up.
+    AS.OVERLAY_DISPOSE_EVENT = 'as:dispose';
     function removeExistingOverlay() {
         const existing = document.getElementById(AS.OVERLAY_CONTAINER_ID);
-        if (existing && existing.parentNode)
+        if (!existing)
+            return;
+        try {
+            existing.dispatchEvent(new CustomEvent(AS.OVERLAY_DISPOSE_EVENT));
+        }
+        catch {
+            // ignore
+        }
+        if (existing.parentNode)
             existing.parentNode.removeChild(existing);
     }
     AS.removeExistingOverlay = removeExistingOverlay;

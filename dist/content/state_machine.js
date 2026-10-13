@@ -125,8 +125,10 @@ var AS;
                     };
                 }
                 case 'BLOCKED': {
-                    // Can transition from PREFLIGHT
-                    if ((state.phase !== 'PREFLIGHT' && state.phase !== 'CONFIRM') || state.runId !== event.runId)
+                    // Before the run, or during it when the exact token count arrives after the user started it.
+                    if (state.phase !== 'PREFLIGHT' && state.phase !== 'CONFIRM' && state.phase !== 'SUMMARIZING')
+                        return state;
+                    if (state.runId !== event.runId)
                         return state;
                     return {
                         phase: 'BLOCKED',

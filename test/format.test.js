@@ -147,3 +147,52 @@ test('Format.isLikelyTruncatedOutput: detects a last line that ends mid-word', (
   assert.equal(f('- 一つ目のポイントです', 'en'), true);
   assert.equal(f('- Japanese text ends with ascii', 'ja'), true);
 });
+
+test('Format: TLDR mode accepts the labels the background prompts ask for, in every output language', async () => {
+  const AS = loadFormat();
+  const { buildSinglePrompt } = await import('../dist/background/prompts.js');
+  const languages = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
+  for (const language of languages) {
+    const prompt = buildSinglePrompt({ title: 'T', url: 'u', language, mode: 'TLDR_12_CONCLUSION', articleText: 'x' });
+    const [, summary] = prompt.match(/^(.+): <one line>$/m);
+    const conclusion = prompt.match(/^(.+): <one line>$/gm)[1].replace(': <one line>', '');
+    const text = [`${summary}: one line`, '', bulletBlock(12), '', `${conclusion}: last line`].join('\n');
+    assert.equal(AS.Format.validate('TLDR_12_CONCLUSION', text).ok, true, `${language}: ${summary} / ${conclusion}`);
+  }
+});
+
+test('Format: TLDR mode accepts full-width colons after CJK labels', () => {
+  const AS = loadFormat();
+  const pairs = [
+    ['要約', '結論'],
+    ['摘要', '结论'],
+    ['摘要', '結論'],
+    ['요약', '결론']
+  ];
+  for (const [summary, conclusion] of pairs) {
+    const text = [`${summary}：一行`, '', bulletBlock(12), '', `${conclusion} ：最後`].join('\n');
+    assert.equal(AS.Format.validate('TLDR_12_CONCLUSION', text).ok, true, `${summary} / ${conclusion}`);
+  }
+  assert.equal(AS.Format.isSummaryLine('要約：一行'), true);
+  assert.equal(AS.Format.isConclusionLine('  結論：最後'), true);
+  // A label alone (no colon) is still not a header line.
+  assert.equal(AS.Format.isSummaryLine('要約 一行'), false);
+});
+
+test('Format.normalizeSummaryText: a full-width-colon Conclusion line is not folded into the last bullet', () => {
+  const AS = loadFormat();
+  const text = '要約：概要\n\n- 一つ目\n\n- 二つ目\n\n結論：まとめ';
+  assert.equal(AS.Format.normalizeSummaryText(text), text);
+});
+
+test('Format: TLDR validation reports why the structure is wrong', () => {
+  const AS = loadFormat();
+  const reason = (lines) => AS.Format.validate('TLDR_12_CONCLUSION', lines.join('\n')).reason;
+  assert.equal(reason(['- bullet', '', 'Summary: s']), 'Missing Summary line');
+  assert.equal(reason(['Summary: s', '', bulletBlock(12)]), 'Missing Conclusion line');
+  assert.equal(reason(['Summary: s', bulletBlock(12), '', 'Conclusion: c']), 'Missing blank line after Summary line');
+  assert.equal(reason(['Summary: s', '', bulletBlock(12), 'Conclusion: c']), 'Missing blank line before Conclusion line');
+  assert.equal(reason(['Summary: s', '', bulletBlock(12), '', 'Conclusion: c', '', 'P.S.']), 'Unexpected content after Conclusion line');
+  assert.match(reason(['Summary: s', '', bulletBlock(11), '', 'Conclusion: c']), /Expected 12 bullets/);
+  assert.equal(reason(['Summary: s', '', bulletBlock(11), '', 'Summary: again', '', 'Conclusion: c']), 'Unexpected header in bullet block');
+});

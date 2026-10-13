@@ -42,8 +42,9 @@ var AS;
         function escapeRegex(value) {
             return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
-        const SUMMARY_RE = new RegExp(`^\\s*(?:${SUMMARY_LABELS.map(escapeRegex).join('|')})\\s*:`, 'i');
-        const CONCLUSION_RE = new RegExp(`^\\s*(?:${CONCLUSION_LABELS.map(escapeRegex).join('|')})\\s*:`, 'i');
+        // Models writing CJK output often use a full-width colon ("要約：") even though the prompt shows ":".
+        const SUMMARY_RE = new RegExp(`^\\s*(?:${SUMMARY_LABELS.map(escapeRegex).join('|')})\\s*[:：]`, 'i');
+        const CONCLUSION_RE = new RegExp(`^\\s*(?:${CONCLUSION_LABELS.map(escapeRegex).join('|')})\\s*[:：]`, 'i');
         function isSummaryLine(line) {
             return SUMMARY_RE.test(line.trim());
         }

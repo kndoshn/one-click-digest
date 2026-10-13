@@ -17,11 +17,15 @@ namespace AS {
       let n = 0;
       for (let i = 0; i < text.length; i++) {
         const code = text.charCodeAt(i);
-        // Rough CJK ranges: Hiragana, Katakana, CJK Unified Ideographs.
+        // Rough CJK ranges: Hiragana, Katakana, CJK Unified Ideographs (+ Extension A), and Korean
+        // Hangul (syllables, conjoining and compatibility jamo).
         if (
           (code >= 0x3040 && code <= 0x30ff) ||
           (code >= 0x4e00 && code <= 0x9fff) ||
-          (code >= 0x3400 && code <= 0x4dbf)
+          (code >= 0x3400 && code <= 0x4dbf) ||
+          (code >= 0xac00 && code <= 0xd7af) ||
+          (code >= 0x1100 && code <= 0x11ff) ||
+          (code >= 0x3130 && code <= 0x318f)
         ) {
           n++;
         }
@@ -164,11 +168,20 @@ namespace AS {
       return costUsdInOut(repairInput, outMax, applyPricingTier(args.finalPricing, repairInput));
     }
 
-    // Unknown models fall back to the default models' pricing.
+    // Highest known rates, for models without a pricing entry (e.g. a stored model ID that is no
+    // longer offered). Over-estimating keeps the approval and hard-limit checks on the safe side.
+    function conservativePricing(): ModelPricing {
+      const all = Object.values(PRICING);
+      return {
+        inputUsdPerMTok: Math.max(...all.map((p) => p.longContext?.inputUsdPerMTok ?? p.inputUsdPerMTok)),
+        outputUsdPerMTok: Math.max(...all.map((p) => p.longContext?.outputUsdPerMTok ?? p.outputUsdPerMTok))
+      };
+    }
+
     function pricingFor(mapModel: string, finalModel: string): { mapPricing: ModelPricing; finalPricing: ModelPricing } {
       return {
-        mapPricing: PRICING[mapModel] || PRICING[MODEL_MAP],
-        finalPricing: PRICING[finalModel] || PRICING[MODEL_FINAL]
+        mapPricing: PRICING[mapModel] || conservativePricing(),
+        finalPricing: PRICING[finalModel] || conservativePricing()
       };
     }
 

@@ -33,7 +33,7 @@ async function waitFor(fn, { timeoutMs = 4000, intervalMs = 5 } = {}) {
 function setup({ settings, article, respond }) {
   const sent = [];
   const host = makeEventTarget();
-  const overlay = { host, lastState: null };
+  const overlay = { host, events: host, lastState: null };
 
   const chrome = {
     i18n: { getMessage: (k) => String(k), getAcceptLanguages: (cb) => cb(['en-US']) },

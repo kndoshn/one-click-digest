@@ -43,7 +43,7 @@ function loadCore(ctx) {
 
 function createTestContext(sendMessageHandler) {
   const host = makeEventTarget();
-  const overlay = { host, lastState: null, renders: [], banner: null };
+  const overlay = { host, events: host, lastState: null, renders: [], banner: null };
 
   const chrome = {
     i18n: {

@@ -27,6 +27,11 @@ function safeJsonParse(text: string): any {
 
 function combineAbortSignals(external: AbortSignal | undefined, internal: AbortController): () => void {
   if (!external) return () => {};
+  // The 'abort' event has already fired (e.g. ABORT_RUN arrived between max_tokens retries).
+  if (external.aborted) {
+    internal.abort();
+    return () => {};
+  }
   const handler = () => internal.abort();
   try {
     external.addEventListener('abort', handler, { once: true });

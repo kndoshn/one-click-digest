@@ -72,3 +72,14 @@ test('settingsToStorage round-trips through parseStoredSettings', () => {
 test('settingsToStorage stores an empty UI language as auto', () => {
   assert.equal(settingsToStorage({ ...DEFAULT_SETTINGS, uiLanguage: '' }).uiLanguage, 'auto');
 });
+
+test('parseStoredSettings: blank numeric strings fall back to the defaults (not 0)', () => {
+  const { settings } = parseStoredSettings({
+    hardCostLimitUsd: '',
+    approvalThresholdUsd: ' ',
+    approvalThresholdChars: '',
+    minArticleChars: '',
+    maxArticleCharsToSend: ''
+  });
+  assert.deepEqual(settings, DEFAULT_SETTINGS);
+});

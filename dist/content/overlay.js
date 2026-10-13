@@ -4,8 +4,8 @@ var AS;
     let Overlay;
     (function (Overlay) {
         const ANIM_DOTS_INTERVAL_MS = 450;
-        function dispatch(host, type, detail) {
-            host.dispatchEvent(new CustomEvent(type, { detail, bubbles: true }));
+        function dispatch(target, type, detail) {
+            target.dispatchEvent(new CustomEvent(type, { detail }));
         }
         function css() {
             return `
@@ -304,7 +304,9 @@ var AS;
             host.style.top = '12px';
             host.style.right = '12px';
             host.style.zIndex = '2147483647';
-            const shadow = host.attachShadow({ mode: 'open' });
+            const events = new EventTarget();
+            // Closed: page scripts cannot reach the controls through host.shadowRoot.
+            const shadow = host.attachShadow({ mode: 'closed' });
             const style = document.createElement('style');
             style.textContent = css();
             const panel = el('div', 'panel');
@@ -317,12 +319,12 @@ var AS;
             settingsButton.id = 'as-settings';
             settingsButton.setAttribute('aria-label', AS.t('buttonSettings'));
             settingsButton.textContent = '⚙';
-            settingsButton.addEventListener('click', () => dispatch(host, 'as:openOptions'));
+            settingsButton.addEventListener('click', () => dispatch(events, 'as:openOptions'));
             const closeButton = el('button', 'close');
             closeButton.id = 'as-close';
             closeButton.setAttribute('aria-label', AS.t('closeAria'));
             closeButton.textContent = '×';
-            closeButton.addEventListener('click', () => dispatch(host, 'as:close'));
+            closeButton.addEventListener('click', () => dispatch(events, 'as:close'));
             titleRow.appendChild(titleLabel);
             titleRow.appendChild(settingsButton);
             header.appendChild(titleRow);
@@ -348,7 +350,7 @@ var AS;
             const toast = el('div', 'toast hidden');
             toast.id = 'as-toast';
             const backdrop = el('div', 'backdrop');
-            backdrop.addEventListener('click', () => dispatch(host, 'as:close'));
+            backdrop.addEventListener('click', () => dispatch(events, 'as:close'));
             panel.appendChild(header);
             panel.appendChild(meta);
             panel.appendChild(controls);
@@ -363,6 +365,7 @@ var AS;
             document.documentElement.appendChild(host);
             return {
                 host,
+                events,
                 shadow,
                 modeBar,
                 body,
@@ -469,7 +472,7 @@ var AS;
                 select.value = baseOption ? baseOption.value : 'auto';
             }
             // Make this idempotent (avoid duplicate listeners if setLanguageOptions is called again).
-            select.onchange = () => dispatch(inst.host, 'as:language', { language: select.value });
+            select.onchange = () => dispatch(inst.events, 'as:language', { language: select.value });
         }
         Overlay.setLanguageOptions = setLanguageOptions;
         function setBanner(inst, text) {
@@ -499,7 +502,16 @@ var AS;
         function startDots(base, targetEl) {
             stopDots();
             let dots = 0;
+            // Show the label right away; the interval only adds the dots.
+            targetEl.textContent = base;
             dotsTimer = setInterval(() => {
+                // The overlay can be removed without unmount() (removeExistingOverlay on re-injection,
+                // whose fresh Overlay functions cannot reach this timer); stop instead of animating a
+                // detached node forever.
+                if (!targetEl.isConnected) {
+                    stopDots();
+                    return;
+                }
                 dots = (dots + 1) % 4;
                 targetEl.textContent = base + '.'.repeat(dots);
             }, ANIM_DOTS_INTERVAL_MS);
@@ -532,7 +544,7 @@ var AS;
                 if (state.selectedMode === opt.mode) {
                     btn.classList.add('selected');
                 }
-                btn.addEventListener('click', () => dispatch(inst.host, 'as:mode', { mode: opt.mode }));
+                btn.addEventListener('click', () => dispatch(inst.events, 'as:mode', { mode: opt.mode }));
                 inst.modeBar.appendChild(btn);
             }
         }
@@ -543,7 +555,7 @@ var AS;
                 setText(btn, AS.t(b.key));
                 if (b.disabled)
                     btn.disabled = true;
-                btn.addEventListener('click', () => dispatch(inst.host, b.event));
+                btn.addEventListener('click', () => dispatch(inst.events, b.event));
                 inst.footer.appendChild(btn);
             }
         }
@@ -562,7 +574,7 @@ var AS;
                 setText(desc, AS.t(opt.descKey));
                 btn.appendChild(label);
                 btn.appendChild(desc);
-                btn.addEventListener('click', () => dispatch(inst.host, 'as:mode', { mode: opt.mode }));
+                btn.addEventListener('click', () => dispatch(inst.events, 'as:mode', { mode: opt.mode }));
                 modes.appendChild(btn);
             }
             inst.body.appendChild(modes);
