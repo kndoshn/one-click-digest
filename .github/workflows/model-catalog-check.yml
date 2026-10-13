@@ -1,0 +1,50 @@
+name: Model catalog check
+
+# Monthly: compares src/shared/models.ts with the Models API and opens (or comments on) an issue
+# when a catalog model is no longer listed or a new Haiku/Sonnet model is available.
+# Needs the repository secret ANTHROPIC_API_KEY (listing models does not use tokens).
+
+on:
+  schedule:
+    - cron: '41 3 2 * *' # monthly
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    name: Check model catalog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # to open or update the report issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          minimum_release_age: 7d
+
+      - name: Compare with the Models API
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/check_models.mjs > report.md
+
+      - name: Open or update the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -s report.md ]; then
+            echo 'The model catalog matches the Models API.'
+            exit 0
+          fi
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          title='Model catalog differs from the Models API'
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body-file report.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file report.md
+          fi

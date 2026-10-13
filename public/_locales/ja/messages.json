@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "APIキーが未設定です。"
   },
+  "statusModelUnavailable": {
+    "message": "保存されていたモデル $1 は使えなくなったため、既定のモデルを選んでいます。このままでよければ「保存」を押してください。"
+  },
   "statusReloading": {
     "message": "保存しました。UI言語を適用するため再読み込みします。"
   },

@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "La clé API n’est pas définie."
   },
+  "statusModelUnavailable": {
+    "message": "Le modèle enregistré $1 n’est plus disponible ; le modèle par défaut est sélectionné. Cliquez sur Enregistrer pour conserver ce choix."
+  },
   "statusReloading": {
     "message": "Enregistré. Rechargement pour appliquer la langue de l’interface."
   },

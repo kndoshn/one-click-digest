@@ -24,6 +24,21 @@ test('parseStoredSettings: empty storage yields defaults without migration', () 
   assert.deepEqual(parseStoredSettings(undefined), { settings: DEFAULT_SETTINGS });
 });
 
+test('parseStoredSettings: replaces models that are no longer offered with the defaults', () => {
+  const { settings, unavailableModels, migration } = parseStoredSettings({
+    modelMap: 'claude-3-haiku',
+    modelFinal: 'claude-3-opus'
+  });
+  assert.equal(settings.modelMap, DEFAULT_SETTINGS.modelMap);
+  assert.equal(settings.modelFinal, DEFAULT_SETTINGS.modelFinal);
+  assert.deepEqual(unavailableModels, ['claude-3-haiku', 'claude-3-opus']);
+  // Not written back: the options page asks the user to save.
+  assert.equal(migration, undefined);
+
+  // Non-string or empty values are not reported (they just fall back).
+  assert.deepEqual(parseStoredSettings({ modelMap: '', modelFinal: 42 }), { settings: DEFAULT_SETTINGS });
+});
+
 test('parseStoredSettings: keeps valid stored values', () => {
   const stored = {
     modelMap: 'claude-haiku-4-5',

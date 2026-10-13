@@ -131,6 +131,9 @@
   "statusKeyMissing": {
     "message": "API key is not set."
   },
+  "statusModelUnavailable": {
+    "message": "The saved model $1 is no longer available, so the default is selected. Click Save to keep this choice."
+  },
   "statusReloading": {
     "message": "Saved. Reloading to apply UI language."
   },

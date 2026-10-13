@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { MODELS } from '../src/shared/models.ts';
 import { FakeDocument, loadHtml } from './helpers/fake_dom.js';
 
 const OPTIONS_HTML = fs.readFileSync(path.join(process.cwd(), 'public', 'options.html'), 'utf-8');
@@ -281,4 +282,25 @@ test('reset to defaults keeps the API key', async () => {
   assert.equal(env.el('hard-limit').value, '1');
   assert.equal(env.el('api-key').disabled, true);
   assert.equal(env.status(), msg('statusResetDefaults'));
+});
+
+test('model selects list the catalog with the default first', async () => {
+  const env = await openOptionsPage();
+  const values = (id) => env.el(id).options.map((o) => o.value);
+  assert.deepEqual(values('model-map').sort(), MODELS.map((m) => m.id).sort());
+  assert.equal(values('model-map')[0], DEFAULTS.modelMap);
+  assert.equal(values('model-final')[0], DEFAULTS.modelFinal);
+  assert.equal(env.el('model-map').options[0].textContent, `${MODELS[0].name} (${MODELS[0].id})`);
+});
+
+test('a stored model that is no longer offered falls back to the default and is reported', async () => {
+  const env = await openOptionsPage({ stored: { claudeApiKey: 'sk-ant-x', modelFinal: 'claude-3-opus' } });
+  assert.equal(env.el('model-final').value, DEFAULTS.modelFinal);
+  assert.equal(env.status(), msg('statusModelUnavailable', 'claude-3-opus'));
+  assert.equal(env.el('status').className, 'danger');
+  // Nothing is written until the user saves.
+  assert.equal(env.storage.modelFinal, 'claude-3-opus');
+
+  await env.click('save');
+  assert.equal(env.storage.modelFinal, DEFAULTS.modelFinal);
 });

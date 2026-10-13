@@ -1,5 +1,7 @@
 // Shared type definitions across extension contexts (background, options, content).
 
+import { DEFAULT_FINAL_MODEL, DEFAULT_MAP_MODEL } from './models.ts';
+
 export type CacheTtl = '5m' | '1h';
 
 export type RuntimeSettings = {
@@ -16,8 +18,8 @@ export type RuntimeSettings = {
 };
 
 export const DEFAULT_SETTINGS: RuntimeSettings = {
-  modelMap: 'claude-haiku-5-5',
-  modelFinal: 'claude-sonnet-5-5',
+  modelMap: DEFAULT_MAP_MODEL,
+  modelFinal: DEFAULT_FINAL_MODEL,
   promptCachingEnabled: true,
   promptCachingTtl: '5m',
   hardCostLimitUsd: 1.0,
