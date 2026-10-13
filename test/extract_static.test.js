@@ -14,5 +14,5 @@ test('Extractor: includes Readability path and a fallback selector set (regressi
   // Fallback selectors (heuristic extraction)
   assert.ok(text.includes("'article'"), "fallback selectors should include 'article'");
   assert.ok(text.includes("'main'"), "fallback selectors should include 'main'");
-  assert.ok(text.includes('[role="main"]'), "fallback selectors should include [role=\"main\"]");
+  assert.ok(text.includes('[role="main"]'), 'fallback selectors should include [role="main"]');
 });

@@ -33,14 +33,20 @@ test('locales: every locale has the same keys as en, with non-empty messages and
     for (const key of enKeys) {
       assert.equal(typeof m[key].message, 'string', `${locale}.${key}`);
       assert.ok(m[key].message.trim().length > 0, `${locale}.${key} is empty`);
-      assert.deepEqual(placeholders(m[key].message), placeholders(messages.en[key].message), `${locale}.${key} placeholders`);
+      assert.deepEqual(
+        placeholders(m[key].message),
+        placeholders(messages.en[key].message),
+        `${locale}.${key} placeholders`
+      );
     }
   }
 });
 
 test('locales: every message key used by the code, HTML and manifest exists', () => {
   const sources = [
-    ...['src/content', 'src/options'].flatMap((dir) => fs.readdirSync(path.join(root, dir)).map((f) => path.join(dir, f))),
+    ...['src/content', 'src/options'].flatMap((dir) =>
+      fs.readdirSync(path.join(root, dir)).map((f) => path.join(dir, f))
+    ),
     'public/options.html',
     'public/manifest.json'
   ].map(read);

@@ -77,7 +77,9 @@ function createTestContext(sendMessageHandler) {
       overlay.renders.push(state);
     },
     setLanguageOptions: () => {},
-    setBanner: (_inst, text) => { overlay.banner = text; },
+    setBanner: (_inst, text) => {
+      overlay.banner = text;
+    },
     showToast: () => {}
   };
 

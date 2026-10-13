@@ -15,7 +15,13 @@ test('modelRequestParams: Sonnet 5.5 keeps adaptive thinking at medium effort', 
 });
 
 test('modelRequestParams: older and unknown models get no extra params', () => {
-  for (const model of ['claude-haiku-4-5', 'claude-sonnet-4-5', 'claude-sonnet-4-6', 'claude-sonnet-5', 'unknown-model']) {
+  for (const model of [
+    'claude-haiku-4-5',
+    'claude-sonnet-4-5',
+    'claude-sonnet-4-6',
+    'claude-sonnet-5',
+    'unknown-model'
+  ]) {
     assert.deepEqual(modelRequestParams(model), {}, model);
   }
 });

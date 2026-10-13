@@ -20,7 +20,9 @@ const VALID_5 = '- A.\n\n- B.\n\n- C.\n\n- D.\n\n- E.';
 
 function longArticle() {
   // Three ~20K-char paragraphs: each becomes its own chunk (8K-token target).
-  const paras = ['First paragraph. ', 'Second paragraph. ', 'Third paragraph. '].map((s) => s.repeat(Math.ceil(20_000 / s.length)).trim());
+  const paras = ['First paragraph. ', 'Second paragraph. ', 'Third paragraph. '].map((s) =>
+    s.repeat(Math.ceil(20_000 / s.length)).trim()
+  );
   return shortArticle(paras.join('\n\n'));
 }
 
@@ -48,7 +50,10 @@ test('a short article downgrades the selected mode and says so in a banner', asy
     assert.equal(env.sent[0].payload.mode, expected, `${selected} with ${text.length} chars`);
     const preflight = inst.states.find((s) => s.phase === 'PREFLIGHT' || s.phase === 'SUMMARIZING');
     assert.equal(preflight.selectedMode, expected);
-    assert.equal(preflight.banner, `toastModeAdjusted(${{ BULLETS_3: 'mode3Label', BULLETS_5: 'mode5Label', BULLETS_10: 'mode10Label' }[expected]})`);
+    assert.equal(
+      preflight.banner,
+      `toastModeAdjusted(${{ BULLETS_3: 'mode3Label', BULLETS_5: 'mode5Label', BULLETS_10: 'mode10Label' }[expected]})`
+    );
   }
 });
 
@@ -80,7 +85,8 @@ test('an estimate over the hard limit is blocked before any API call, and Back r
 test('a token count that pushes the estimate over the hard limit blocks the run', async () => {
   const env = createControllerEnv({
     settings: { minArticleChars: 50, approvalThresholdChars: 1000, hardCostLimitUsd: 0.05 },
-    respond: (m) => (m.type === 'COUNT_TOKENS' ? { ok: true, inputTokens: 2_000_000 } : { ok: false, code: 'unhandled' })
+    respond: (m) =>
+      m.type === 'COUNT_TOKENS' ? { ok: true, inputTokens: 2_000_000 } : { ok: false, code: 'unhandled' }
   });
   const inst = await injectAndWaitIdle(env);
   await runToPhase(env, inst, 'BULLETS_3', 'BLOCKED');
@@ -96,7 +102,8 @@ test('a token count that pushes the estimate over the hard limit blocks the run'
 test('a token count that fails at the messaging layer keeps the rough estimate', async () => {
   const env = createControllerEnv({
     settings: { minArticleChars: 50, approvalThresholdChars: 1000 },
-    respond: (m) => (m.type === 'COUNT_TOKENS' ? lastError('Could not establish connection.') : { ok: false, code: 'unhandled' })
+    respond: (m) =>
+      m.type === 'COUNT_TOKENS' ? lastError('Could not establish connection.') : { ok: false, code: 'unhandled' }
   });
   const inst = await injectAndWaitIdle(env);
   await runToPhase(env, inst, 'BULLETS_3', 'PREFLIGHT');
@@ -195,7 +202,10 @@ test('changing the output language re-runs a finished summary, and is used by th
 
 test('background errors are shown with a friendly message and diagnostics', async () => {
   const cases = [
-    [{ ok: false, code: 'invalid_request_error', message: 'bad', status: 400 }, 'errorBadRequest\n(code=invalid_request_error, status=400)'],
+    [
+      { ok: false, code: 'invalid_request_error', message: 'bad', status: 400 },
+      'errorBadRequest\n(code=invalid_request_error, status=400)'
+    ],
     [{ ok: false, code: 'overloaded_error', message: 'busy' }, 'errorRateLimit\n(code=overloaded_error)'],
     [{ ok: false, code: 'api_error', message: 'oops', status: 503 }, 'errorServer\n(code=api_error, status=503)'],
     [{ ok: false, code: 'weird', message: 'Something odd' }, 'Something odd\n(code=weird)'],
@@ -207,7 +217,9 @@ test('background errors are shown with a friendly message and diagnostics', asyn
     [lastError('Extension context invalidated.'), 'Extension context invalidated.']
   ];
   let next;
-  const env = createControllerEnv({ respond: (m) => (m.type === 'RUN_SUMMARY_SINGLE' ? next : { ok: false, code: 'unhandled' }) });
+  const env = createControllerEnv({
+    respond: (m) => (m.type === 'RUN_SUMMARY_SINGLE' ? next : { ok: false, code: 'unhandled' })
+  });
   const inst = await injectAndWaitIdle(env);
 
   for (const [resp, expected] of cases) {
@@ -335,10 +347,13 @@ test('saving an API key in the options page clears the missing-key warning', asy
   let apiKeySet = false;
   let failSettings = false;
   const env = createControllerEnv({
-    settingsResponse: () => (failSettings ? lastError('gone') : { ok: true, apiKeySet, settings: { minArticleChars: 50 } })
+    settingsResponse: () =>
+      failSettings ? lastError('gone') : { ok: true, apiKeySet, settings: { minArticleChars: 50 } }
   });
   env.inject();
-  const inst = await waitFor(() => (env.overlays[0]?.lastState?.phase === 'IDLE' && env.storageListeners.size ? env.overlays[0] : null));
+  const inst = await waitFor(() =>
+    env.overlays[0]?.lastState?.phase === 'IDLE' && env.storageListeners.size ? env.overlays[0] : null
+  );
   await tick();
   assert.equal(inst.lastState.apiKeySet, false);
 
@@ -457,7 +472,11 @@ test('the bullet style picked in the result screen restyles the summary and Copy
 });
 
 test('a new overlay starts with the saved bullet style; an unknown saved value means dash', async () => {
-  for (const [saved, expected] of [['dot', 'dot'], ['bogus', 'dash'], [undefined, 'dash']]) {
+  for (const [saved, expected] of [
+    ['dot', 'dot'],
+    ['bogus', 'dash'],
+    [undefined, 'dash']
+  ]) {
     const env = createControllerEnv({
       settingsResponse: () => ({ ok: true, apiKeySet: true, settings: { minArticleChars: 50 }, bulletStyle: saved })
     });

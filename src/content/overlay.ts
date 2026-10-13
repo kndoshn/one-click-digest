@@ -501,7 +501,8 @@ namespace AS {
 
       const optAuto = document.createElement('option');
       optAuto.value = 'auto';
-      optAuto.textContent = selected === 'auto' ? `${t('languageAuto')} (${labelFor(resolvedAuto)})` : t('languageAuto');
+      optAuto.textContent =
+        selected === 'auto' ? `${t('languageAuto')} (${labelFor(resolvedAuto)})` : t('languageAuto');
       select.appendChild(optAuto);
 
       const seen = new Set<string>();
@@ -770,7 +771,11 @@ namespace AS {
       pre.textContent = Format.applyBulletStyle(state.summaryText, bulletStyle);
       inst.body.appendChild(pre);
 
-      renderFooterButtons(inst, [{ key: 'buttonCopy', primary: true, event: 'as:copy' }], bulletStyleBar(inst, bulletStyle));
+      renderFooterButtons(
+        inst,
+        [{ key: 'buttonCopy', primary: true, event: 'as:copy' }],
+        bulletStyleBar(inst, bulletStyle)
+      );
     }
 
     function renderError(inst: Instance, state: ErrorState): void {

@@ -35,7 +35,7 @@ jobs:
         run: npm run typecheck
 
   lint:
-    name: Lint
+    name: Lint and format
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,6 +53,9 @@ jobs:
 
       - name: Lint
         run: npm run lint -- --format=github
+
+      - name: Check formatting
+        run: npm run format:check
 
   test:
     name: Test

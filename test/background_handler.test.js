@@ -306,7 +306,10 @@ test('RUN_SUMMARY_SINGLE: max_tokens per mode, with the Japanese note on bullet 
   ];
   for (const [mode, maxTokens, count] of cases) {
     resetFetch([messagesResponse('ok')]);
-    await send({ type: 'RUN_SUMMARY_SINGLE', payload: { ...BASE, language: 'ja-JP', mode, articleText: 'Body text', model: HAIKU } });
+    await send({
+      type: 'RUN_SUMMARY_SINGLE',
+      payload: { ...BASE, language: 'ja-JP', mode, articleText: 'Body text', model: HAIKU }
+    });
     const hint = `Return exactly ${count} bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${JA_NOTE}`;
     assert.equal(lastBody().max_tokens, maxTokens, mode);
     assert.equal(lastBody().messages[0].content, singlePrompt('ja-JP', hint), mode);
@@ -448,7 +451,15 @@ test('RUN_SUMMARY_REPAIR: empty chunk summaries fall back to the plain prompt', 
   resetFetch([messagesResponse('- fixed')]);
   await send({
     type: 'RUN_SUMMARY_REPAIR',
-    payload: { ...BASE, language: 'en', mode: 'BULLETS_3', badOutput: 'bad', model: HAIKU, chunkSummaries: [], fixTruncation: true }
+    payload: {
+      ...BASE,
+      language: 'en',
+      mode: 'BULLETS_3',
+      badOutput: 'bad',
+      model: HAIKU,
+      chunkSummaries: [],
+      fixTruncation: true
+    }
   });
   assert.equal(typeof lastBody().messages[0].content, 'string');
   assert.ok(lastBody().messages[0].content.includes('If the output looks cut off'));
@@ -507,23 +518,33 @@ test('max_tokens retry returns as soon as a retry completes', async () => {
 });
 
 test('API errors are normalized', async () => {
-  resetFetch([jsonResponse(401, { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } })]);
+  resetFetch([
+    jsonResponse(401, { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } })
+  ]);
   assert.deepEqual(
-    await send({ type: 'RUN_SUMMARY_SINGLE', payload: { ...BASE, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU } }),
+    await send({
+      type: 'RUN_SUMMARY_SINGLE',
+      payload: { ...BASE, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU }
+    }),
     { ok: false, code: 'authentication_error', message: 'invalid x-api-key', status: 401 }
   );
 
   resetFetch([{ ok: false, status: 502, text: async () => 'Bad gateway' }]);
   assert.deepEqual(
-    await send({ type: 'RUN_SUMMARY_SINGLE', payload: { ...BASE, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU } }),
+    await send({
+      type: 'RUN_SUMMARY_SINGLE',
+      payload: { ...BASE, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU }
+    }),
     { ok: false, code: 'api_error', message: 'Messages request failed.', status: 502 }
   );
 
   resetFetch([jsonResponse(500, {})]);
-  assert.deepEqual(
-    await send({ type: 'COUNT_TOKENS', payload: { ...BASE, articleText: 'x', model: HAIKU } }),
-    { ok: false, code: 'api_error', message: 'Token count request failed.', status: 500 }
-  );
+  assert.deepEqual(await send({ type: 'COUNT_TOKENS', payload: { ...BASE, articleText: 'x', model: HAIKU } }), {
+    ok: false,
+    code: 'api_error',
+    message: 'Token count request failed.',
+    status: 500
+  });
 
   resetFetch([
     () => {
@@ -531,13 +552,19 @@ test('API errors are normalized', async () => {
     }
   ]);
   assert.deepEqual(
-    await send({ type: 'RUN_SUMMARY_MAP', payload: { ...BASE, language: 'en', chunkIndex: 1, chunkCount: 2, chunkText: 'c', model: HAIKU } }),
+    await send({
+      type: 'RUN_SUMMARY_MAP',
+      payload: { ...BASE, language: 'en', chunkIndex: 1, chunkCount: 2, chunkText: 'c', model: HAIKU }
+    }),
     { ok: false, code: 'network_error', message: 'Failed to fetch', status: 0 }
   );
 
   resetFetch([messagesResponse('', { stop_reason: 'refusal' })]);
   assert.deepEqual(
-    await send({ type: 'RUN_SUMMARY_SINGLE', payload: { ...BASE, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU } }),
+    await send({
+      type: 'RUN_SUMMARY_SINGLE',
+      payload: { ...BASE, language: 'en', mode: 'BULLETS_3', articleText: 'x', model: HAIKU }
+    }),
     { ok: false, code: 'refusal', message: 'The model declined to respond.' }
   );
 });
@@ -608,7 +635,11 @@ test('SET_BULLET_STYLE: saves a known style for GET_SETTINGS, rejects anything e
 
 test('OPEN_OPTIONS and unknown message types', async () => {
   assert.deepEqual(await send({ type: 'OPEN_OPTIONS' }), { ok: true });
-  assert.deepEqual(await send({ type: 'NOPE' }), { ok: false, code: 'unknown_type', message: 'Unknown message type: NOPE' });
+  assert.deepEqual(await send({ type: 'NOPE' }), {
+    ok: false,
+    code: 'unknown_type',
+    message: 'Unknown message type: NOPE'
+  });
 });
 
 test('action click injects content scripts only into regular pages', async () => {
@@ -633,7 +664,14 @@ test('action click injects content scripts only into regular pages', async () =>
     ]
   });
 
-  for (const url of ['chrome://settings', 'chrome-extension://x/y', 'about:blank', 'file:///tmp/a.html', 'view-source:https://a', '']) {
+  for (const url of [
+    'chrome://settings',
+    'chrome-extension://x/y',
+    'about:blank',
+    'file:///tmp/a.html',
+    'view-source:https://a',
+    ''
+  ]) {
     await click({ id: 8, url });
   }
   await click({ url: 'https://example.com' });

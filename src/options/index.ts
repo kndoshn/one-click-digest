@@ -114,7 +114,9 @@ function parseNum(input: string, fallback: number, opts?: { min?: number; max?: 
 
 // Keep in sync with toUiLang in src/content/i18n.ts.
 function toUiLang(input: string): UiLang {
-  const lower = String(input || '').trim().toLowerCase();
+  const lower = String(input || '')
+    .trim()
+    .toLowerCase();
   if (lower.startsWith('pt')) return 'pt-BR';
   if (lower.startsWith('zh')) {
     if (lower.includes('tw') || lower.includes('hk') || lower.includes('mo')) return 'zh-TW';
@@ -170,7 +172,9 @@ function readPrefsFromUi(): Preferences {
   const approvalThresholdChars = Math.floor(
     parseNum(getInputValue('approval-chars'), DEFAULT_PREFS.approvalThresholdChars, { min: 0 })
   );
-  const minArticleChars = Math.floor(parseNum(getInputValue('min-article-chars'), DEFAULT_PREFS.minArticleChars, { min: 0 }));
+  const minArticleChars = Math.floor(
+    parseNum(getInputValue('min-article-chars'), DEFAULT_PREFS.minArticleChars, { min: 0 })
+  );
   const maxArticleCharsToSend = Math.floor(
     parseNum(getInputValue('max-send-chars'), DEFAULT_PREFS.maxArticleCharsToSend, { min: 1_000 })
   );

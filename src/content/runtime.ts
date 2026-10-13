@@ -71,7 +71,11 @@ namespace AS {
     uiLanguage: string;
   };
 
-  export async function getSettings(): Promise<{ apiKeySet: boolean; settings?: Partial<RuntimeSettings>; bulletStyle?: unknown }> {
+  export async function getSettings(): Promise<{
+    apiKeySet: boolean;
+    settings?: Partial<RuntimeSettings>;
+    bulletStyle?: unknown;
+  }> {
     try {
       const resp = await sendMessage({ type: 'GET_SETTINGS' });
       if (resp && resp.ok === true) {

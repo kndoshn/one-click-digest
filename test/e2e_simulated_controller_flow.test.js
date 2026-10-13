@@ -69,7 +69,11 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
           return;
         }
         if (msg.type === 'RUN_SUMMARY_SINGLE') {
-          cb({ ok: true, text: ['- A.', '', '- B.', '', '- C.'].join('\n'), usage: { input_tokens: 10, output_tokens: 10 } });
+          cb({
+            ok: true,
+            text: ['- A.', '', '- B.', '', '- C.'].join('\n'),
+            usage: { input_tokens: 10, output_tokens: 10 }
+          });
           return;
         }
         if (msg.type === 'ABORT_RUN') {
@@ -165,7 +169,11 @@ test('Simulated E2E: long article triggers approval → map-reduce → repair', 
           return;
         }
         if (msg.type === 'RUN_SUMMARY_MAP') {
-          cb({ ok: true, text: ['- m1', '- m2', '- m3', '- m4', '- m5'].join('\n'), usage: { input_tokens: 1000, output_tokens: 200 } });
+          cb({
+            ok: true,
+            text: ['- m1', '- m2', '- m3', '- m4', '- m5'].join('\n'),
+            usage: { input_tokens: 1000, output_tokens: 200 }
+          });
           return;
         }
         if (msg.type === 'RUN_SUMMARY_REDUCE') {
@@ -341,7 +349,9 @@ test('Simulated E2E: token refinement clears even when API key is missing (no st
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'PREFLIGHT');
 
   // Refinement should not get stuck even though COUNT_TOKENS fails.
-  await waitFor(() => overlay.lastState && overlay.lastState.phase === 'PREFLIGHT' && overlay.lastState.refining === false);
+  await waitFor(
+    () => overlay.lastState && overlay.lastState.phase === 'PREFLIGHT' && overlay.lastState.refining === false
+  );
 
   // Ensure COUNT_TOKENS was attempted (gating removed).
   assert.ok(sent.some((m) => m.type === 'COUNT_TOKENS'));

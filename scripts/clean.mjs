@@ -1,10 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
-const distDir = path.join(process.cwd(), "dist");
+const distDir = path.join(process.cwd(), 'dist');
 if (fs.existsSync(distDir)) {
   fs.rmSync(distDir, { recursive: true, force: true });
-  console.log("[clean] removed dist/");
+  console.log('[clean] removed dist/');
 } else {
-  console.log("[clean] dist/ not found (noop)");
+  console.log('[clean] dist/ not found (noop)');
 }

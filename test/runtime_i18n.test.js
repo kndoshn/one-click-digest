@@ -109,14 +109,22 @@ test('sendMessage resolves with the response and rejects on chrome.runtime.lastE
 });
 
 test('getSettings reports no API key when the background fails or answers not-ok', async () => {
-  for (const respond of [(cb) => cb({ ok: false }), () => {
-    throw new Error('gone');
-  }]) {
+  for (const respond of [
+    (cb) => cb({ ok: false }),
+    () => {
+      throw new Error('gone');
+    }
+  ]) {
     const { AS } = load({ chrome: { runtime: { lastError: null, sendMessage: (_m, cb) => respond(cb) } } });
     assert.deepEqual({ ...(await AS.getSettings()) }, { apiKeySet: false });
   }
   const { AS } = load({
-    chrome: { runtime: { lastError: null, sendMessage: (_m, cb) => cb({ ok: true, apiKeySet: 1, settings: { uiLanguage: 'ja' } }) } }
+    chrome: {
+      runtime: {
+        lastError: null,
+        sendMessage: (_m, cb) => cb({ ok: true, apiKeySet: 1, settings: { uiLanguage: 'ja' } })
+      }
+    }
   });
   const r = await AS.getSettings();
   assert.equal(r.apiKeySet, true);
@@ -152,7 +160,8 @@ test('openOptionsPage falls back to chrome.runtime.openOptionsPage when messagin
 });
 
 test('getAcceptLanguages uses chrome.i18n, falling back to navigator.language', async () => {
-  const withList = (list) => load({ chrome: { i18n: { getAcceptLanguages: (cb) => cb(list) } } }).AS.getAcceptLanguages();
+  const withList = (list) =>
+    load({ chrome: { i18n: { getAcceptLanguages: (cb) => cb(list) } } }).AS.getAcceptLanguages();
   assert.deepEqual([...(await withList(['ja', 'en-US']))], ['ja', 'en-US']);
   assert.deepEqual([...(await withList([]))], ['en-US']);
   assert.deepEqual([...(await withList(undefined))], ['en-US']);
@@ -162,7 +171,9 @@ test('getAcceptLanguages uses chrome.i18n, falling back to navigator.language', 
 
 test('copyToClipboard uses the async clipboard API, then falls back to execCommand', async () => {
   const written = [];
-  const ok = await load({ navigator: { clipboard: { writeText: async (t) => written.push(t) } } }).AS.copyToClipboard('hello');
+  const ok = await load({ navigator: { clipboard: { writeText: async (t) => written.push(t) } } }).AS.copyToClipboard(
+    'hello'
+  );
   assert.equal(ok, true);
   assert.deepEqual(written, ['hello']);
 

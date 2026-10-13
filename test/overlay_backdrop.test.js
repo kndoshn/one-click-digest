@@ -12,10 +12,7 @@ test('Overlay: backdrop element exists in mount()', () => {
 
   const mountEndIdx = overlayCode.indexOf('export function unmount', mountIdx);
   const mountSnippet = overlayCode.slice(mountIdx, mountEndIdx);
-  assert.ok(
-    /backdrop/.test(mountSnippet),
-    'mount() should create a backdrop element'
-  );
+  assert.ok(/backdrop/.test(mountSnippet), 'mount() should create a backdrop element');
   assert.ok(
     /shadow\.appendChild\(backdrop\)|shadow\.insertBefore\(backdrop/.test(mountSnippet),
     'backdrop should be added to shadow DOM'
@@ -30,7 +27,7 @@ test('Overlay: backdrop has click listener that dispatches as:close', () => {
   const mountSnippet = overlayCode.slice(mountIdx, mountEndIdx);
   assert.ok(
     /backdrop\.addEventListener\(['"]click['"].*dispatch\(host,\s*['"]as:close['"]\)/.test(mountSnippet) ||
-    /backdrop.*click.*as:close/s.test(mountSnippet),
+      /backdrop.*click.*as:close/s.test(mountSnippet),
     'backdrop click should dispatch as:close event'
   );
 });
@@ -42,14 +39,8 @@ test('Overlay: backdrop has CSS for full-screen fixed positioning', () => {
   const cssEndIdx = overlayCode.indexOf('function el<K', cssIdx);
   const cssSnippet = overlayCode.slice(cssIdx, cssEndIdx > 0 ? cssEndIdx : cssIdx + 3000);
 
-  assert.ok(
-    /\.backdrop\s*\{[^}]*position:\s*fixed/s.test(cssSnippet),
-    'backdrop should have position: fixed'
-  );
-  assert.ok(
-    /\.backdrop\s*\{[^}]*inset:\s*0/s.test(cssSnippet),
-    'backdrop should have inset: 0'
-  );
+  assert.ok(/\.backdrop\s*\{[^}]*position:\s*fixed/s.test(cssSnippet), 'backdrop should have position: fixed');
+  assert.ok(/\.backdrop\s*\{[^}]*inset:\s*0/s.test(cssSnippet), 'backdrop should have inset: 0');
 });
 
 test('Overlay: backdrop respects busy state via data-busy attribute', () => {
@@ -71,8 +62,7 @@ test('Overlay: render() updates backdrop data-busy attribute', () => {
 
   const renderSnippet = overlayCode.slice(renderIdx, renderIdx + 500);
   assert.ok(
-    /inst\.backdrop\.dataset/.test(renderSnippet) ||
-    /backdrop.*data-busy|backdrop.*busy/.test(renderSnippet),
+    /inst\.backdrop\.dataset/.test(renderSnippet) || /backdrop.*data-busy|backdrop.*busy/.test(renderSnippet),
     'render() should update backdrop busy state'
   );
 });
@@ -95,7 +85,7 @@ test('Overlay: close button still dispatches as:close (regression)', () => {
   const mountSnippet = overlayCode.slice(mountIdx, mountIdx + 1500);
   assert.ok(
     /closeButton\.addEventListener\(['"]click['"].*dispatch\(host,\s*['"]as:close['"]\)/.test(mountSnippet) ||
-    /closeButton.*click.*as:close/s.test(mountSnippet),
+      /closeButton.*click.*as:close/s.test(mountSnippet),
     'close button should still dispatch as:close event'
   );
 });

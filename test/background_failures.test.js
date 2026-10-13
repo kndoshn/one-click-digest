@@ -52,11 +52,14 @@ test('unreadable storage: defaults are used and no API key is reported', async (
   assert.equal(r.apiKeySet, false);
   assert.equal(r.settings.hardCostLimitUsd, 1);
 
-  assert.deepEqual(await send({ type: 'COUNT_TOKENS', payload: { runId: 'r', title: 't', url: 'u', articleText: 'a', model: 'm' } }), {
-    ok: false,
-    code: 'api_key_missing',
-    message: 'API key is not set.'
-  });
+  assert.deepEqual(
+    await send({ type: 'COUNT_TOKENS', payload: { runId: 'r', title: 't', url: 'u', articleText: 'a', model: 'm' } }),
+    {
+      ok: false,
+      code: 'api_key_missing',
+      message: 'API key is not set.'
+    }
+  );
 });
 
 test('a transient storage failure is retried on the next request instead of being cached', async () => {
@@ -87,7 +90,11 @@ test('OPEN_OPTIONS reports a failure to open the options page', async () => {
 
 test('a message that crashes the handler gets an internal_error response without details', async () => {
   // RUN_SUMMARY_SINGLE without a payload.
-  assert.deepEqual(await send({ type: 'RUN_SUMMARY_SINGLE' }), { ok: false, code: 'internal_error', message: 'Internal error' });
+  assert.deepEqual(await send({ type: 'RUN_SUMMARY_SINGLE' }), {
+    ok: false,
+    code: 'internal_error',
+    message: 'Internal error'
+  });
   assert.equal(errors.length, 1);
   assert.equal(errors[0][0], '[ArticleSummarizer] background message handler failed');
 });

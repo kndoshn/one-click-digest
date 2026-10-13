@@ -25,7 +25,7 @@ test('UX invariants (static): closing while busy asks for confirmation and abort
 test('UX invariants (static): Copy shows a post-copy toast', () => {
   const p = path.join(process.cwd(), 'src', 'content', 'controller.ts');
   const text = fs.readFileSync(p, 'utf-8');
-  assert.ok(text.includes("toastCopied"));
+  assert.ok(text.includes('toastCopied'));
 });
 
 test('UX invariants (static): DONE language change triggers full re-run', () => {
