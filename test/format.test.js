@@ -191,10 +191,19 @@ test('Format: TLDR validation reports why the structure is wrong', () => {
   assert.equal(reason(['- bullet', '', 'Summary: s']), 'Missing Summary line');
   assert.equal(reason(['Summary: s', '', bulletBlock(12)]), 'Missing Conclusion line');
   assert.equal(reason(['Summary: s', bulletBlock(12), '', 'Conclusion: c']), 'Missing blank line after Summary line');
-  assert.equal(reason(['Summary: s', '', bulletBlock(12), 'Conclusion: c']), 'Missing blank line before Conclusion line');
-  assert.equal(reason(['Summary: s', '', bulletBlock(12), '', 'Conclusion: c', '', 'P.S.']), 'Unexpected content after Conclusion line');
+  assert.equal(
+    reason(['Summary: s', '', bulletBlock(12), 'Conclusion: c']),
+    'Missing blank line before Conclusion line'
+  );
+  assert.equal(
+    reason(['Summary: s', '', bulletBlock(12), '', 'Conclusion: c', '', 'P.S.']),
+    'Unexpected content after Conclusion line'
+  );
   assert.match(reason(['Summary: s', '', bulletBlock(11), '', 'Conclusion: c']), /Expected 12 bullets/);
-  assert.equal(reason(['Summary: s', '', bulletBlock(11), '', 'Summary: again', '', 'Conclusion: c']), 'Unexpected header in bullet block');
+  assert.equal(
+    reason(['Summary: s', '', bulletBlock(11), '', 'Summary: again', '', 'Conclusion: c']),
+    'Unexpected header in bullet block'
+  );
 });
 
 test('Format.applyBulletStyle: swaps the marker of bullet lines only', () => {

@@ -49,7 +49,10 @@ function confirm(runId = 'r1') {
 }
 
 function summarizing(runId = 'r1', est = estimate()) {
-  return reduce(reduce(preflight(runId), { type: 'TOKENS_REFINED', runId, estimate: est }), { type: 'START_SUMMARY', runId });
+  return reduce(reduce(preflight(runId), { type: 'TOKENS_REFINED', runId, estimate: est }), {
+    type: 'START_SUMMARY',
+    runId
+  });
 }
 
 test('EXTRACT_OK seeds a placeholder estimate from the selected mode', () => {
@@ -112,7 +115,10 @@ test('TOKENS_REFINED: clears refining in PREFLIGHT, updates CONFIRM, ignored els
 
   const s = summarizing();
   assert.equal(reduce(s, { type: 'TOKENS_REFINED', runId: 'r1', estimate: refined }), s);
-  assert.equal(reduce(preflight(), { type: 'TOKENS_REFINED', runId: 'stale', estimate: refined }).estimate.tokenExact, undefined);
+  assert.equal(
+    reduce(preflight(), { type: 'TOKENS_REFINED', runId: 'stale', estimate: refined }).estimate.tokenExact,
+    undefined
+  );
   const idle = AS.StateMachine.initialState('auto', 'BULLETS_5');
   assert.equal(reduce(idle, { type: 'TOKENS_REFINED', runId: 'r1', estimate: refined }), idle);
 });
@@ -150,7 +156,11 @@ test('NEEDS_CONFIRM requires PREFLIGHT for the same run', () => {
 
 test('START_SUMMARY: single-pass vs map progress, and only from PREFLIGHT/CONFIRM of the same run', () => {
   assert.deepEqual(plain(summarizing().progress), { stage: 'SINGLE' });
-  assert.deepEqual(plain(summarizing('r1', estimate({ chunkCount: 4 })).progress), { stage: 'MAP', current: 0, total: 4 });
+  assert.deepEqual(plain(summarizing('r1', estimate({ chunkCount: 4 })).progress), {
+    stage: 'MAP',
+    current: 0,
+    total: 4
+  });
 
   const fromConfirm = reduce(confirm(), { type: 'START_SUMMARY', runId: 'r1' });
   assert.equal(fromConfirm.phase, 'SUMMARIZING');

@@ -307,7 +307,13 @@ function buildSummaryRequest(msg: AnyMsg): SummaryRequest | undefined {
       return {
         model: p.model,
         maxTokens: modeMaxOutputTokens(p.mode),
-        userPrompt: buildSinglePrompt({ title: p.title, url: p.url, language: p.language, mode: p.mode, articleText: p.articleText }),
+        userPrompt: buildSinglePrompt({
+          title: p.title,
+          url: p.url,
+          language: p.language,
+          mode: p.mode,
+          articleText: p.articleText
+        }),
         timeoutMs: 75_000,
         maxRetries: 2,
         maxTokensCap: 6000
@@ -425,7 +431,9 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
   if (msg.type === 'COUNT_TOKENS') {
     const p = (msg as MsgCountTokens).payload;
     const userPrompt = buildTokenCountPrompt({ title: p.title, url: p.url, articleText: p.articleText });
-    const r = await withRunAbort(p.runId, (abortSignal) => countTokens({ apiKey, model: p.model, userPrompt, abortSignal }));
+    const r = await withRunAbort(p.runId, (abortSignal) =>
+      countTokens({ apiKey, model: p.model, userPrompt, abortSignal })
+    );
     return r.ok ? { ok: true, inputTokens: r.inputTokens } : r;
   }
 
@@ -439,17 +447,19 @@ async function handleMessage(msg: AnyMsg): Promise<unknown> {
   return { ok: false, code: 'unknown_type', message: `Unknown message type: ${msg.type}` };
 }
 
-chrome.runtime.onMessage.addListener((msg: AnyMsg, _sender: chrome.runtime.MessageSender, sendResponse: (resp: unknown) => void) => {
-  void (async () => {
-    try {
-      sendResponse(await handleMessage(msg));
-    } catch (err) {
-      // Avoid leaking sensitive data.
-      console.error('[ArticleSummarizer] background message handler failed', err);
-      sendResponse({ ok: false, code: 'internal_error', message: 'Internal error' });
-    }
-  })();
+chrome.runtime.onMessage.addListener(
+  (msg: AnyMsg, _sender: chrome.runtime.MessageSender, sendResponse: (resp: unknown) => void) => {
+    void (async () => {
+      try {
+        sendResponse(await handleMessage(msg));
+      } catch (err) {
+        // Avoid leaking sensitive data.
+        console.error('[ArticleSummarizer] background message handler failed', err);
+        sendResponse({ ok: false, code: 'internal_error', message: 'Internal error' });
+      }
+    })();
 
-  // Indicate async response.
-  return true;
-});
+    // Indicate async response.
+    return true;
+  }
+);

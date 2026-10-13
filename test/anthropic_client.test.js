@@ -27,7 +27,11 @@ function response(status, body) {
 }
 
 function messages(text, stopReason = 'end_turn') {
-  return response(200, { content: [{ type: 'text', text }], stop_reason: stopReason, usage: { input_tokens: 1, output_tokens: 2 } });
+  return response(200, {
+    content: [{ type: 'text', text }],
+    stop_reason: stopReason,
+    usage: { input_tokens: 1, output_tokens: 2 }
+  });
 }
 
 function abortError() {
@@ -61,10 +65,14 @@ test('an abort that lands between max_tokens retries stops the next attempt', as
   reset((_url, init) => {
     if (fetchCalls.length === 1) {
       // The run is cancelled while the first (truncated) response is being read.
-      return { ok: true, status: 200, text: async () => {
-        controller.abort();
-        return JSON.stringify({ content: [{ type: 'text', text: '- cut' }], stop_reason: 'max_tokens' });
-      } };
+      return {
+        ok: true,
+        status: 200,
+        text: async () => {
+          controller.abort();
+          return JSON.stringify({ content: [{ type: 'text', text: '- cut' }], stop_reason: 'max_tokens' });
+        }
+      };
     }
     return init.signal.aborted ? Promise.reject(abortError()) : messages('- retried anyway');
   });
@@ -151,7 +159,12 @@ test('only text blocks make up the summary (thinking and other blocks are skippe
 
   // A 200 response without content is an empty summary, not an error.
   reset(() => response(200, ''));
-  assert.deepEqual(await runMessagesWithRetry(REQUEST), { ok: true, text: '', usage: undefined, stopReason: undefined });
+  assert.deepEqual(await runMessagesWithRetry(REQUEST), {
+    ok: true,
+    text: '',
+    usage: undefined,
+    stopReason: undefined
+  });
 });
 
 test('max_tokens retries never exceed the cap', async () => {

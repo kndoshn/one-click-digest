@@ -83,7 +83,9 @@ function setup({ settings, article, respond }) {
     setBanner: () => {},
     showToast: () => {}
   };
-  ctx.AS.Extract = { extractArticle: () => ({ ok: true, linkDensity: 0.01, charCount: article.text.length, ...article }) };
+  ctx.AS.Extract = {
+    extractArticle: () => ({ ok: true, linkDensity: 0.01, charCount: article.text.length, ...article })
+  };
 
   ctx.AS.Controller.bootstrap();
   return { sent, host, overlay };
@@ -106,8 +108,10 @@ test('single pass: format repair, then truncation repair', async () => {
     settings: { minArticleChars: 50 },
     article,
     respond: (m) => {
-      if (m.type === 'RUN_SUMMARY_SINGLE') return { ok: true, text: 'Here:\n- A.\n- B.\n- C.', usage: { input_tokens: 1, output_tokens: 2 } };
-      if (m.type === 'RUN_SUMMARY_REPAIR' && !m.payload.fixTruncation) return { ok: true, text: '- A.\n\n- B.\n\n- C cut' };
+      if (m.type === 'RUN_SUMMARY_SINGLE')
+        return { ok: true, text: 'Here:\n- A.\n- B.\n- C.', usage: { input_tokens: 1, output_tokens: 2 } };
+      if (m.type === 'RUN_SUMMARY_REPAIR' && !m.payload.fixTruncation)
+        return { ok: true, text: '- A.\n\n- B.\n\n- C cut' };
       if (m.type === 'RUN_SUMMARY_REPAIR') return { ok: true, text: '- A.\n\n- B.\n\n- C done.' };
       return { ok: false, code: 'unhandled' };
     }
@@ -122,11 +126,25 @@ test('single pass: format repair, then truncation repair', async () => {
   assert.deepEqual(withoutRunId(sent), [
     {
       type: 'RUN_SUMMARY_SINGLE',
-      payload: { title: 'Short', url: article.url, language: 'en-US', mode: 'BULLETS_3', articleText: article.text, model: 'claude-haiku-5-5' }
+      payload: {
+        title: 'Short',
+        url: article.url,
+        language: 'en-US',
+        mode: 'BULLETS_3',
+        articleText: article.text,
+        model: 'claude-haiku-5-5'
+      }
     },
     {
       type: 'RUN_SUMMARY_REPAIR',
-      payload: { language: 'en-US', mode: 'BULLETS_3', badOutput: 'Here:\n- A.\n- B.\n- C.', model: 'claude-haiku-5-5', title: 'Short', url: article.url }
+      payload: {
+        language: 'en-US',
+        mode: 'BULLETS_3',
+        badOutput: 'Here:\n- A.\n- B.\n- C.',
+        model: 'claude-haiku-5-5',
+        title: 'Short',
+        url: article.url
+      }
     },
     {
       type: 'RUN_SUMMARY_REPAIR',
@@ -168,7 +186,9 @@ test('single pass: failed repair keeps the draft and normalizes continuation lin
 
 test('map-reduce: approval, token count, map per chunk, reduce, format repair, truncation repair', async () => {
   // Three ~20K-char paragraphs: each becomes its own chunk (8K-token target).
-  const paras = ['First paragraph. ', 'Second paragraph. ', 'Third paragraph. '].map((s) => s.repeat(Math.ceil(20_000 / s.length)).trim());
+  const paras = ['First paragraph. ', 'Second paragraph. ', 'Third paragraph. '].map((s) =>
+    s.repeat(Math.ceil(20_000 / s.length)).trim()
+  );
   const article = { title: 'Long', url: 'https://example.com/long', text: paras.join('\n\n') };
   const mapOut = (i) => `- point ${i}`;
 
@@ -178,8 +198,10 @@ test('map-reduce: approval, token count, map per chunk, reduce, format repair, t
     respond: (m) => {
       if (m.type === 'COUNT_TOKENS') return { ok: true, inputTokens: 18_000 };
       if (m.type === 'RUN_SUMMARY_MAP') return { ok: true, text: mapOut(m.payload.chunkIndex) };
-      if (m.type === 'RUN_SUMMARY_REDUCE') return { ok: true, text: 'Summary:\n- x', usage: { input_tokens: 9, output_tokens: 8 } };
-      if (m.type === 'RUN_SUMMARY_REPAIR' && !m.payload.fixTruncation) return { ok: true, text: '- A.\n\n- B.\n\n- C cut' };
+      if (m.type === 'RUN_SUMMARY_REDUCE')
+        return { ok: true, text: 'Summary:\n- x', usage: { input_tokens: 9, output_tokens: 8 } };
+      if (m.type === 'RUN_SUMMARY_REPAIR' && !m.payload.fixTruncation)
+        return { ok: true, text: '- A.\n\n- B.\n\n- C cut' };
       if (m.type === 'RUN_SUMMARY_REPAIR') return { ok: true, text: '- A.\n\n- B.\n\n- C done.' };
       return { ok: false, code: 'unhandled' };
     }
@@ -201,19 +223,47 @@ test('map-reduce: approval, token count, map per chunk, reduce, format repair, t
   assert.deepEqual(JSON.parse(JSON.stringify(overlay.lastState.usage)), { input_tokens: 9, output_tokens: 8 });
 
   const chunkSummaries = [mapOut(1), mapOut(2), mapOut(3)];
-  const repairBase = { language: 'en-US', mode: 'BULLETS_3', model: 'claude-sonnet-5-5', title: 'Long', url: article.url, chunkSummaries };
+  const repairBase = {
+    language: 'en-US',
+    mode: 'BULLETS_3',
+    model: 'claude-sonnet-5-5',
+    title: 'Long',
+    url: article.url,
+    chunkSummaries
+  };
   assert.deepEqual(withoutRunId(sent), [
-    { type: 'COUNT_TOKENS', payload: { title: 'Long', url: article.url, articleText: article.text, model: 'claude-haiku-5-5' } },
+    {
+      type: 'COUNT_TOKENS',
+      payload: { title: 'Long', url: article.url, articleText: article.text, model: 'claude-haiku-5-5' }
+    },
     ...paras.map((chunkText, i) => ({
       type: 'RUN_SUMMARY_MAP',
-      payload: { title: 'Long', url: article.url, language: 'en-US', chunkText, chunkIndex: i + 1, chunkCount: 3, model: 'claude-haiku-5-5' }
+      payload: {
+        title: 'Long',
+        url: article.url,
+        language: 'en-US',
+        chunkText,
+        chunkIndex: i + 1,
+        chunkCount: 3,
+        model: 'claude-haiku-5-5'
+      }
     })),
     {
       type: 'RUN_SUMMARY_REDUCE',
-      payload: { title: 'Long', url: article.url, language: 'en-US', mode: 'BULLETS_3', chunkSummaries, model: 'claude-sonnet-5-5' }
+      payload: {
+        title: 'Long',
+        url: article.url,
+        language: 'en-US',
+        mode: 'BULLETS_3',
+        chunkSummaries,
+        model: 'claude-sonnet-5-5'
+      }
     },
     { type: 'RUN_SUMMARY_REPAIR', payload: { ...repairBase, badOutput: 'Summary:\n- x' } },
-    { type: 'RUN_SUMMARY_REPAIR', payload: { ...repairBase, badOutput: '- A.\n\n- B.\n\n- C cut', fixTruncation: true } }
+    {
+      type: 'RUN_SUMMARY_REPAIR',
+      payload: { ...repairBase, badOutput: '- A.\n\n- B.\n\n- C cut', fixTruncation: true }
+    }
   ]);
 });
 
@@ -226,7 +276,8 @@ test('map-reduce: a failed map chunk stops the run with an error', async () => {
     respond: (m) => {
       if (m.type === 'COUNT_TOKENS') return { ok: false, code: 'network_error', status: 0 };
       if (m.type === 'RUN_SUMMARY_MAP' && m.payload.chunkIndex === 1) return { ok: true, text: '- one' };
-      if (m.type === 'RUN_SUMMARY_MAP') return { ok: false, code: 'rate_limit_error', message: 'slow down', status: 429 };
+      if (m.type === 'RUN_SUMMARY_MAP')
+        return { ok: false, code: 'rate_limit_error', message: 'slow down', status: 429 };
       return { ok: false, code: 'unhandled' };
     }
   });

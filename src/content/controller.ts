@@ -316,7 +316,12 @@ namespace AS {
       );
     }
 
-    async function runSinglePass(runId: string, article: ExtractOk, mode: SummaryMode, language: string): Promise<void> {
+    async function runSinglePass(
+      runId: string,
+      article: ExtractOk,
+      mode: SummaryMode,
+      language: string
+    ): Promise<void> {
       reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
       const resp = await sendMessage({
         type: 'RUN_SUMMARY_SINGLE',
@@ -338,7 +343,15 @@ namespace AS {
         return;
       }
 
-      await finishSummary(runId, mode, language, resp.text, MODEL_MAP, { title: article.title, url: article.url }, resp.usage);
+      await finishSummary(
+        runId,
+        mode,
+        language,
+        resp.text,
+        MODEL_MAP,
+        { title: article.title, url: article.url },
+        resp.usage
+      );
     }
 
     async function runSummary(runId: string, article: ExtractOk): Promise<void> {
@@ -387,7 +400,10 @@ namespace AS {
       if (!isRunActive(runId)) return;
 
       if (!r.ok) {
-        reduce({ type: 'EXTRACT_FAIL', runId, message: t(EXTRACT_ERROR_KEYS[r.code] || 'errorExtractionFailed') }, true);
+        reduce(
+          { type: 'EXTRACT_FAIL', runId, message: t(EXTRACT_ERROR_KEYS[r.code] || 'errorExtractionFailed') },
+          true
+        );
         return;
       }
 
@@ -426,26 +442,35 @@ namespace AS {
 
       // Decide next state without flicker: batch transitions and render once.
       setState(StateMachine.reduce(ctx.state, { type: 'EXTRACT_OK', runId, article: articleForState }), false);
-      setState(StateMachine.reduce(ctx.state, {
-        type: 'PREFLIGHT_READY',
-        runId,
-        estimate,
-        refining: false
-      }), false);
+      setState(
+        StateMachine.reduce(ctx.state, {
+          type: 'PREFLIGHT_READY',
+          runId,
+          estimate,
+          refining: false
+        }),
+        false
+      );
 
       if (Estimate.isOverHardLimit(estimate)) {
-        setState(StateMachine.reduce(ctx.state, { type: 'BLOCKED', runId, estimate, reason: t('reasonHardLimit') }), true);
+        setState(
+          StateMachine.reduce(ctx.state, { type: 'BLOCKED', runId, estimate, reason: t('reasonHardLimit') }),
+          true
+        );
         return;
       }
 
       if (Estimate.needsApproval(estimate)) {
         // Show preflight first, refine tokens in background.
-        setState(StateMachine.reduce(ctx.state, {
-          type: 'PREFLIGHT_READY',
-          runId,
-          estimate,
-          refining: true
-        }), true);
+        setState(
+          StateMachine.reduce(ctx.state, {
+            type: 'PREFLIGHT_READY',
+            runId,
+            estimate,
+            refining: true
+          }),
+          true
+        );
         refineTokensIfPossible(runId, estimate, articleForState).catch(() => {
           // ignore
         });
@@ -679,7 +704,12 @@ namespace AS {
             setUiLanguage(typeof next === 'string' ? next : 'auto')
               .then(() => {
                 if (ctx.disposed) return;
-                Overlay.setLanguageOptions(ctx.overlay, OUTPUT_LANGUAGES, ctx.state.selectedLanguage, ctx.acceptLanguages);
+                Overlay.setLanguageOptions(
+                  ctx.overlay,
+                  OUTPUT_LANGUAGES,
+                  ctx.state.selectedLanguage,
+                  ctx.acceptLanguages
+                );
                 Overlay.render(ctx.overlay, ctx.state);
               })
               .catch(() => {

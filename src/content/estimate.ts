@@ -63,7 +63,12 @@ namespace AS {
       return estimateTokensFromCounts(text.length, countCjkChars(text));
     }
 
-    function costUsdInOut(inputTokens: number, outputTokens: number, pricing: ModelPricing, inputMultiplier = 1): number {
+    function costUsdInOut(
+      inputTokens: number,
+      outputTokens: number,
+      pricing: ModelPricing,
+      inputMultiplier = 1
+    ): number {
       const mult = Number.isFinite(inputMultiplier) && inputMultiplier > 0 ? inputMultiplier : 1;
       const input = (inputTokens / 1_000_000) * pricing.inputUsdPerMTok * mult;
       const output = (outputTokens / 1_000_000) * pricing.outputUsdPerMTok;
@@ -137,7 +142,8 @@ namespace AS {
       const writeMult = cachingLikely ? cacheWriteMultiplier() : 1;
 
       const reducePricing = applyPricingTier(args.finalPricing, reduceInput);
-      const reduceCost = costUsdInTokens(reduceInput, reducePricing, writeMult) + costUsdOutTokens(outMax, reducePricing);
+      const reduceCost =
+        costUsdInTokens(reduceInput, reducePricing, writeMult) + costUsdOutTokens(outMax, reducePricing);
       return mapCost + reduceCost;
     }
 
@@ -178,7 +184,10 @@ namespace AS {
       };
     }
 
-    function pricingFor(mapModel: string, finalModel: string): { mapPricing: ModelPricing; finalPricing: ModelPricing } {
+    function pricingFor(
+      mapModel: string,
+      finalModel: string
+    ): { mapPricing: ModelPricing; finalPricing: ModelPricing } {
       return {
         mapPricing: PRICING[mapModel] || conservativePricing(),
         finalPricing: PRICING[finalModel] || conservativePricing()

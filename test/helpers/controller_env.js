@@ -61,7 +61,17 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
   const toasts = [];
   const errors = [];
   const page = { overlayHost: null };
-  const env = { sent, storageListeners, overlays, toasts, errors, page, confirmResult: true, confirmCalls: 0, copyResult: true };
+  const env = {
+    sent,
+    storageListeners,
+    overlays,
+    toasts,
+    errors,
+    page,
+    confirmResult: true,
+    confirmCalls: 0,
+    copyResult: true
+  };
 
   // The page-level parent of the overlay host (document.documentElement in the real DOM).
   const root = {
@@ -132,7 +142,15 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
         const host = new EventTarget();
         host.parentNode = root;
         // `host` is the page-visible element; `events` carries the overlay's UI events.
-        const inst = { host, events: new EventTarget(), lastState: null, states: [], renders: 0, unmounted: false, languageOptionsSet: 0 };
+        const inst = {
+          host,
+          events: new EventTarget(),
+          lastState: null,
+          states: [],
+          renders: 0,
+          unmounted: false,
+          languageOptionsSet: 0
+        };
         overlays.push(inst);
         page.overlayHost = host;
         return inst;
@@ -164,7 +182,8 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
   // A UI event from the overlay's own controls.
   env.dispatch = (inst, type, detail = {}) => inst.events.dispatchEvent(new CustomEventPolyfill(type, { detail }));
   // An event a page script dispatches on the overlay host element (which is in the page DOM).
-  env.dispatchFromPage = (inst, type, detail = {}) => inst.host.dispatchEvent(new CustomEventPolyfill(type, { detail }));
+  env.dispatchFromPage = (inst, type, detail = {}) =>
+    inst.host.dispatchEvent(new CustomEventPolyfill(type, { detail }));
   env.ctx = ctx;
   return env;
 }

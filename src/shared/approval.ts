@@ -28,7 +28,9 @@ export function normalizeApprovalThresholds(input: NormalizeApprovalInput): Appr
   const legacyChars = rawChars === LEGACY_CHARS || rawCharsStr === String(LEGACY_CHARS);
 
   const approvalThresholdUsd = legacyUsd ? input.defaultUsd : parseNumberOr(rawUsd, input.defaultUsd);
-  const approvalThresholdChars = legacyChars ? input.defaultChars : Math.floor(parseNumberOr(rawChars, input.defaultChars));
+  const approvalThresholdChars = legacyChars
+    ? input.defaultChars
+    : Math.floor(parseNumberOr(rawChars, input.defaultChars));
 
   return {
     approvalThresholdUsd,

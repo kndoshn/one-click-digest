@@ -63,11 +63,37 @@ function setup() {
   const AS = ctx.AS;
   const inst = AS.Overlay.mount();
   const events = [];
-  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language', 'as:bulletStyle']) {
-    inst.events.addEventListener(type, (ev) => events.push([type, ev.detail == null ? null : JSON.parse(JSON.stringify(ev.detail))]));
+  for (const type of [
+    'as:close',
+    'as:openOptions',
+    'as:cancel',
+    'as:reset',
+    'as:copy',
+    'as:proceed',
+    'as:run',
+    'as:runLight',
+    'as:mode',
+    'as:language',
+    'as:bulletStyle'
+  ]) {
+    inst.events.addEventListener(type, (ev) =>
+      events.push([type, ev.detail == null ? null : JSON.parse(JSON.stringify(ev.detail))])
+    );
   }
   const hostEvents = [];
-  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language', 'as:bulletStyle']) {
+  for (const type of [
+    'as:close',
+    'as:openOptions',
+    'as:cancel',
+    'as:reset',
+    'as:copy',
+    'as:proceed',
+    'as:run',
+    'as:runLight',
+    'as:mode',
+    'as:language',
+    'as:bulletStyle'
+  ]) {
     inst.host.addEventListener(type, () => hostEvents.push(type));
   }
   return { AS, doc, inst, timers, events, hostEvents };
@@ -162,7 +188,14 @@ test('busy phases disable the language select and settings button and let clicks
 
 test('PREFLIGHT: estimate rows and Cancel/Proceed', () => {
   const { AS, inst, events } = setup();
-  AS.Overlay.render(inst, { ...base, phase: 'PREFLIGHT', runId: 'r', article: ARTICLE, estimate: ESTIMATE, refining: true });
+  AS.Overlay.render(inst, {
+    ...base,
+    phase: 'PREFLIGHT',
+    runId: 'r',
+    article: ARTICLE,
+    estimate: ESTIMATE,
+    refining: true
+  });
 
   assert.equal(inst.body.querySelector('.sectionTitle').textContent, 'sectionEstimate');
   assert.deepEqual(kvRows(inst.body), [
@@ -208,15 +241,10 @@ test('CONFIRM: approval details, data-sent note, and Cancel/Run light/Run', () =
   });
 
   assert.equal(inst.body.children[0].textContent, 'promptApprovalRequired');
-  assert.deepEqual(kvRows(inst.body).map(([k]) => k), [
-    'labelChars',
-    'labelSendChars',
-    'labelTokens',
-    'labelCost',
-    'labelTime',
-    'labelModel',
-    'labelChunkCount'
-  ]);
+  assert.deepEqual(
+    kvRows(inst.body).map(([k]) => k),
+    ['labelChars', 'labelSendChars', 'labelTokens', 'labelCost', 'labelTime', 'labelModel', 'labelChunkCount']
+  );
   assert.deepEqual(
     inst.body.querySelectorAll('.note').map((n) => n.textContent),
     ['noteDataSent', 'noteTruncated', 'noteChunking']
@@ -233,7 +261,14 @@ test('CONFIRM: approval details, data-sent note, and Cancel/Run light/Run', () =
 test('SUMMARIZING: progress label per stage, animated dots, Cancel', () => {
   const { AS, inst, timers } = setup();
   const render = (progress) => {
-    AS.Overlay.render(inst, { ...base, phase: 'SUMMARIZING', runId: 'r', article: ARTICLE, estimate: ESTIMATE, progress });
+    AS.Overlay.render(inst, {
+      ...base,
+      phase: 'SUMMARIZING',
+      runId: 'r',
+      article: ARTICLE,
+      estimate: ESTIMATE,
+      progress
+    });
     return inst.body.querySelector('.statusMessage');
   };
 
@@ -290,7 +325,13 @@ test('DONE: the summary, Copy, and a mode bar that re-runs in another mode', () 
 
 test('DONE: the bullet style buttons pick how the summary is shown, without re-running', () => {
   const { AS, inst, events } = setup();
-  const done = { ...base, phase: 'DONE', runId: 'r', article: ARTICLE, summaryText: 'Summary: S\n\n- A.\n\n- B.\n\nConclusion: C' };
+  const done = {
+    ...base,
+    phase: 'DONE',
+    runId: 'r',
+    article: ARTICLE,
+    summaryText: 'Summary: S\n\n- A.\n\n- B.\n\nConclusion: C'
+  };
   const styleButtons = () => inst.footer.querySelector('.bulletStyles').children;
 
   AS.Overlay.render(inst, { ...done, bulletStyle: 'number' });
@@ -299,7 +340,13 @@ test('DONE: the bullet style buttons pick how the summary is shown, without re-r
   assert.equal(group.getAttribute('role'), 'group');
   assert.equal(group.getAttribute('aria-label'), 'labelBulletStyle');
   assert.deepEqual(
-    styleButtons().map((b) => [b.textContent, b.getAttribute('aria-label'), b.title, b.getAttribute('aria-pressed'), b.classList.contains('selected')]),
+    styleButtons().map((b) => [
+      b.textContent,
+      b.getAttribute('aria-label'),
+      b.title,
+      b.getAttribute('aria-pressed'),
+      b.classList.contains('selected')
+    ]),
     [
       ['-', 'bulletStyleDash', 'bulletStyleDash', 'false', false],
       ['・', 'bulletStyleDot', 'bulletStyleDot', 'false', false],
@@ -312,7 +359,10 @@ test('DONE: the bullet style buttons pick how the summary is shown, without re-r
 
   AS.Overlay.render(inst, { ...done, bulletStyle: 'dot' });
   assert.equal(inst.body.querySelector('.summary').textContent, 'Summary: S\n\n・A.\n\n・B.\n\nConclusion: C');
-  assert.deepEqual(styleButtons().map((b) => b.getAttribute('aria-pressed')), ['false', 'true', 'false']);
+  assert.deepEqual(
+    styleButtons().map((b) => b.getAttribute('aria-pressed')),
+    ['false', 'true', 'false']
+  );
 
   // Other screens have no bullet style buttons.
   AS.Overlay.render(inst, { ...base, phase: 'ERROR', message: 'm' });

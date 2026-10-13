@@ -8,7 +8,8 @@ import { createClassicContext, runClassicScripts } from './helpers/classic_conte
 import { FakeDocument, loadHtml } from './helpers/fake_dom.js';
 
 const sentence = (n, word = 'Body') => `${word} sentence number ${n} with enough words to count.`;
-const paragraphs = (count, word) => Array.from({ length: count }, (_, i) => `<p>${sentence(i + 1, word)}</p>`).join('\n');
+const paragraphs = (count, word) =>
+  Array.from({ length: count }, (_, i) => `<p>${sentence(i + 1, word)}</p>`).join('\n');
 
 function load({ html = '', title = 'Page title', readability, minArticleChars = 200 } = {}) {
   const doc = loadHtml(new FakeDocument(), html);
@@ -47,7 +48,10 @@ test('Readability path: normalized text, title, URL and link density from the pa
   const calls = [];
   const text = `  ${sentence(1)}\r\n\r\n\r\n\r\n${sentence(2)}   \t ${sentence(3)} `.repeat(4);
   const { AS, doc } = load({
-    readability: readabilityReturning({ title: '  Readable title ', textContent: text, content: '<p>text <a>link</a></p>' }, calls)
+    readability: readabilityReturning(
+      { title: '  Readable title ', textContent: text, content: '<p>text <a>link</a></p>' },
+      calls
+    )
   });
 
   const r = plain(AS.Extract.extractArticle());
@@ -75,7 +79,10 @@ test('Readability path: a blank title falls back to the page title', () => {
 });
 
 test('Readability path: too short or link-heavy results are rejected without the fallback', () => {
-  const short = load({ readability: readabilityReturning({ textContent: 'Too short.', content: '' }), html: paragraphs(20) });
+  const short = load({
+    readability: readabilityReturning({ textContent: 'Too short.', content: '' }),
+    html: paragraphs(20)
+  });
   assert.deepEqual(plain(short.AS.Extract.extractArticle()), {
     ok: false,
     code: 'TOO_SHORT',
@@ -97,7 +104,12 @@ test('Readability path: too short or link-heavy results are rejected without the
 
 test('the heuristic fallback runs when Readability is missing, returns nothing, or throws', () => {
   const html = `<article>${paragraphs(10)}</article>`;
-  for (const readability of [undefined, readabilityReturning(null), readabilityReturning({ textContent: '' }), readabilityReturning(new Error('x'))]) {
+  for (const readability of [
+    undefined,
+    readabilityReturning(null),
+    readabilityReturning({ textContent: '' }),
+    readabilityReturning(new Error('x'))
+  ]) {
     const { AS } = load({ html, readability });
     const r = AS.Extract.extractArticle();
     assert.equal(r.ok, true);
@@ -154,7 +166,11 @@ test('fallback: link-heavy, too short, and empty pages are rejected', () => {
   assert.ok(r.charCount > 0 && r.charCount < 600);
 
   const empty = load({ html: '<div><span>tiny</span></div>' });
-  assert.deepEqual(plain(empty.AS.Extract.extractArticle()), { ok: false, code: 'NO_MAIN_TEXT', message: 'No text blocks were found.' });
+  assert.deepEqual(plain(empty.AS.Extract.extractArticle()), {
+    ok: false,
+    code: 'NO_MAIN_TEXT',
+    message: 'No text blocks were found.'
+  });
 });
 
 test('unexpected DOM errors are reported as UNKNOWN', () => {

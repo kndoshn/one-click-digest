@@ -12,8 +12,9 @@ Common commands:
 ```bash
 npm install
 npm run build
+npm run format     # oxfmt; CI runs `npm run format:check`
 npm run typecheck
-npm run lint
+npm run lint       # oxlint, including type-aware rules
 npm test
 ```
 

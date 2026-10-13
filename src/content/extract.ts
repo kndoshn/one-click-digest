@@ -61,7 +61,8 @@ namespace AS {
         const charCount = text.length;
         if (charCount <= 0) return null;
 
-        const title = (typeof parsed.title === 'string' && parsed.title.trim().length > 0) ? parsed.title.trim() : getPageTitle();
+        const title =
+          typeof parsed.title === 'string' && parsed.title.trim().length > 0 ? parsed.title.trim() : getPageTitle();
         const url = getPageUrl();
         const linkDensity = typeof parsed.content === 'string' ? estimateLinkDensityFromHtml(parsed.content) : 0;
 

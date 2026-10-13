@@ -7,7 +7,9 @@ namespace AS {
     const BULLET_RE = /^\s*(?:[-*•・]\s+|\d+[.)]\s+)/;
 
     function normalize(text: string): string {
-      return String(text || '').replace(/\r\n/g, '\n').trim();
+      return String(text || '')
+        .replace(/\r\n/g, '\n')
+        .trim();
     }
 
     export function expectedBulletCount(mode: SummaryMode): number {
@@ -39,7 +41,17 @@ namespace AS {
       return undefined;
     }
 
-    const SUMMARY_LABELS = ['Summary', '要約', 'Résumé', 'Zusammenfassung', 'Resumen', 'Sintesi', 'Resumo', '摘要', '요약'];
+    const SUMMARY_LABELS = [
+      'Summary',
+      '要約',
+      'Résumé',
+      'Zusammenfassung',
+      'Resumen',
+      'Sintesi',
+      'Resumo',
+      '摘要',
+      '요약'
+    ];
     const CONCLUSION_LABELS = ['Conclusion', '結論', 'Fazit', 'Conclusión', 'Conclusione', 'Conclusão', '结论', '결론'];
 
     function escapeRegex(value: string): string {
@@ -148,7 +160,9 @@ namespace AS {
         return -1;
       };
 
-      for (const raw of String(input || '').replace(/\r\n/g, '\n').split('\n')) {
+      for (const raw of String(input || '')
+        .replace(/\r\n/g, '\n')
+        .split('\n')) {
         const line = raw.trim();
         if (line.length === 0) {
           out.push('');
@@ -194,7 +208,23 @@ namespace AS {
         .join('\n');
     }
 
-    const SENTENCE_END_CHARS = new Set(['.', '!', '?', '。', '！', '？', '…', '」', '』', '）', ')', '】', ']', '”', '"']);
+    const SENTENCE_END_CHARS = new Set([
+      '.',
+      '!',
+      '?',
+      '。',
+      '！',
+      '？',
+      '…',
+      '」',
+      '』',
+      '）',
+      ')',
+      '】',
+      ']',
+      '”',
+      '"'
+    ]);
 
     // Heuristic: the output looks cut off if its last line ends mid-word (no closing punctuation).
     export function isLikelyTruncatedOutput(text: string, language: string): boolean {
@@ -214,7 +244,10 @@ namespace AS {
       // Japanese bullets are intentionally instructed to omit a trailing "。" (see
       // bulletStyleNoteFor in background/prompts.ts), so a bare kana/kanji ending is
       // expected there and must not be mistaken for truncation.
-      const isJapanese = String(language || '').trim().toLowerCase().startsWith('ja');
+      const isJapanese = String(language || '')
+        .trim()
+        .toLowerCase()
+        .startsWith('ja');
       if (isJapanese && /[\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar)) return false;
 
       return /[A-Za-z0-9\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar);

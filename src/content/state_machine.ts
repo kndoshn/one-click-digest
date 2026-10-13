@@ -1,6 +1,10 @@
 namespace AS {
   export namespace StateMachine {
-    export function initialState(language: string, mode: SummaryMode, bulletStyle: BulletStyle = DEFAULT_BULLET_STYLE): UiState {
+    export function initialState(
+      language: string,
+      mode: SummaryMode,
+      bulletStyle: BulletStyle = DEFAULT_BULLET_STYLE
+    ): UiState {
       return {
         phase: 'IDLE',
         selectedLanguage: language,
@@ -154,9 +158,7 @@ namespace AS {
               banner: state.banner,
               article: state.article,
               estimate: state.estimate,
-              progress: willChunk
-                ? { stage: 'MAP', current: 0, total: state.estimate.chunkCount }
-                : { stage: 'SINGLE' }
+              progress: willChunk ? { stage: 'MAP', current: 0, total: state.estimate.chunkCount } : { stage: 'SINGLE' }
             };
           }
           return state;

@@ -11,7 +11,9 @@ namespace AS {
 
   // Keep in sync with toUiLang in src/options/index.ts.
   function toUiLang(input: string): UiLang {
-    const lower = String(input || '').trim().toLowerCase();
+    const lower = String(input || '')
+      .trim()
+      .toLowerCase();
     if (lower.startsWith('pt')) return 'pt-BR';
     if (lower.startsWith('zh')) {
       if (lower.includes('tw') || lower.includes('hk') || lower.includes('mo')) return 'zh-TW';

@@ -292,7 +292,8 @@ const RAW_TEXT_TAGS = new Set(['style', 'script']);
 export function loadHtml(doc, html) {
   const stack = [doc.body];
   const top = () => stack[stack.length - 1];
-  const tokenRe = /<!--[\s\S]*?-->|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s=>]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>|([^<]+)/gi;
+  const tokenRe =
+    /<!--[\s\S]*?-->|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s=>]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>|([^<]+)/gi;
   let m;
   while ((m = tokenRe.exec(html))) {
     const [token, closeTag, openTag, attrText, text] = m;

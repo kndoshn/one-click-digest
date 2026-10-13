@@ -31,7 +31,9 @@ export function modeMaxOutputTokens(mode: SummaryMode): number {
 }
 
 function normalizeLang(language: string): string {
-  return String(language || '').trim().toLowerCase();
+  return String(language || '')
+    .trim()
+    .toLowerCase();
 }
 
 function headerLabelsFor(language: string): { summary: string; conclusion: string } {
@@ -43,7 +45,8 @@ function headerLabelsFor(language: string): { summary: string; conclusion: strin
   if (lang.startsWith('it')) return { summary: 'Sintesi', conclusion: 'Conclusione' };
   if (lang.startsWith('pt')) return { summary: 'Resumo', conclusion: 'Conclusão' };
   if (lang.startsWith('zh')) {
-    if (lang.includes('tw') || lang.includes('hk') || lang.includes('mo')) return { summary: '摘要', conclusion: '結論' };
+    if (lang.includes('tw') || lang.includes('hk') || lang.includes('mo'))
+      return { summary: '摘要', conclusion: '結論' };
     return { summary: '摘要', conclusion: '结论' };
   }
   if (lang.startsWith('ko')) return { summary: '요약', conclusion: '결론' };

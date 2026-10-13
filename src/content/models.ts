@@ -209,7 +209,11 @@ namespace AS {
     }
 
     // Cost thresholds
-    if (typeof settings.hardCostLimitUsd === 'number' && isFinite(settings.hardCostLimitUsd) && settings.hardCostLimitUsd > 0) {
+    if (
+      typeof settings.hardCostLimitUsd === 'number' &&
+      isFinite(settings.hardCostLimitUsd) &&
+      settings.hardCostLimitUsd > 0
+    ) {
       HARD_COST_LIMIT_USD = settings.hardCostLimitUsd;
     }
     if (
@@ -228,7 +232,11 @@ namespace AS {
     }
 
     // Extraction/send limits
-    if (typeof settings.minArticleChars === 'number' && isFinite(settings.minArticleChars) && settings.minArticleChars >= 0) {
+    if (
+      typeof settings.minArticleChars === 'number' &&
+      isFinite(settings.minArticleChars) &&
+      settings.minArticleChars >= 0
+    ) {
       MIN_ARTICLE_CHARS = Math.floor(settings.minArticleChars);
     }
     if (
@@ -396,12 +404,23 @@ namespace AS {
     | { type: 'NEEDS_CONFIRM'; runId: string; estimate: Estimate; note?: string }
     | { type: 'BLOCKED'; runId: string; estimate: Estimate; reason: string }
     | { type: 'START_SUMMARY'; runId: string }
-    | { type: 'SUMMARY_PROGRESS'; runId: string; stage: 'SINGLE' | 'MAP' | 'REDUCE' | 'REPAIR'; current?: number; total?: number }
+    | {
+        type: 'SUMMARY_PROGRESS';
+        runId: string;
+        stage: 'SINGLE' | 'MAP' | 'REDUCE' | 'REPAIR';
+        current?: number;
+        total?: number;
+      }
     | { type: 'SUMMARY_DONE'; runId: string; summaryText: string; usage?: any }
     | { type: 'SUMMARY_ERROR'; runId: string; message: string }
     | { type: 'RESET'; banner?: string };
 
   export function isBusy(state: UiState): boolean {
-    return state.phase === 'EXTRACTING' || state.phase === 'PREFLIGHT' || state.phase === 'CONFIRM' || state.phase === 'SUMMARIZING';
+    return (
+      state.phase === 'EXTRACTING' ||
+      state.phase === 'PREFLIGHT' ||
+      state.phase === 'CONFIRM' ||
+      state.phase === 'SUMMARIZING'
+    );
   }
 }
