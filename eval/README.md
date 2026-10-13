@@ -6,7 +6,7 @@ Measures how well the extension's summarization pipeline works with real models,
 
 `eval/run.ts` sends every case through the same code the extension uses: the pipeline (`src/content/pipeline.ts`), the request builder (`src/background/summary_requests.ts`) and the API client (`src/background/anthropic.ts`), with the default models and prompt caching. Only text extraction is skipped: the article text is given directly.
 
-Cases (`eval/cases.ts`): every article in `eval/articles/` in every summary mode, in the article's language, plus two cases with a different output language (42 cases). The articles are fictional and written for this eval, so they can be published and are not in any model's training data. They cover English and Japanese, news, a science report, an engineering postmortem, an opinion piece, a very short notice, and two long articles that are summarized in chunks (map-reduce).
+Cases (`eval/cases.ts`): every article in `eval/articles/` in every summary mode, in the article's language, plus six cases with a different output language (66 cases). The articles are fictional and written for this eval, so they can be published and are not in any model's training data. They cover English and Japanese, news, a court ruling, a science report, an engineering postmortem, an opinion piece, a product review, an interview, a sports report, a local notice about water rates, a very short recall notice, and two long articles that are summarized in chunks (map-reduce).
 
 ## Running it
 

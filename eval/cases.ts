@@ -46,5 +46,19 @@ export const CASES: EvalCase[] = [
   }),
   // Output language different from the article's.
   { id: 'en-short-city-budget/BULLETS_5/ja', article: 'en-short-city-budget', mode: 'BULLETS_5', language: 'ja' },
-  { id: 'ja-short-hospital/BULLETS_5/en', article: 'ja-short-hospital', mode: 'BULLETS_5', language: 'en' }
+  { id: 'ja-short-hospital/BULLETS_5/en', article: 'ja-short-hospital', mode: 'BULLETS_5', language: 'en' },
+  { id: 'en-short-ebike-review/BULLETS_3/ja', article: 'en-short-ebike-review', mode: 'BULLETS_3', language: 'ja' },
+  {
+    id: 'en-short-postmortem/TLDR_12_CONCLUSION/ja',
+    article: 'en-short-postmortem',
+    mode: 'TLDR_12_CONCLUSION',
+    language: 'ja'
+  },
+  { id: 'ja-short-water-rates/BULLETS_10/en', article: 'ja-short-water-rates', mode: 'BULLETS_10', language: 'en' },
+  {
+    id: 'ja-short-earnings/TLDR_12_CONCLUSION/en',
+    article: 'ja-short-earnings',
+    mode: 'TLDR_12_CONCLUSION',
+    language: 'en'
+  }
 ];
