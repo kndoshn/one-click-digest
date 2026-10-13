@@ -44,3 +44,11 @@ test('UX invariants (static): panel border stays visible on dark pages', () => {
   // so the panel edge is distinguishable from dark-mode sites.
   assert.ok(Math.min(r, g, b) * a >= 220, `panel border too dark on black: rgba(${r},${g},${b},${a})`);
 });
+
+test('UX invariants (static): summary text is larger than the surrounding UI text', () => {
+  const p = path.join(process.cwd(), 'src', 'content', 'overlay.ts');
+  const text = fs.readFileSync(p, 'utf-8');
+  const m = /\.summary\s*\{[^}]*font-size:\s*(\d+)px/s.exec(text);
+  assert.ok(m, '.summary should have a px font-size');
+  assert.ok(Number(m[1]) >= 15, `summary font too small: ${m[1]}px`);
+});
