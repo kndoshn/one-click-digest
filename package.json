@@ -1,11 +1,11 @@
 {
-  "name": "article-summarizer-extension",
-  "version": "1.0.0",
-  "description": "Chrome extension for AI-powered article summarization using Claude API",
-  "private": false,
+  "name": "one-click-digest",
+  "version": "1.0.7",
+  "description": "Chrome extension that summarizes web articles with one click using your Claude API key",
+  "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24.11.0"
   },
   "scripts": {
     "clean": "node scripts/clean.mjs",
@@ -17,11 +17,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/user/one-click-digest"
+    "url": "git+https://github.com/kndoshn/one-click-digest.git"
   },
   "bugs": {
-    "url": "https://github.com/user/one-click-digest/issues"
+    "url": "https://github.com/kndoshn/one-click-digest/issues"
   },
+  "homepage": "https://github.com/kndoshn/one-click-digest#readme",
   "keywords": [
     "chrome-extension",
     "claude",
@@ -29,11 +30,10 @@
     "summarizer",
     "article"
   ],
-  "author": "",
+  "author": "kndoshn",
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.3.4",
-    "@types/filesystem": "^0.0.36",
     "c8": "^12.0.0",
     "typescript": "^7.0.2"
   }

@@ -1,20 +1,20 @@
 <div align="center">
-  <img src="public/Banner.png" alt="OneClickDigest" height="100" />
+  <img src="docs/images/Banner.png" alt="OneClickDigest" height="100" />
   <br /><br />
   <b>• OneClickDigest : Article Summarizer for Chrome / Brave •</b>
   <p>A browser extension that summarizes web articles with one click using your Claude API key.</p>
   <p><b>🔑 Your API key is stored locally on your device and never sent anywhere except directly to Anthropic.</b></p>
   <br />
-  <img src="public/screenshots/ss_01.png" alt="OneClickDigest overlay - mode selection" width="480" />
+  <img src="docs/images/screenshots/ss_01.png" alt="OneClickDigest overlay - mode selection" width="480" />
   <br />
-  <img src="public/screenshots/ss_02.png" alt="OneClickDigest overlay - summary output" width="480" />
+  <img src="docs/images/screenshots/ss_02.png" alt="OneClickDigest overlay - summary output" width="480" />
 </div>
 
 ## Quick Start
 
 ### 1. Download the Extension
 
-Download the latest ZIP from [Releases](../../releases) and unzip it.
+Download `one-click-digest-<version>.zip` from the latest [release](../../releases/latest) and unzip it into a folder.
 
 ### 2. Install in Your Browser
 
@@ -23,14 +23,14 @@ Download the latest ZIP from [Releases](../../releases) and unzip it.
 1. Open `chrome://extensions`
 2. Enable **Developer mode** (top right)
 3. Click **Load unpacked**
-4. Select the `dist/` folder
+4. Select the unzipped folder (the one that contains `manifest.json`)
 
 **Brave:**
 
 1. Open `brave://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked**
-4. Select the `dist/` folder
+4. Select the unzipped folder (the one that contains `manifest.json`)
 
 ### 3. Get a Claude API Key
 
@@ -98,14 +98,16 @@ Your API key is stored locally and only sent to Anthropic for API calls. Do not 
 ### Build from Source
 
 ```bash
-git clone https://github.com/your-repo/one-click-digest.git
+git clone https://github.com/kndoshn/one-click-digest.git
 cd one-click-digest
 npm install
 npm run build
 npm test
 ```
 
-Load the `dist/` folder in your browser.
+`npm run build` writes the extension to `dist/` (not committed). Load that folder with **Load unpacked**.
+
+The Node.js version is pinned in `mise.toml`; with [mise](https://mise.jdx.dev/), run `mise install` first.
 
 ### Advanced Options
 

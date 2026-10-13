@@ -11,18 +11,18 @@ This is an open-source repository. Do not commit or push to `main` directly, eve
 5. Do not merge the PR yourself. When CI is green, give the maintainer the merge command:
 
    ```
-   gh pr merge <number> --squash --delete-branch --admin
+   gh pr merge <number> --squash --delete-branch
    ```
 
-   `--admin` is needed because the branch ruleset requires an approving review, which the PR author cannot give. `--delete-branch` also switches the local checkout back to an updated `main`.
+   The branch ruleset requires a PR and the `CI passed` check, but no approving review. PRs are squash-merged with the PR title as the commit message, so the PR title must use a conventional prefix too. `--delete-branch` also switches the local checkout back to an updated `main`.
 
 Do everything else yourself (branching, changes, tests, commits, pushes, the PR, CI fixes), so that the merge command is the only step left for the maintainer.
 
 ## Before opening a PR
 
-- Use Node.js 22.12+ (the version in `mise.toml`).
+- Use the Node.js version pinned in `mise.toml` (`mise install`).
 - Run `npm run typecheck` and `npm test`. `npm test` builds first.
-- `dist/` is committed. After changing `src/` or `public/`, run `npm run build` and commit `dist/` too. CI fails when `dist/` does not match a fresh build.
+- `dist/` is build output and is not committed.
 - Add or update tests for behavior changes (see `CONTRIBUTING.md`). For a bug fix, add a test that fails without the fix.
 - Content scripts (`src/content/*.ts`) are injected as classic scripts. `dist/content/*.js` must not contain `import` or `export`, not even in comments (a test checks this).
 - Never put API calls or the API key in content scripts. They belong in the background worker.

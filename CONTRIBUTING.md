@@ -5,7 +5,7 @@ Thanks for considering contributing.
 ## Development
 
 Prerequisites:
-- Node.js 22.12+ (the version in `mise.toml`; CI also tests the current LTS)
+- Node.js, at the version pinned in `mise.toml` (run `mise install` with [mise](https://mise.jdx.dev/)). CI uses the same version.
 
 Common commands:
 
@@ -14,6 +14,10 @@ npm install
 npm run build
 npm test
 ```
+
+`npm run build` writes the unpacked extension to `dist/`, which is not committed. Load it from `chrome://extensions` with **Load unpacked**.
+
+`.npmrc` sets `min-release-age=7`, so npm does not pick package versions published less than 7 days ago.
 
 ## Code style
 
