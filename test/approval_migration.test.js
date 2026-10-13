@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { normalizeApprovalThresholds } from '../dist/shared/approval.js';
+import { normalizeApprovalThresholds } from '../src/shared/approval.ts';
 
 test('normalizeApprovalThresholds migrates legacy defaults', () => {
   const result = normalizeApprovalThresholds({

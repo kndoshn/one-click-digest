@@ -1,10 +1,10 @@
-// Unit tests for the background Anthropic API client (dist/background/anthropic.js) with a
+// Unit tests for the background Anthropic API client (src/background/anthropic.ts) with a
 // stubbed global fetch.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { countTokens, runMessagesWithRetry } from '../dist/background/anthropic.js';
+import { countTokens, runMessagesWithRetry } from '../src/background/anthropic.ts';
 
 let fetchImpl;
 const fetchCalls = [];

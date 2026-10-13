@@ -21,6 +21,8 @@ node_modules/
 
 # Build output (built by `npm run build`, shipped as a release zip)
 dist/
+# Test bundles (built by `npm test`)
+build/
 
 # Coverage
 coverage/

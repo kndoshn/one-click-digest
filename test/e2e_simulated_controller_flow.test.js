@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function makeEventTarget() {
   const listeners = new Map();
@@ -29,16 +29,7 @@ async function waitFor(fn, { timeoutMs = 2500, intervalMs = 10 } = {}) {
 }
 
 function loadCore(ctx) {
-  return runClassicScripts(ctx, [
-    'dist/content/runtime.js',
-    'dist/content/i18n.js',
-    'dist/content/models.js',
-    'dist/content/state_machine.js',
-    'dist/content/format.js',
-    'dist/content/chunk.js',
-    'dist/content/estimate.js',
-    'dist/content/controller.js'
-  ]);
+  return runContentBundle(ctx);
 }
 
 test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE', async () => {
@@ -98,7 +89,7 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
   loadCore(ctx);
 
   // Stub DOM-dependent modules.
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -114,7 +105,7 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
     }
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({
       ok: true,
       title: 'T',
@@ -126,9 +117,9 @@ test('Simulated E2E: single-pass run reaches DONE and calls RUN_SUMMARY_SINGLE',
   };
 
   // Avoid touching the real DOM clipboard APIs.
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
 
   // Wait until settings are loaded (apiKeySet reflected).
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE');
@@ -210,7 +201,7 @@ test('Simulated E2E: long article triggers approval → map-reduce → repair', 
 
   loadCore(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -222,7 +213,7 @@ test('Simulated E2E: long article triggers approval → map-reduce → repair', 
     showToast: () => {}
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => {
       const huge = 'Long article text. '.repeat(4000);
       return {
@@ -236,9 +227,9 @@ test('Simulated E2E: long article triggers approval → map-reduce → repair', 
     }
   };
 
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
 
   // Wait until settings are loaded (ensures token refinement path is eligible).
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE' && overlay.lastState.apiKeySet === true);
@@ -309,7 +300,7 @@ test('Simulated E2E: token refinement clears even when API key is missing (no st
 
   loadCore(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -321,7 +312,7 @@ test('Simulated E2E: token refinement clears even when API key is missing (no st
     showToast: () => {}
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => {
       const huge = 'Long article text. '.repeat(4000);
       return {
@@ -335,9 +326,9 @@ test('Simulated E2E: token refinement clears even when API key is missing (no st
     }
   };
 
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
 
   // Wait for IDLE. apiKeySet should be false.
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE' && overlay.lastState.apiKeySet === false);
@@ -403,7 +394,7 @@ test('Simulated E2E: cancel aborts and resets without confirm', async () => {
 
   loadCore(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -417,7 +408,7 @@ test('Simulated E2E: cancel aborts and resets without confirm', async () => {
     showToast: () => {}
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => {
       const huge = 'Long article text. '.repeat(4000);
       return {
@@ -431,9 +422,9 @@ test('Simulated E2E: cancel aborts and resets without confirm', async () => {
     }
   };
 
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
 
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE');
 
@@ -499,7 +490,7 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
 
   loadCore(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -511,7 +502,7 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
     showToast: () => {}
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({
       ok: true,
       title: 'T',
@@ -522,9 +513,9 @@ test('Simulated E2E: truncation repair runs when last bullet is cut off', async 
     })
   };
 
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
 
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE');
 
@@ -597,7 +588,7 @@ test('Simulated E2E: Japanese bullet ending without trailing "。" is not treate
 
   loadCore(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -609,7 +600,7 @@ test('Simulated E2E: Japanese bullet ending without trailing "。" is not treate
     showToast: () => {}
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({
       ok: true,
       title: 'T',
@@ -620,9 +611,9 @@ test('Simulated E2E: Japanese bullet ending without trailing "。" is not treate
     })
   };
 
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
 
   await waitFor(() => overlay.lastState && overlay.lastState.phase === 'IDLE');
 

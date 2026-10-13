@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function makeEventTarget() {
   const listeners = new Map();
@@ -29,16 +29,7 @@ async function waitFor(fn, { timeoutMs = 2500, intervalMs = 10 } = {}) {
 }
 
 function loadCore(ctx) {
-  return runClassicScripts(ctx, [
-    'dist/content/runtime.js',
-    'dist/content/i18n.js',
-    'dist/content/models.js',
-    'dist/content/state_machine.js',
-    'dist/content/format.js',
-    'dist/content/chunk.js',
-    'dist/content/estimate.js',
-    'dist/content/controller.js'
-  ]);
+  return runContentBundle(ctx);
 }
 
 function createTestContext(sendMessageHandler) {
@@ -69,7 +60,7 @@ function createTestContext(sendMessageHandler) {
 
   loadCore(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -83,7 +74,7 @@ function createTestContext(sendMessageHandler) {
     showToast: () => {}
   };
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({
       ok: true,
       title: 'Test Article',
@@ -94,7 +85,7 @@ function createTestContext(sendMessageHandler) {
     })
   };
 
-  ctx.AS.copyToClipboard = async () => true;
+  ctx.deps.copyToClipboard = async () => true;
 
   return { ctx, overlay, host };
 }
@@ -118,7 +109,7 @@ test('Error handling: API 401 authentication error shows friendly message', asyn
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -144,7 +135,7 @@ test('Error handling: API 429 rate limit shows rate limit message', async () => 
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -170,7 +161,7 @@ test('Error handling: model refusal shows refusal message', async () => {
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -196,7 +187,7 @@ test('Error handling: Network timeout shows timeout message', async () => {
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -222,7 +213,7 @@ test('Error handling: Network error shows network message', async () => {
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -248,7 +239,7 @@ test('Error handling: API 500 server error shows server message', async () => {
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -274,7 +265,7 @@ test('Error handling: Missing API key shows api key missing message', async () =
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -296,7 +287,7 @@ test('Error handling: Extraction too short shows too short message', async () =>
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({
       ok: false,
       code: 'TOO_SHORT',
@@ -306,7 +297,7 @@ test('Error handling: Extraction too short shows too short message', async () =>
     })
   };
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });
@@ -328,7 +319,7 @@ test('Error handling: Link-heavy page shows not article message', async () => {
     cb({ ok: false, code: 'unhandled', message: 'unhandled' });
   });
 
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({
       ok: false,
       code: 'LINK_HEAVY',
@@ -338,7 +329,7 @@ test('Error handling: Link-heavy page shows not article message', async () => {
     })
   };
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   await waitFor(() => overlay.lastState?.phase === 'IDLE');
 
   host.dispatch('as:mode', { mode: 'BULLETS_3' });

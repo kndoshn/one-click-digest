@@ -14,8 +14,8 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "test": "npm run build && node --test",
-    "test:coverage": "npm run build && c8 node --test",
+    "test": "node scripts/build.mjs --test && node --test",
+    "test:coverage": "node scripts/build.mjs --test && c8 node --test",
     "test:coverage:report": "npm run test:coverage && c8 report --reporter=html"
   },
   "repository": {
@@ -38,6 +38,7 @@
   "devDependencies": {
     "@types/chrome": "^0.3.4",
     "c8": "^12.0.0",
+    "esbuild": "^0.28.2",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",

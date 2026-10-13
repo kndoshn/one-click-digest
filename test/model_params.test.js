@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { modelRequestParams } from '../dist/shared/model_params.js';
+import { modelRequestParams } from '../src/shared/model_params.ts';
 
 test('modelRequestParams: Haiku 5.5 disables thinking', () => {
   assert.deepEqual(modelRequestParams('claude-haiku-5-5'), { thinking: { type: 'disabled' } });

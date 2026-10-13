@@ -27,10 +27,7 @@
               }
             ]
           }
-        ],
-        // Content scripts are classic scripts that share `namespace AS`; oxlint sees the
-        // namespace declarations as unused.
-        "no-unused-vars": "off"
+        ]
       }
     },
     {
@@ -43,5 +40,5 @@
       }
     }
   ],
-  "ignorePatterns": ["dist/**", "coverage/**", "third_party/**"]
+  "ignorePatterns": ["dist/**", "build/**", "coverage/**", "third_party/**"]
 }

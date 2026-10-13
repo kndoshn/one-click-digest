@@ -16,14 +16,13 @@ const messages = Object.fromEntries(
 const enKeys = Object.keys(messages.en).sort();
 const placeholders = (s) => (s.match(/\$\d+/g) || []).sort();
 
-test('locales: the expected set of locales, matching the UI language lists in code', () => {
+test('locales: the expected set of locales, matching the UI language list in code', () => {
   assert.deepEqual(locales, ['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt_BR', 'zh_CN', 'zh_TW']);
   const asFolders = (src) => {
     const m = src.match(/SUPPORTED_UI_LANGS = \[([^\]]+)\]/);
     return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1].replace('-', '_')).sort();
   };
-  assert.deepEqual(asFolders(read('src/content/i18n.ts')), locales);
-  assert.deepEqual(asFolders(read('src/options/index.ts')), locales);
+  assert.deepEqual(asFolders(read('src/shared/ui_lang.ts')), locales);
 });
 
 test('locales: every locale has the same keys as en, with non-empty messages and the same placeholders', () => {

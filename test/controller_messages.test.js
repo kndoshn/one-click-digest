@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function makeEventTarget() {
   const listeners = new Map();
@@ -62,18 +62,9 @@ function setup({ settings, article, respond }) {
     performance
   });
 
-  runClassicScripts(ctx, [
-    'dist/content/runtime.js',
-    'dist/content/i18n.js',
-    'dist/content/models.js',
-    'dist/content/state_machine.js',
-    'dist/content/chunk.js',
-    'dist/content/format.js',
-    'dist/content/estimate.js',
-    'dist/content/controller.js'
-  ]);
+  runContentBundle(ctx);
 
-  ctx.AS.Overlay = {
+  ctx.deps.overlay = {
     mount: () => overlay,
     unmount: () => {},
     render: (_inst, state) => {
@@ -83,11 +74,11 @@ function setup({ settings, article, respond }) {
     setBanner: () => {},
     showToast: () => {}
   };
-  ctx.AS.Extract = {
+  ctx.deps.extract = {
     extractArticle: () => ({ ok: true, linkDensity: 0.01, charCount: article.text.length, ...article })
   };
 
-  ctx.AS.Controller.bootstrap();
+  ctx.AS.Controller.bootstrap(ctx.deps);
   return { sent, host, overlay };
 }
 

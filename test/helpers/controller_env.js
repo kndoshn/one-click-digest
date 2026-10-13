@@ -1,20 +1,10 @@
-// Test harness for the content controller (dist/content/controller.js): runs the content scripts in
-// a VM context with chrome messaging, chrome.storage.onChanged and the DOM-facing modules
-// (Overlay, Extract) stubbed. `inject()` simulates chrome.scripting.executeScript running every
-// content script again (as on each toolbar click), followed by bootstrap.js.
+// Test harness for the content controller (src/content/controller.ts): runs the content script
+// test bundle in a VM context with chrome messaging and chrome.storage.onChanged stubbed, and passes
+// stubs for the DOM-facing parts (overlay, extract, clipboard) to Controller.bootstrap(). `inject()`
+// simulates chrome.scripting.executeScript running the content script again (as on each toolbar
+// click), which starts from fresh module state.
 
-import { CustomEventPolyfill, createClassicContext, runClassicScripts } from './classic_context.js';
-
-const CONTENT_SCRIPTS = [
-  'dist/content/runtime.js',
-  'dist/content/i18n.js',
-  'dist/content/models.js',
-  'dist/content/state_machine.js',
-  'dist/content/chunk.js',
-  'dist/content/format.js',
-  'dist/content/estimate.js',
-  'dist/content/controller.js'
-];
+import { CustomEventPolyfill, createClassicContext, runContentBundle } from './classic_context.js';
 
 const OVERLAY_ID = '__article_summarizer_overlay__';
 
@@ -135,8 +125,8 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
   });
 
   env.inject = () => {
-    runClassicScripts(ctx, CONTENT_SCRIPTS);
-    ctx.AS.Overlay = {
+    runContentBundle(ctx);
+    ctx.deps.overlay = {
       mount: () => {
         if (env.mountError) throw env.mountError;
         const host = new EventTarget();
@@ -171,12 +161,12 @@ export function createControllerEnv({ respond, settings = { minArticleChars: 50 
         toasts.push(text);
       }
     };
-    ctx.AS.Extract = { extractArticle: extract || (() => shortArticle()) };
-    ctx.AS.copyToClipboard = async (text) => {
+    ctx.deps.extract = { extractArticle: extract || (() => shortArticle()) };
+    ctx.deps.copyToClipboard = async (text) => {
       env.copied = text;
       return env.copyResult;
     };
-    ctx.AS.Controller.bootstrap();
+    ctx.AS.Controller.bootstrap(ctx.deps);
   };
 
   // A UI event from the overlay's own controls.

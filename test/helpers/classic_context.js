@@ -5,8 +5,8 @@ import vm from 'node:vm';
 /**
  * Creates a VM context suitable for evaluating "classic" (non-module) scripts.
  *
- * We use this to unit test dist/content/*.js which are injected as classic scripts
- * in MV3, and are therefore not importable as normal ESM modules.
+ * The content scripts are injected into pages as a classic-script bundle, so tests run the test
+ * bundle (an IIFE that defines `AS`) in a context with stubbed browser globals.
  */
 export function createClassicContext(extraGlobals = {}) {
   const base = {
@@ -23,11 +23,22 @@ export function createClassicContext(extraGlobals = {}) {
   return vm.createContext(base);
 }
 
+// The content script test bundle (see test/helpers/content_api.ts and scripts/build.mjs).
+export const CONTENT_TEST_BUNDLE = 'build/test/content.js';
+
+// Runs the content script test bundle in `ctx`: defines ctx.AS, as each toolbar click does in a page.
+// ctx.deps collects stubs for AS.Controller.bootstrap(ctx.deps) (overlay, extract, copyToClipboard).
+export function runContentBundle(ctx) {
+  runClassicScripts(ctx, [CONTENT_TEST_BUNDLE]);
+  ctx.deps = {};
+  return ctx;
+}
+
 export function runClassicScripts(ctx, relPaths) {
   for (const relPath of relPaths) {
     const abs = path.join(process.cwd(), relPath);
     const code = fs.readFileSync(abs, 'utf-8');
-    // Use the absolute path so V8 coverage (c8) attributes the code to dist/content/*.js.
+    // Use the absolute path so V8 coverage (c8) can find the file and its inline source map.
     vm.runInContext(code, ctx, { filename: abs });
   }
   return ctx;

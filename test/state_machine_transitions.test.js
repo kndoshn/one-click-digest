@@ -3,11 +3,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function load() {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
   return ctx.AS;
 }
 

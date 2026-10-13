@@ -8,23 +8,21 @@
 //   - Call Anthropic Token Count API (preflight refinement)
 //   - Call Anthropic Messages API (summarization pipeline)
 
-import { STORAGE_KEYS } from '../shared/constants.js';
-import { BulletStyle, DEFAULT_BULLET_STYLE, RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.js';
-import { SETTINGS_STORAGE_KEYS, isBulletStyle, parseBulletStyle, parseStoredSettings } from '../shared/settings.js';
-import { createAbortRegistry } from './abort_registry.js';
-import { MessagesRequest, countTokens, runMessagesWithRetry } from './anthropic.js';
+import { STORAGE_KEYS } from '../shared/constants.ts';
+import { type BulletStyle, DEFAULT_BULLET_STYLE, type RuntimeSettings, DEFAULT_SETTINGS } from '../shared/types.ts';
+import { SETTINGS_STORAGE_KEYS, isBulletStyle, parseBulletStyle, parseStoredSettings } from '../shared/settings.ts';
+import { createAbortRegistry } from './abort_registry.ts';
+import { type MessagesRequest, countTokens, runMessagesWithRetry } from './anthropic.ts';
+import { MAP_CHUNK_MAX_OUTPUT_TOKENS, type SummaryMode, modeMaxOutputTokens } from '../shared/summary_modes.ts';
 import {
-  CacheControlEphemeral,
-  MAP_CHUNK_MAX_OUTPUT_TOKENS,
-  SummaryMode,
+  type CacheControlEphemeral,
   buildMapPrompt,
   buildMapSystem,
   buildReducePrompt,
   buildRepairPrompt,
   buildSinglePrompt,
-  buildTokenCountPrompt,
-  modeMaxOutputTokens
-} from './prompts.js';
+  buildTokenCountPrompt
+} from './prompts.ts';
 
 // -----------------------------
 // Script injection
@@ -50,25 +48,10 @@ function isInjectableUrl(url: unknown): url is string {
   return true;
 }
 
-// NOTE: We inject multiple classic scripts in a deterministic order.
-// This keeps content scripts simple and avoids bundling constraints.
-const CONTENT_FILES: string[] = [
-  // Third-party extraction helper (global Readability constructor)
-  'third_party/readability/Readability.js',
-
-  // App scripts
-  'content/runtime.js',
-  'content/i18n.js',
-  'content/models.js',
-  'content/state_machine.js',
-  'content/chunk.js',
-  'content/format.js',
-  'content/extract.js',
-  'content/estimate.js',
-  'content/overlay.js',
-  'content/controller.js',
-  'content/bootstrap.js'
-];
+// Injected in this order on every toolbar click, as classic scripts. Readability.js is the
+// unmodified upstream file and defines a global `Readability`; content/main.js is the bundled
+// content script (see scripts/build.mjs).
+const CONTENT_FILES: string[] = ['third_party/readability/Readability.js', 'content/main.js'];
 
 async function injectContentScripts(tab: chrome.tabs.Tab): Promise<void> {
   try {

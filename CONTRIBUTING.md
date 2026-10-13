@@ -24,8 +24,10 @@ npm test
 
 ## Code style
 
-- Keep content scripts classic-script compatible (`dist/content/*.js` must not contain `import`/`export`).
+- `src/` is TypeScript, built with esbuild (`scripts/build.mjs`) and type-checked with `tsc --noEmit`. Imports use `.ts` extensions, and type-only imports use `import type` (or inline `type`).
+- Content scripts are bundled into a single classic script, `dist/content/main.js`, injected after the unmodified `third_party/readability/Readability.js`. They may import from `src/shared/`, but not from `src/background/`.
 - Do not move API calls or API keys into the content script.
+- Tests import `src/**/*.ts` directly (Node.js type stripping). Content script tests run a test bundle (`build/test/content.js`, built by `npm test`) in a VM context; see `test/helpers/classic_context.js`.
 
 ## Pull requests
 

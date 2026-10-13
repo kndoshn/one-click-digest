@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function loadFormat() {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/format.js']);
+  runContentBundle(ctx);
   assert.ok(ctx.AS?.Format, 'AS.Format should exist');
   return ctx.AS;
 }
@@ -150,7 +150,7 @@ test('Format.isLikelyTruncatedOutput: detects a last line that ends mid-word', (
 
 test('Format: TLDR mode accepts the labels the background prompts ask for, in every output language', async () => {
   const AS = loadFormat();
-  const { buildSinglePrompt } = await import('../dist/background/prompts.js');
+  const { buildSinglePrompt } = await import('../src/background/prompts.ts');
   const languages = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
   for (const language of languages) {
     const prompt = buildSinglePrompt({ title: 'T', url: 'u', language, mode: 'TLDR_12_CONCLUSION', articleText: 'x' });

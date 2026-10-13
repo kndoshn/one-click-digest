@@ -1,4 +1,4 @@
-// Options page behavior: dist/options/index.js driven against public/options.html in a fake DOM,
+// Options page behavior: src/options/index.ts driven against public/options.html in a fake DOM,
 // with chrome.storage, fetch (for _locales), confirm and location.reload stubbed.
 
 import test from 'node:test';
@@ -88,7 +88,7 @@ async function openOptionsPage({ stored = {}, uiLanguage = 'en-US' } = {}) {
 
   // A fresh module instance per page load (the module wires DOMContentLoaded at import time).
   importCount += 1;
-  await import(`../dist/options/index.js?load=${importCount}`);
+  await import(`../src/options/index.ts?load=${importCount}`);
 
   env.el = (id) => doc.getElementById(id);
   env.status = () => doc.getElementById('status').textContent;

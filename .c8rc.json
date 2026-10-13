@@ -1,5 +1,4 @@
 {
-  "include": ["dist/**/*.js"],
-  "exclude": ["dist/third_party/**"],
+  "include": ["src/**/*.ts", "build/test/content.js"],
   "reporter": ["text", "lcov"]
 }

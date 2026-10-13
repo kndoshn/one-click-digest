@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function loadEstimate() {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/estimate.js']);
+  runContentBundle(ctx);
   assert.ok(ctx.AS?.Estimate, 'AS.Estimate should exist');
   return ctx;
 }
@@ -42,7 +42,7 @@ test('Estimate: hard limit uses costWorst', () => {
   });
 
   // Force an extremely low hard limit; should now be over.
-  AS.HARD_COST_LIMIT_USD = 0.000001;
+  AS.applyRuntimeSettings({ hardCostLimitUsd: 0.000001 });
   assert.equal(AS.Estimate.isOverHardLimit(est), true);
 });
 
@@ -69,7 +69,7 @@ test('Estimate: prompt caching write multiplier affects cost estimate when prefi
   const longText = 'a'.repeat(180_000);
 
   // Baseline: caching disabled
-  AS.PROMPT_CACHING_ENABLED = false;
+  AS.applyRuntimeSettings({ promptCachingEnabled: false });
   const noCache = AS.Estimate.buildEstimate({
     extractedCharCount: longText.length,
     textToSend: longText,
@@ -80,8 +80,7 @@ test('Estimate: prompt caching write multiplier affects cost estimate when prefi
   });
 
   // With caching enabled + 1h TTL (higher write multiplier)
-  AS.PROMPT_CACHING_ENABLED = true;
-  AS.PROMPT_CACHING_TTL = '1h';
+  AS.applyRuntimeSettings({ promptCachingEnabled: true, promptCachingTtl: '1h' });
   const cache1h = AS.Estimate.buildEstimate({
     extractedCharCount: longText.length,
     textToSend: longText,

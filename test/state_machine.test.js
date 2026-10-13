@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createClassicContext, runClassicScripts } from './helpers/classic_context.js';
+import { createClassicContext, runContentBundle } from './helpers/classic_context.js';
 
 function loadStateMachine() {
   const ctx = createClassicContext();
-  runClassicScripts(ctx, ['dist/content/models.js', 'dist/content/state_machine.js']);
+  runContentBundle(ctx);
   assert.ok(ctx.AS, 'AS namespace should exist after loading scripts');
   return ctx.AS;
 }
