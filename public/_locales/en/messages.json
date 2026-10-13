@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "Copy"
   },
+  "labelBulletStyle": {
+    "message": "Bullet style"
+  },
+  "bulletStyleDash": {
+    "message": "Dash (-)"
+  },
+  "bulletStyleDot": {
+    "message": "Middle dot (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "Numbered (1.)"
+  },
   "buttonBack": {
     "message": "Back"
   },

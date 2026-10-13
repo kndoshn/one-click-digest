@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "Copia"
   },
+  "labelBulletStyle": {
+    "message": "Stile dell'elenco"
+  },
+  "bulletStyleDash": {
+    "message": "Trattino (-)"
+  },
+  "bulletStyleDot": {
+    "message": "Punto centrale (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "Numerato (1.)"
+  },
   "buttonBack": {
     "message": "Indietro"
   },

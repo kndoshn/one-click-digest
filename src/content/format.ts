@@ -170,6 +170,30 @@ namespace AS {
       return out.join('\n').trim();
     }
 
+    // Swap the marker of every bullet line for the chosen style; numbers count bullets only, so the
+    // Summary/Conclusion lines of the TL;DR mode stay unnumbered. Expects normalizeSummaryText output
+    // (one line per bullet).
+    export function applyBulletStyle(text: string, style: BulletStyle): string {
+      let n = 0;
+      return String(text || '')
+        .split('\n')
+        .map((line) => {
+          if (!isBulletLine(line)) return line;
+          const body = line.replace(BULLET_RE, '');
+          switch (style) {
+            case 'dot':
+              // Japanese convention: no space after the middle dot.
+              return `・${body}`;
+            case 'number':
+              n += 1;
+              return `${n}. ${body}`;
+            default:
+              return `- ${body}`;
+          }
+        })
+        .join('\n');
+    }
+
     const SENTENCE_END_CHARS = new Set(['.', '!', '?', '。', '！', '？', '…', '」', '』', '）', ')', '】', ']', '”', '"']);
 
     // Heuristic: the output looks cut off if its last line ends mid-word (no closing punctuation).

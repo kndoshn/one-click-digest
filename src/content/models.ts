@@ -20,6 +20,37 @@ namespace AS {
 
   export const DEFAULT_MODE: SummaryMode = 'BULLETS_5';
 
+  // -----------------------------
+  // Bullet styles
+  // -----------------------------
+
+  // How the result screen marks bullet points. The model always writes "- "; the overlay swaps the
+  // marker for display and copy (Format.applyBulletStyle). Mirrors src/shared/types.ts.
+  export type BulletStyle = 'dash' | 'dot' | 'number';
+
+  export type BulletStyleOption = {
+    style: BulletStyle;
+    // Shown on the button as is (not translated).
+    marker: string;
+    labelKey: string;
+  };
+
+  export const BULLET_STYLE_OPTIONS: BulletStyleOption[] = [
+    { style: 'dash', marker: '-', labelKey: 'bulletStyleDash' },
+    { style: 'dot', marker: '・', labelKey: 'bulletStyleDot' },
+    { style: 'number', marker: '1.', labelKey: 'bulletStyleNumber' }
+  ];
+
+  export const DEFAULT_BULLET_STYLE: BulletStyle = 'dash';
+
+  export function isBulletStyle(value: unknown): value is BulletStyle {
+    return BULLET_STYLE_OPTIONS.some((o) => o.style === value);
+  }
+
+  export function parseBulletStyle(value: unknown): BulletStyle {
+    return isBulletStyle(value) ? value : DEFAULT_BULLET_STYLE;
+  }
+
   export type ModeRuntimeSpec = {
     mode: SummaryMode;
     maxOutputTokens: number;
@@ -228,6 +259,7 @@ namespace AS {
     phase: UiPhase;
     selectedLanguage: string; // 'auto' or BCP-47
     selectedMode: SummaryMode;
+    bulletStyle: BulletStyle;
     apiKeySet: boolean;
     // If not empty, shown as a non-blocking banner.
     banner?: string;
@@ -355,6 +387,7 @@ namespace AS {
     | { type: 'SETTINGS_LOADED'; apiKeySet: boolean }
     | { type: 'LANGUAGE_CHANGED'; language: string }
     | { type: 'MODE_CHANGED'; mode: SummaryMode }
+    | { type: 'BULLET_STYLE_CHANGED'; bulletStyle: BulletStyle }
     | { type: 'START_RUN'; runId: string }
     | { type: 'EXTRACT_OK'; runId: string; article: ExtractOk }
     | { type: 'EXTRACT_FAIL'; runId: string; message: string }

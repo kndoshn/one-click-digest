@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "Copiar"
   },
+  "labelBulletStyle": {
+    "message": "Estilo de viñetas"
+  },
+  "bulletStyleDash": {
+    "message": "Guion (-)"
+  },
+  "bulletStyleDot": {
+    "message": "Punto medio (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "Numerada (1.)"
+  },
   "buttonBack": {
     "message": "Volver"
   },

@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "複製"
   },
+  "labelBulletStyle": {
+    "message": "項目符號"
+  },
+  "bulletStyleDash": {
+    "message": "短橫線（-）"
+  },
+  "bulletStyleDot": {
+    "message": "間隔號（・）"
+  },
+  "bulletStyleNumber": {
+    "message": "編號（1.）"
+  },
   "buttonBack": {
     "message": "返回"
   },

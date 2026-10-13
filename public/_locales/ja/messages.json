@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "コピー"
   },
+  "labelBulletStyle": {
+    "message": "箇条書きの記号"
+  },
+  "bulletStyleDash": {
+    "message": "ハイフン（-）"
+  },
+  "bulletStyleDot": {
+    "message": "中黒（・）"
+  },
+  "bulletStyleNumber": {
+    "message": "番号（1.）"
+  },
   "buttonBack": {
     "message": "戻る"
   },

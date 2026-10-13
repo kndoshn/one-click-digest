@@ -52,15 +52,21 @@ function setup() {
     setTimeout: timers.setTimeout,
     clearTimeout: timers.clearTimeout
   });
-  runClassicScripts(ctx, ['dist/content/runtime.js', 'dist/content/i18n.js', 'dist/content/models.js', 'dist/content/overlay.js']);
+  runClassicScripts(ctx, [
+    'dist/content/runtime.js',
+    'dist/content/i18n.js',
+    'dist/content/models.js',
+    'dist/content/format.js',
+    'dist/content/overlay.js'
+  ]);
   const AS = ctx.AS;
   const inst = AS.Overlay.mount();
   const events = [];
-  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language']) {
+  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language', 'as:bulletStyle']) {
     inst.events.addEventListener(type, (ev) => events.push([type, ev.detail == null ? null : JSON.parse(JSON.stringify(ev.detail))]));
   }
   const hostEvents = [];
-  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language']) {
+  for (const type of ['as:close', 'as:openOptions', 'as:cancel', 'as:reset', 'as:copy', 'as:proceed', 'as:run', 'as:runLight', 'as:mode', 'as:language', 'as:bulletStyle']) {
     inst.host.addEventListener(type, () => hostEvents.push(type));
   }
   return { AS, doc, inst, timers, events, hostEvents };
@@ -256,7 +262,7 @@ test('DONE: the summary, Copy, and a mode bar that re-runs in another mode', () 
   assert.equal(timers.intervals.size, 0, 'leaving SUMMARIZING stops the animation');
 
   assert.equal(inst.body.querySelector('.summary').textContent, '- A.\n\n- B.');
-  assert.deepEqual(footerButtons(inst), ['buttonCopy']);
+  assert.deepEqual(footerButtons(inst), ['buttonCopy', '', '-・1.']);
   clickFooter(inst, 'buttonCopy');
 
   assert.equal(inst.modeBar.classList.contains('hidden'), false);
@@ -279,6 +285,37 @@ test('DONE: the summary, Copy, and a mode bar that re-runs in another mode', () 
   AS.Overlay.render(inst, { ...base, phase: 'IDLE' });
   assert.equal(inst.modeBar.classList.contains('hidden'), true);
   assert.equal(inst.modeBar.children.length, 0);
+});
+
+test('DONE: the bullet style buttons pick how the summary is shown, without re-running', () => {
+  const { AS, inst, events } = setup();
+  const done = { ...base, phase: 'DONE', runId: 'r', article: ARTICLE, summaryText: 'Summary: S\n\n- A.\n\n- B.\n\nConclusion: C' };
+  const styleButtons = () => inst.footer.querySelector('.bulletStyles').children;
+
+  AS.Overlay.render(inst, { ...done, bulletStyle: 'number' });
+  assert.equal(inst.body.querySelector('.summary').textContent, 'Summary: S\n\n1. A.\n\n2. B.\n\nConclusion: C');
+  const group = inst.footer.querySelector('.bulletStyles');
+  assert.equal(group.getAttribute('role'), 'group');
+  assert.equal(group.getAttribute('aria-label'), 'labelBulletStyle');
+  assert.deepEqual(
+    styleButtons().map((b) => [b.textContent, b.getAttribute('aria-label'), b.title, b.getAttribute('aria-pressed'), b.classList.contains('selected')]),
+    [
+      ['-', 'bulletStyleDash', 'bulletStyleDash', 'false', false],
+      ['・', 'bulletStyleDot', 'bulletStyleDot', 'false', false],
+      ['1.', 'bulletStyleNumber', 'bulletStyleNumber', 'true', true]
+    ]
+  );
+
+  styleButtons()[1].click();
+  assert.deepEqual(events, [['as:bulletStyle', { style: 'dot' }]]);
+
+  AS.Overlay.render(inst, { ...done, bulletStyle: 'dot' });
+  assert.equal(inst.body.querySelector('.summary').textContent, 'Summary: S\n\n・A.\n\n・B.\n\nConclusion: C');
+  assert.deepEqual(styleButtons().map((b) => b.getAttribute('aria-pressed')), ['false', 'true', 'false']);
+
+  // Other screens have no bullet style buttons.
+  AS.Overlay.render(inst, { ...base, phase: 'ERROR', message: 'm' });
+  assert.equal(inst.footer.querySelector('.bulletStyles'), null);
 });
 
 test('ERROR and BLOCKED: message, Back, and Open options', () => {

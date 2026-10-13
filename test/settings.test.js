@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 
 import { STORAGE_KEYS } from '../dist/shared/constants.js';
 import { DEFAULT_SETTINGS } from '../dist/shared/types.js';
-import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../dist/shared/settings.js';
+import { SETTINGS_STORAGE_KEYS, parseBulletStyle, parseStoredSettings, settingsToStorage } from '../dist/shared/settings.js';
 
-test('SETTINGS_STORAGE_KEYS covers every setting key but not the API key', () => {
-  const expected = Object.values(STORAGE_KEYS).filter((k) => k !== STORAGE_KEYS.CLAUDE_API_KEY);
+test('SETTINGS_STORAGE_KEYS covers every setting key but not the API key or the bullet style', () => {
+  // The bullet style is saved from the overlay; keeping it out of the settings means saving the
+  // options page never overwrites it with a stale value.
+  const expected = Object.values(STORAGE_KEYS).filter(
+    (k) => k !== STORAGE_KEYS.CLAUDE_API_KEY && k !== STORAGE_KEYS.BULLET_STYLE
+  );
   assert.deepEqual([...SETTINGS_STORAGE_KEYS].sort(), expected.sort());
 });
 
@@ -82,4 +86,9 @@ test('parseStoredSettings: blank numeric strings fall back to the defaults (not 
     maxArticleCharsToSend: ''
   });
   assert.deepEqual(settings, DEFAULT_SETTINGS);
+});
+
+test('parseBulletStyle: keeps the known styles and falls back to dash', () => {
+  for (const style of ['dash', 'dot', 'number']) assert.equal(parseBulletStyle(style), style);
+  for (const bad of [undefined, null, '', 'DOT', 'bullet', 1]) assert.equal(parseBulletStyle(bad), 'dash');
 });

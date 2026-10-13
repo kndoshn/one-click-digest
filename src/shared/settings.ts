@@ -2,7 +2,7 @@
 
 import { STORAGE_KEYS } from './constants.js';
 import { normalizeApprovalThresholds } from './approval.js';
-import { RuntimeSettings, DEFAULT_SETTINGS } from './types.js';
+import { BULLET_STYLES, BulletStyle, DEFAULT_BULLET_STYLE, RuntimeSettings, DEFAULT_SETTINGS } from './types.js';
 import { parseNumberOr } from './utils.js';
 
 // Storage keys backing RuntimeSettings (the API key is stored separately).
@@ -75,4 +75,12 @@ export function settingsToStorage(settings: RuntimeSettings): Record<string, unk
     [STORAGE_KEYS.MAX_ARTICLE_CHARS_TO_SEND]: settings.maxArticleCharsToSend,
     [STORAGE_KEYS.UI_LANGUAGE]: settings.uiLanguage || 'auto'
   };
+}
+
+export function isBulletStyle(value: unknown): value is BulletStyle {
+  return (BULLET_STYLES as readonly unknown[]).includes(value);
+}
+
+export function parseBulletStyle(value: unknown): BulletStyle {
+  return isBulletStyle(value) ? value : DEFAULT_BULLET_STYLE;
 }

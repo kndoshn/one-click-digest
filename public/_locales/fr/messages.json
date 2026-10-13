@@ -236,6 +236,18 @@
   "buttonCopy": {
     "message": "Copier"
   },
+  "labelBulletStyle": {
+    "message": "Style des puces"
+  },
+  "bulletStyleDash": {
+    "message": "Tiret (-)"
+  },
+  "bulletStyleDot": {
+    "message": "Point médian (・)"
+  },
+  "bulletStyleNumber": {
+    "message": "Numérotée (1.)"
+  },
   "buttonBack": {
     "message": "Retour"
   },
