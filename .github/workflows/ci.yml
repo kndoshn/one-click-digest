@@ -165,7 +165,6 @@ jobs:
           advanced-security: false
           annotations: true
 
-  # Not part of "CI passed" yet: required once it has proven stable.
   e2e:
     name: E2E
     runs-on: ubuntu-latest
@@ -203,7 +202,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [typecheck, lint, test, audit, build, zizmor]
+    needs: [typecheck, lint, test, audit, build, zizmor, e2e]
     runs-on: ubuntu-latest
     permissions: {}
     steps:
