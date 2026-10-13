@@ -2,12 +2,6 @@ namespace AS {
   // A single overlay instance per tab injection.
   export const OVERLAY_CONTAINER_ID = '__article_summarizer_overlay__';
 
-  export function safeNowMs(): number {
-    return typeof performance !== 'undefined' && typeof performance.now === 'function'
-      ? performance.now()
-      : Date.now();
-  }
-
   export function makeRunId(): string {
     // Not crypto-grade; sufficient for correlating UI events.
     return `run_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
@@ -32,14 +26,6 @@ namespace AS {
     }
   }
 
-  export function getDomain(): string {
-    try {
-      return new URL(getPageUrl()).hostname;
-    } catch {
-      return location.host || '';
-    }
-  }
-
   export async function getAcceptLanguages(): Promise<string[]> {
     const fallback = [navigator.language || 'en'];
 
@@ -58,6 +44,7 @@ namespace AS {
     return fallback;
   }
 
+  // Mirrors src/shared/types.ts (content scripts are classic scripts and cannot import it).
   export type CacheTtl = '5m' | '1h';
 
   export type RuntimeSettings = {

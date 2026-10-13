@@ -3,29 +3,6 @@ var AS;
 (function (AS) {
     let Chunker;
     (function (Chunker) {
-        function countCjkChars(text) {
-            // Keep this consistent with Estimate.countCjkChars.
-            // We intentionally duplicate this here to avoid repeatedly scanning
-            // the growing "candidate" string in the chunk loop.
-            let n = 0;
-            for (let i = 0; i < text.length; i++) {
-                const code = text.charCodeAt(i);
-                // Rough CJK ranges: Hiragana, Katakana, CJK Unified Ideographs.
-                if ((code >= 0x3040 && code <= 0x30ff) ||
-                    (code >= 0x4e00 && code <= 0x9fff) ||
-                    (code >= 0x3400 && code <= 0x4dbf)) {
-                    n++;
-                }
-            }
-            return n;
-        }
-        function roughHighTokens(chars, cjkChars) {
-            if (chars <= 0)
-                return 0;
-            const ratio = cjkChars / Math.max(1, chars);
-            // Keep consistent with Estimate.roughTokenEstimate() high formula.
-            return ratio >= 0.25 ? Math.ceil(chars / 1.4) : Math.ceil(chars / 3.3);
-        }
         function splitParagraphs(text) {
             // Prefer paragraph boundaries produced by the extractor.
             const normalized = (text || '').replace(/\r\n/g, '\n').trim();
@@ -81,7 +58,8 @@ var AS;
             }
             // Performance notes:
             // - Avoid repeatedly calling Estimate.estimateTokens() on the growing "candidate" string.
-            //   That leads to quadratic-time scans on long articles.
+            //   That leads to quadratic-time scans on long articles. Instead, keep running char/CJK
+            //   counts and estimate from those.
             // - Avoid repeated string concatenations; keep an array and join once per chunk.
             const SEP = '\n\n';
             const sepChars = SEP.length;
@@ -99,7 +77,7 @@ var AS;
             };
             for (const para of paras) {
                 const paraChars = para.length;
-                const paraCjk = countCjkChars(para);
+                const paraCjk = AS.Estimate.countCjkChars(para);
                 if (currentParas.length === 0) {
                     currentParas.push(para);
                     currentChars = paraChars;
@@ -108,7 +86,7 @@ var AS;
                 }
                 const nextChars = currentChars + sepChars + paraChars;
                 const nextCjk = currentCjk + paraCjk;
-                const nextHigh = roughHighTokens(nextChars, nextCjk);
+                const nextHigh = AS.Estimate.estimateTokensFromCounts(nextChars, nextCjk).high;
                 if (nextHigh <= targetTokens) {
                     currentParas.push(para);
                     currentChars = nextChars;

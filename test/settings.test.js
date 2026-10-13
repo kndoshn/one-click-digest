@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { STORAGE_KEYS } from '../dist/shared/constants.js';
+import { DEFAULT_SETTINGS } from '../dist/shared/types.js';
+import { SETTINGS_STORAGE_KEYS, parseStoredSettings, settingsToStorage } from '../dist/shared/settings.js';
+
+test('SETTINGS_STORAGE_KEYS covers every setting key but not the API key', () => {
+  const expected = Object.values(STORAGE_KEYS).filter((k) => k !== STORAGE_KEYS.CLAUDE_API_KEY);
+  assert.deepEqual([...SETTINGS_STORAGE_KEYS].sort(), expected.sort());
+});
+
+test('parseStoredSettings: empty storage yields defaults without migration', () => {
+  assert.deepEqual(parseStoredSettings({}), { settings: DEFAULT_SETTINGS });
+  assert.deepEqual(parseStoredSettings(undefined), { settings: DEFAULT_SETTINGS });
+});
+
+test('parseStoredSettings: keeps valid stored values', () => {
+  const stored = {
+    modelMap: 'claude-haiku-4-5',
+    modelFinal: 'claude-sonnet-5',
+    promptCachingEnabled: false,
+    promptCachingTtl: '1h',
+    hardCostLimitUsd: 0.5,
+    approvalThresholdUsd: 0.3,
+    approvalThresholdChars: 40_000,
+    minArticleChars: 300,
+    maxArticleCharsToSend: 50_000,
+    uiLanguage: 'ja'
+  };
+  assert.deepEqual(parseStoredSettings(stored), { settings: stored });
+});
+
+test('parseStoredSettings: coerces and falls back for malformed values', () => {
+  const { settings, migration } = parseStoredSettings({
+    modelMap: '',
+    promptCachingEnabled: 'false',
+    promptCachingTtl: 'bogus',
+    hardCostLimitUsd: 'abc',
+    approvalThresholdChars: '1234.9',
+    minArticleChars: '700.9',
+    maxArticleCharsToSend: null
+  });
+  assert.equal(migration, undefined);
+  assert.equal(settings.modelMap, DEFAULT_SETTINGS.modelMap);
+  assert.equal(settings.promptCachingEnabled, DEFAULT_SETTINGS.promptCachingEnabled);
+  assert.equal(settings.promptCachingTtl, '5m');
+  assert.equal(settings.hardCostLimitUsd, DEFAULT_SETTINGS.hardCostLimitUsd);
+  assert.equal(settings.approvalThresholdChars, 1234);
+  assert.equal(settings.minArticleChars, 700);
+  assert.equal(settings.maxArticleCharsToSend, DEFAULT_SETTINGS.maxArticleCharsToSend);
+});
+
+test('parseStoredSettings: reports legacy approval defaults for write-back', () => {
+  assert.deepEqual(parseStoredSettings({ approvalThresholdUsd: 0.25 }).migration, {
+    approvalThresholdUsd: DEFAULT_SETTINGS.approvalThresholdUsd
+  });
+  assert.deepEqual(parseStoredSettings({ approvalThresholdChars: '25000' }).migration, {
+    approvalThresholdChars: DEFAULT_SETTINGS.approvalThresholdChars
+  });
+  assert.deepEqual(parseStoredSettings({ approvalThresholdUsd: '0.25', approvalThresholdChars: 25_000 }).migration, {
+    approvalThresholdUsd: DEFAULT_SETTINGS.approvalThresholdUsd,
+    approvalThresholdChars: DEFAULT_SETTINGS.approvalThresholdChars
+  });
+});
+
+test('settingsToStorage round-trips through parseStoredSettings', () => {
+  const settings = { ...DEFAULT_SETTINGS, modelMap: 'claude-haiku-4-5', promptCachingTtl: '1h', uiLanguage: 'fr' };
+  assert.deepEqual(parseStoredSettings(settingsToStorage(settings)), { settings });
+});
+
+test('settingsToStorage stores an empty UI language as auto', () => {
+  assert.equal(settingsToStorage({ ...DEFAULT_SETTINGS, uiLanguage: '' }).uiLanguage, 'auto');
+});

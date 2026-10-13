@@ -10,8 +10,11 @@ namespace AS {
     const ctx: ControllerCtx = {
       overlay: null as any,
       state: null as any,
-      acceptLanguages: [],
+      acceptLanguages: []
     };
+
+    // Output languages offered in the overlay's language select.
+    const OUTPUT_LANGUAGES = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
 
     function setState(next: UiState, render: boolean = true): void {
       ctx.state = next;
@@ -107,10 +110,8 @@ namespace AS {
       return ctx.activeRunId === runId;
     }
 
-    async function sendToBackground(_runId: string, _purpose: string, message: any): Promise<any> {
-      // NOTE: The background worker maintains an AbortController registry per runId.
-      // We keep this wrapper for future observability instrumentation.
-      return await sendMessage(message);
+    function isTextResponse(resp: any): resp is { ok: true; text: string; usage?: any } {
+      return Boolean(resp && resp.ok === true && typeof resp.text === 'string');
     }
 
     function abortInFlight(): void {
@@ -132,7 +133,7 @@ namespace AS {
       if (!isRunActive(runId)) return;
 
       try {
-        const resp = await sendToBackground(runId, 'count_tokens', {
+        const resp = await sendMessage({
           type: 'COUNT_TOKENS',
           payload: {
             runId,
@@ -171,23 +172,23 @@ namespace AS {
     type RepairContext = {
       title: string;
       url: string;
+      // Map-reduce runs pass the chunk summaries so the repair pass can reuse the reduce prompt cache.
       chunkSummaries?: string[];
     };
 
-    async function maybeRepairFormat(
+    // Asks the background to rewrite `text`. Keeps `text` unless the rewrite passes format validation.
+    async function requestRepair(
       runId: string,
       mode: SummaryMode,
       language: string,
       text: string,
       repairModel: string,
-      repairContext?: RepairContext
+      repairContext: RepairContext,
+      fixTruncation: boolean
     ): Promise<string> {
-      const v = Format.validate(mode, text);
-      if (v.ok) return text;
-
       reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REPAIR' }, true);
 
-      const resp = await sendToBackground(runId, 'repair', {
+      const resp = await sendMessage({
         type: 'RUN_SUMMARY_REPAIR',
         payload: {
           runId,
@@ -195,239 +196,161 @@ namespace AS {
           mode,
           badOutput: text,
           model: repairModel,
-          title: repairContext?.title,
-          url: repairContext?.url,
-          chunkSummaries: repairContext?.chunkSummaries
+          title: repairContext.title,
+          url: repairContext.url,
+          chunkSummaries: repairContext.chunkSummaries,
+          ...(fixTruncation ? { fixTruncation: true } : {})
         }
       });
 
       if (!isRunActive(runId)) return text;
 
-      if (resp && resp.ok === true && typeof resp.text === 'string') {
-        const repaired = resp.text;
-        return Format.validate(mode, repaired).ok ? repaired : text;
-      }
+      if (isTextResponse(resp) && Format.validate(mode, resp.text).ok) return resp.text;
       return text;
     }
 
-    function isLikelyTruncatedOutput(text: string, language: string): boolean {
-      const lines = String(text || '')
-        .replace(/\r\n/g, '\n')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-      if (lines.length === 0) return false;
-
-      const lastLine = lines[lines.length - 1].replace(/^[-*•・]\s+/, '').trim();
-      if (lastLine.length === 0) return false;
-      const lastChar = lastLine.slice(-1);
-
-      const punctuation = new Set(['.', '!', '?', '。', '！', '？', '…', '」', '』', '）', ')', '】', ']', '”', '"']);
-      if (punctuation.has(lastChar)) return false;
-
-      // Japanese bullets are intentionally instructed to omit a trailing "。" (see
-      // bulletStyleNoteFor in background/index.ts), so a bare kana/kanji ending is
-      // expected there and must not be mistaken for truncation.
-      const isJapanese = String(language || '').trim().toLowerCase().startsWith('ja');
-      if (isJapanese && /[\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar)) return false;
-
-      return /[A-Za-z0-9\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar);
-    }
-
-    async function maybeRepairTruncation(
+    // Final step shared by single-pass and map-reduce runs: repair the format if invalid, then
+    // repair a likely-truncated ending, then show the result.
+    async function finishSummary(
       runId: string,
       mode: SummaryMode,
       language: string,
-      text: string,
+      draft: string,
       repairModel: string,
-      repairContext?: RepairContext
-    ): Promise<string> {
-      if (!isLikelyTruncatedOutput(text, language)) return text;
-
-      reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REPAIR' }, true);
-
-      const resp = await sendToBackground(runId, 'repair_truncation', {
-        type: 'RUN_SUMMARY_REPAIR',
-        payload: {
-          runId,
-          language,
-          mode,
-          badOutput: text,
-          model: repairModel,
-          title: repairContext?.title,
-          url: repairContext?.url,
-          chunkSummaries: repairContext?.chunkSummaries,
-          fixTruncation: true
-        }
-      });
-
-      if (!isRunActive(runId)) return text;
-
-      if (resp && resp.ok === true && typeof resp.text === 'string') {
-        const repaired = resp.text;
-        return Format.validate(mode, repaired).ok ? repaired : text;
+      repairContext: RepairContext,
+      usage: any
+    ): Promise<void> {
+      let text = draft;
+      if (!Format.validate(mode, text).ok) {
+        text = await requestRepair(runId, mode, language, text, repairModel, repairContext, false);
+        if (!isRunActive(runId)) return;
       }
-      return text;
-    }
-
-    async function runSummary(runId: string, article: ExtractOk, estimate: Estimate): Promise<void> {
+      if (Format.isLikelyTruncatedOutput(text, language)) {
+        text = await requestRepair(runId, mode, language, text, repairModel, repairContext, true);
+      }
       if (!isRunActive(runId)) return;
+      reduce({ type: 'SUMMARY_DONE', runId, summaryText: Format.normalizeSummaryText(text), usage }, true);
+    }
 
-      const language = resolvedLanguage();
-      const mode = currentMode();
-      const normalizeSummaryText = (input: string): string => {
-        const lines = String(input || '').replace(/\r\n/g, '\n').split('\n');
-        const out: string[] = [];
-        const isBullet = (line: string): boolean => Format.isBulletLine(line);
-        const isSummary = (line: string): boolean => Format.isSummaryLine(line);
-        const isConclusion = (line: string): boolean => Format.isConclusionLine(line);
-        const lastNonEmptyIndex = (): number => {
-          for (let i = out.length - 1; i >= 0; i--) {
-            if (out[i].trim().length > 0) return i;
-          }
-          return -1;
-        };
+    async function runMapReduce(
+      runId: string,
+      article: ExtractOk,
+      chunks: string[],
+      mode: SummaryMode,
+      language: string
+    ): Promise<void> {
+      const total = chunks.length;
+      const chunkSummaries: string[] = [];
+      for (let i = 0; i < total; i++) {
+        if (!isRunActive(runId)) return;
+        reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'MAP', current: i + 1, total }, true);
 
-        for (const raw of lines) {
-          const line = raw.trim();
-          if (line.length === 0) {
-            out.push('');
-            continue;
-          }
-          if (isBullet(line) || isSummary(line) || isConclusion(line)) {
-            out.push(line);
-            continue;
-          }
-
-          const prevIndex = lastNonEmptyIndex();
-          if (prevIndex >= 0 && isBullet(out[prevIndex])) {
-            out[prevIndex] = `${out[prevIndex]} ${line}`;
-          } else {
-            out.push(line);
-          }
-        }
-
-        return out.join('\n').trim();
-      };
-
-      try {
-        const chunks = Chunker.chunkText(article.text, CHUNK_TARGET_INPUT_TOKENS);
-        const total = chunks.length;
-
-        if (total > 1) {
-          const chunkSummaries: string[] = [];
-          for (let i = 0; i < total; i++) {
-            if (!isRunActive(runId)) return;
-            reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'MAP', current: i + 1, total }, true);
-
-            const resp = await sendToBackground(runId, `map_${i + 1}`, {
-              type: 'RUN_SUMMARY_MAP',
-              payload: {
-                runId,
-                title: article.title,
-                url: article.url,
-                language,
-                chunkText: chunks[i],
-                chunkIndex: i + 1,
-                chunkCount: total,
-                model: MODEL_MAP
-              }
-            });
-
-            if (!isRunActive(runId)) return;
-
-            if (resp && resp.ok === true && typeof resp.text === 'string') {
-              chunkSummaries.push(resp.text);
-              continue;
-            }
-            reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
-            return;
-          }
-
-          if (!isRunActive(runId)) return;
-          reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REDUCE' }, true);
-
-          const reduced = await sendToBackground(runId, 'reduce', {
-            type: 'RUN_SUMMARY_REDUCE',
-            payload: {
-              runId,
-              title: article.title,
-              url: article.url,
-              language,
-              mode,
-              chunkSummaries,
-              model: MODEL_FINAL
-            }
-          });
-
-          if (!isRunActive(runId)) return;
-
-          if (reduced && reduced.ok === true && typeof reduced.text === 'string') {
-            let finalText = await maybeRepairFormat(runId, mode, language, reduced.text, MODEL_FINAL, {
-              title: article.title,
-              url: article.url,
-              // Enable prompt caching reuse for repair by providing the same chunk summaries.
-              chunkSummaries
-            });
-            finalText = await maybeRepairTruncation(runId, mode, language, finalText, MODEL_FINAL, {
-              title: article.title,
-              url: article.url,
-              chunkSummaries
-            });
-            if (!isRunActive(runId)) return;
-            reduce(
-              { type: 'SUMMARY_DONE', runId, summaryText: normalizeSummaryText(finalText), usage: reduced.usage },
-              true
-            );
-            return;
-          }
-
-          reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(reduced) }, true);
-          return;
-        }
-
-        // Single pass.
-        reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
-        const resp = await sendToBackground(runId, 'single', {
-          type: 'RUN_SUMMARY_SINGLE',
+        const resp = await sendMessage({
+          type: 'RUN_SUMMARY_MAP',
           payload: {
             runId,
             title: article.title,
             url: article.url,
             language,
-            mode,
-            articleText: article.text,
-
-            // Must match our cost model assumptions: single-pass uses the map model.
+            chunkText: chunks[i],
+            chunkIndex: i + 1,
+            chunkCount: total,
             model: MODEL_MAP
           }
         });
 
         if (!isRunActive(runId)) return;
-
-        if (resp && resp.ok === true && typeof resp.text === 'string') {
-          let finalText = await maybeRepairFormat(runId, mode, language, resp.text, MODEL_MAP, {
-            title: article.title,
-            url: article.url
-          });
-          finalText = await maybeRepairTruncation(runId, mode, language, finalText, MODEL_MAP, {
-            title: article.title,
-            url: article.url
-          });
-          if (!isRunActive(runId)) return;
-          reduce(
-            { type: 'SUMMARY_DONE', runId, summaryText: normalizeSummaryText(finalText), usage: resp.usage },
-            true
-          );
+        if (!isTextResponse(resp)) {
+          reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
           return;
         }
+        chunkSummaries.push(resp.text);
+      }
 
+      if (!isRunActive(runId)) return;
+      reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'REDUCE' }, true);
+
+      const reduced = await sendMessage({
+        type: 'RUN_SUMMARY_REDUCE',
+        payload: {
+          runId,
+          title: article.title,
+          url: article.url,
+          language,
+          mode,
+          chunkSummaries,
+          model: MODEL_FINAL
+        }
+      });
+
+      if (!isRunActive(runId)) return;
+      if (!isTextResponse(reduced)) {
+        reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(reduced) }, true);
+        return;
+      }
+
+      await finishSummary(
+        runId,
+        mode,
+        language,
+        reduced.text,
+        MODEL_FINAL,
+        { title: article.title, url: article.url, chunkSummaries },
+        reduced.usage
+      );
+    }
+
+    async function runSinglePass(runId: string, article: ExtractOk, mode: SummaryMode, language: string): Promise<void> {
+      reduce({ type: 'SUMMARY_PROGRESS', runId, stage: 'SINGLE' }, true);
+      const resp = await sendMessage({
+        type: 'RUN_SUMMARY_SINGLE',
+        payload: {
+          runId,
+          title: article.title,
+          url: article.url,
+          language,
+          mode,
+          articleText: article.text,
+          // Must match our cost model assumptions: single-pass uses the map model.
+          model: MODEL_MAP
+        }
+      });
+
+      if (!isRunActive(runId)) return;
+      if (!isTextResponse(resp)) {
         reduce({ type: 'SUMMARY_ERROR', runId, message: formatBackgroundError(resp) }, true);
+        return;
+      }
+
+      await finishSummary(runId, mode, language, resp.text, MODEL_MAP, { title: article.title, url: article.url }, resp.usage);
+    }
+
+    async function runSummary(runId: string, article: ExtractOk): Promise<void> {
+      if (!isRunActive(runId)) return;
+
+      const language = resolvedLanguage();
+      const mode = currentMode();
+
+      try {
+        const chunks = Chunker.chunkText(article.text, CHUNK_TARGET_INPUT_TOKENS);
+        if (chunks.length > 1) {
+          await runMapReduce(runId, article, chunks, mode, language);
+        } else {
+          await runSinglePass(runId, article, mode, language);
+        }
       } catch (err: any) {
         if (!isRunActive(runId)) return;
         reduce({ type: 'SUMMARY_ERROR', runId, message: err?.message || t('errorUnknown') }, true);
       }
     }
+
+    // User-facing message for each extraction failure reason.
+    const EXTRACT_ERROR_KEYS: Record<ExtractFail['code'], string> = {
+      TOO_SHORT: 'errorTooShort',
+      LINK_HEAVY: 'errorNotArticle',
+      NO_MAIN_TEXT: 'errorNoMainText',
+      UNKNOWN: 'errorExtractionFailed'
+    };
 
     async function doExtractAndMaybeRun(runId: string): Promise<void> {
       if (!isRunActive(runId)) return;
@@ -436,14 +359,7 @@ namespace AS {
       if (!isRunActive(runId)) return;
 
       if (!r.ok) {
-        // Map reason to user-facing message.
-        let msg = '';
-        if (r.code === 'TOO_SHORT') msg = t('errorTooShort');
-        else if (r.code === 'LINK_HEAVY') msg = t('errorNotArticle');
-        else if (r.code === 'NO_MAIN_TEXT') msg = t('errorNoMainText');
-        else msg = t('errorExtractionFailed');
-
-        reduce({ type: 'EXTRACT_FAIL', runId, message: msg }, true);
+        reduce({ type: 'EXTRACT_FAIL', runId, message: t(EXTRACT_ERROR_KEYS[r.code] || 'errorExtractionFailed') }, true);
         return;
       }
 
@@ -510,7 +426,7 @@ namespace AS {
 
       // No approval needed: run immediately.
       setState(StateMachine.reduce(ctx.state, { type: 'START_SUMMARY', runId }), true);
-      await runSummary(runId, articleForState, estimate);
+      await runSummary(runId, articleForState);
     }
 
     function startRun(mode: SummaryMode): void {
@@ -548,7 +464,7 @@ namespace AS {
       if (s.phase !== 'CONFIRM') return;
 
       reduce({ type: 'START_SUMMARY', runId: s.runId }, true);
-      runSummary(s.runId, s.article, s.estimate).catch(() => {
+      runSummary(s.runId, s.article).catch(() => {
         // ignore
       });
     }
@@ -590,7 +506,7 @@ namespace AS {
       }
 
       reduce({ type: 'START_SUMMARY', runId }, true);
-      runSummary(runId, a, est).catch((err) => {
+      runSummary(runId, a).catch((err) => {
         console.error('[ArticleSummarizer] runSummary (light) failed', err);
         if (isRunActive(runId)) {
           reduce({ type: 'SUMMARY_ERROR', runId, message: t('errorUnknown') }, true);
@@ -668,8 +584,6 @@ namespace AS {
         if (!mode) return;
         startRun(mode);
       });
-
-      const OUTPUT_LANGUAGES = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
 
       // Populate languages.
       ctx.acceptLanguages = await getAcceptLanguages();

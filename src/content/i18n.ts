@@ -9,37 +9,16 @@ namespace AS {
   let overrideMessages: MessagesMap | null = null;
   let overrideLang: UiLang | null = null;
 
+  // Keep in sync with toUiLang in src/options/index.ts.
   function toUiLang(input: string): UiLang {
-    const raw = String(input || '').trim();
-    if (!raw) return 'en';
-    const lower = raw.toLowerCase();
+    const lower = String(input || '').trim().toLowerCase();
     if (lower.startsWith('pt')) return 'pt-BR';
     if (lower.startsWith('zh')) {
       if (lower.includes('tw') || lower.includes('hk') || lower.includes('mo')) return 'zh-TW';
       return 'zh-CN';
     }
     const base = lower.split('-')[0];
-    if (base === 'ja') return 'ja';
-    if (base === 'fr') return 'fr';
-    if (base === 'de') return 'de';
-    if (base === 'es') return 'es';
-    if (base === 'it') return 'it';
-    if (base === 'ko') return 'ko';
-    return 'en';
-  }
-
-  function uiLangToLocaleFolder(lang: UiLang): string {
-    if (lang === 'pt-BR') return 'pt_BR';
-    if (lang === 'zh-CN') return 'zh_CN';
-    if (lang === 'zh-TW') return 'zh_TW';
-    return lang;
-  }
-
-  function uiLangToBcp(lang: UiLang): string {
-    if (lang === 'pt-BR') return 'pt-BR';
-    if (lang === 'zh-CN') return 'zh-CN';
-    if (lang === 'zh-TW') return 'zh-TW';
-    return lang;
+    return (SUPPORTED_UI_LANGS as readonly string[]).includes(base) ? (base as UiLang) : 'en';
   }
 
   function resolveBrowserUiLang(): UiLang {
@@ -79,8 +58,7 @@ namespace AS {
   }
 
   export function getUiLanguage(): string {
-    if (overrideLang) return uiLangToBcp(overrideLang);
-    return uiLangToBcp(resolveBrowserUiLang());
+    return overrideLang || resolveBrowserUiLang();
   }
 
   export async function setUiLanguage(value: string): Promise<void> {
@@ -92,7 +70,8 @@ namespace AS {
     }
 
     const lang = toUiLang(raw);
-    const folder = uiLangToLocaleFolder(lang);
+    // _locales folders use underscores (pt_BR, zh_CN, zh_TW).
+    const folder = lang.replace('-', '_');
     try {
       const url = chrome.runtime.getURL(`_locales/${folder}/messages.json`);
       const resp = await fetch(url);

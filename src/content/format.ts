@@ -135,5 +135,64 @@ namespace AS {
       const expected = expectedBulletCount(mode);
       return validateBulletBlock(lines, expected);
     }
+
+    // Tidy model output for display: trim every line and fold stray continuation lines into the
+    // preceding bullet.
+    export function normalizeSummaryText(input: string): string {
+      const out: string[] = [];
+      const lastNonEmptyIndex = (): number => {
+        for (let i = out.length - 1; i >= 0; i--) {
+          if (out[i].trim().length > 0) return i;
+        }
+        return -1;
+      };
+
+      for (const raw of String(input || '').replace(/\r\n/g, '\n').split('\n')) {
+        const line = raw.trim();
+        if (line.length === 0) {
+          out.push('');
+          continue;
+        }
+        if (isBulletLine(line) || isSummaryLine(line) || isConclusionLine(line)) {
+          out.push(line);
+          continue;
+        }
+
+        const prevIndex = lastNonEmptyIndex();
+        if (prevIndex >= 0 && isBulletLine(out[prevIndex])) {
+          out[prevIndex] = `${out[prevIndex]} ${line}`;
+        } else {
+          out.push(line);
+        }
+      }
+
+      return out.join('\n').trim();
+    }
+
+    const SENTENCE_END_CHARS = new Set(['.', '!', '?', '。', '！', '？', '…', '」', '』', '）', ')', '】', ']', '”', '"']);
+
+    // Heuristic: the output looks cut off if its last line ends mid-word (no closing punctuation).
+    export function isLikelyTruncatedOutput(text: string, language: string): boolean {
+      const lines = String(text || '')
+        .replace(/\r\n/g, '\n')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (lines.length === 0) return false;
+
+      const lastLine = lines[lines.length - 1].replace(/^[-*•・]\s+/, '').trim();
+      if (lastLine.length === 0) return false;
+      const lastChar = lastLine.slice(-1);
+
+      if (SENTENCE_END_CHARS.has(lastChar)) return false;
+
+      // Japanese bullets are intentionally instructed to omit a trailing "。" (see
+      // bulletStyleNoteFor in background/prompts.ts), so a bare kana/kanji ending is
+      // expected there and must not be mistaken for truncation.
+      const isJapanese = String(language || '').trim().toLowerCase().startsWith('ja');
+      if (isJapanese && /[\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar)) return false;
+
+      return /[A-Za-z0-9\u3040-\u30ff\u4e00-\u9faf]$/.test(lastChar);
+    }
   }
 }

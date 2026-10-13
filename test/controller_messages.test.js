@@ -245,3 +245,35 @@ test('map-reduce: a failed map chunk stops the run with an error', async () => {
     ['COUNT_TOKENS', 'RUN_SUMMARY_MAP', 'RUN_SUMMARY_MAP']
   );
 });
+
+test('cancelling during the format repair does not send a truncation repair', async () => {
+  const article = { title: 'Short', url: 'https://example.com/short', text: 'Hello world. '.repeat(200) };
+  let host;
+  const env = setup({
+    settings: { minArticleChars: 50 },
+    article,
+    respond: (m) => {
+      if (m.type === 'RUN_SUMMARY_SINGLE') return { ok: true, text: 'Here:\n- A.\n- B.\n- C cut' };
+      if (m.type === 'RUN_SUMMARY_REPAIR') {
+        // The user cancels while the repair request is in flight.
+        host.dispatch('as:cancel');
+        return { ok: true, text: '- A.\n\n- B.\n\n- C cut' };
+      }
+      if (m.type === 'ABORT_RUN') return { ok: true, aborted: true };
+      return { ok: false, code: 'unhandled' };
+    }
+  });
+  host = env.host;
+
+  await waitFor(() => env.overlay.lastState?.phase === 'IDLE' && env.overlay.lastState.apiKeySet);
+  host.dispatch('as:mode', { mode: 'BULLETS_3' });
+  await waitFor(() => env.sent.some((m) => m.type === 'ABORT_RUN'));
+  await new Promise((r) => setTimeout(r, 50));
+
+  assert.equal(env.overlay.lastState.phase, 'IDLE');
+  assert.equal(env.overlay.lastState.banner, 'bannerCancelled');
+  assert.deepEqual(
+    env.sent.map((m) => m.type),
+    ['RUN_SUMMARY_SINGLE', 'RUN_SUMMARY_REPAIR', 'ABORT_RUN']
+  );
+});

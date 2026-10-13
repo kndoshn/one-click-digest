@@ -116,3 +116,34 @@ test('Format: TLDR mode rejects extra non-empty lines', () => {
   const r = AS.Format.validate('TLDR_12_CONCLUSION', text);
   assert.equal(r.ok, false);
 });
+
+test('Format.normalizeSummaryText: trims lines and folds continuation lines into the previous bullet', () => {
+  const AS = loadFormat();
+  const n = AS.Format.normalizeSummaryText;
+  assert.equal(n('  - A\n  continued.\n\n- B.  '), '- A continued.\n\n- B.');
+  assert.equal(n('- A\r\nmore\r\n\r\n- B'), '- A more\n\n- B');
+  // Continuations attach across blank lines to the last non-empty bullet.
+  assert.equal(n('- A\n\ntail'), '- A tail');
+  // Text before any bullet stays on its own line; header lines are kept as-is.
+  assert.equal(n('intro\n- A'), 'intro\n- A');
+  assert.equal(n('Summary: s\n\n- A\n\nConclusion: c\nextra'), 'Summary: s\n\n- A\n\nConclusion: c\nextra');
+  assert.equal(n(''), '');
+});
+
+test('Format.isLikelyTruncatedOutput: detects a last line that ends mid-word', () => {
+  const AS = loadFormat();
+  const f = AS.Format.isLikelyTruncatedOutput;
+  assert.equal(f('- A.\n\n- B is cut', 'en'), true);
+  assert.equal(f('- A.\n\n- B 42', 'en'), true);
+  assert.equal(f('- A.\n\n- B done.', 'en'), false);
+  assert.equal(f('- A.\n\n- B (note)', 'en'), false);
+  assert.equal(f('- A.\n\n- B「引用」', 'en'), false);
+  assert.equal(f('- A.\n\n- B —', 'en'), false);
+  assert.equal(f('', 'en'), false);
+  assert.equal(f('-  \n\n', 'en'), false);
+  // Japanese bullets intentionally omit the trailing "。".
+  assert.equal(f('- 一つ目のポイントです', 'ja'), false);
+  assert.equal(f('- 一つ目のポイントです', 'ja-JP'), false);
+  assert.equal(f('- 一つ目のポイントです', 'en'), true);
+  assert.equal(f('- Japanese text ends with ascii', 'ja'), true);
+});
