@@ -32,6 +32,7 @@ Formatting-only commits are listed in `.git-blame-ignore-revs`. GitHub skips the
 - Messages between the content script and the background worker are defined once, as valibot schemas in `src/shared/messages.ts`. The worker validates every message; senders get typed responses (`ResponseFor<type>`).
 - `npm run typecheck` also checks the tests (JavaScript with `checkJs`, not strict yet; `tsconfig.test.json`).
 - Tests import `src/**/*.ts` directly (Node.js type stripping). Content script tests run a test bundle (`build/test/content.js`, built by `npm test`) in a VM context; see `test/helpers/classic_context.js`.
+- GitHub Actions workflows pin actions by commit SHA and set minimal `permissions`. CI audits `.github/` with [zizmor](https://docs.zizmor.sh/); to run it locally: `GH_TOKEN=$(gh auth token) uvx zizmor .`
 
 ## End-to-end tests
 

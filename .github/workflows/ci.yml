@@ -145,6 +145,26 @@ jobs:
           path: one-click-digest.zip
           if-no-files-found: error
 
+  # Audits .github/ (workflows and dependabot.yml) for injection, excessive
+  # permissions, unpinned actions and similar issues.
+  zizmor:
+    name: Workflow security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Findings fail the job and show up as annotations instead of code scanning alerts.
+      # Dependabot updates the action but not `version`; bump it by hand.
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          version: 1.30.1
+          advanced-security: false
+          annotations: true
+
   # Not part of "CI passed" yet: required once it has proven stable.
   e2e:
     name: E2E
@@ -183,7 +203,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [typecheck, lint, test, audit, build]
+    needs: [typecheck, lint, test, audit, build, zizmor]
     runs-on: ubuntu-latest
     permissions: {}
     steps:
