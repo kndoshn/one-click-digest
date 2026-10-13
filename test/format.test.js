@@ -176,8 +176,8 @@ test('Format: TLDR mode accepts the labels the background prompts ask for, in ev
   const languages = ['en', 'ja', 'fr', 'de', 'es', 'it', 'pt-BR', 'zh-CN', 'zh-TW', 'ko'];
   for (const language of languages) {
     const prompt = buildSinglePrompt({ title: 'T', url: 'u', language, mode: 'TLDR_12_CONCLUSION', articleText: 'x' });
-    const [, summary] = prompt.match(/^(.+): <one line>$/m);
-    const conclusion = prompt.match(/^(.+): <one line>$/gm)[1].replace(': <one line>', '');
+    const [, summary] = prompt.match(/^(.+): <one sentence>$/m);
+    const conclusion = prompt.match(/^(.+): <one sentence>$/gm)[1].replace(': <one sentence>', '');
     const text = [`${summary}: one line`, '', bulletBlock(12), '', `${conclusion}: last line`].join('\n');
     assert.equal(AS.Format.validate('TLDR_12_CONCLUSION', text).ok, true, `${language}: ${summary} / ${conclusion}`);
   }

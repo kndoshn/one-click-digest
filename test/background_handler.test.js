@@ -108,20 +108,20 @@ const HAIKU_PARAMS = { thinking: { type: 'disabled' } };
 const SONNET_PARAMS = { output_config: { effort: 'medium' } };
 
 const HINT_3 =
-  'Return exactly 3 bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.';
+  'Return exactly 3 bullet points, one per line, each starting with "- ".\n' +
+  'Write nothing else: no title, no introduction, no closing note.';
 const HINT_5 =
-  'Return exactly 5 bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.';
+  'Return exactly 5 bullet points, one per line, each starting with "- ".\n' +
+  'Write nothing else: no title, no introduction, no closing note.';
 const JA_NOTE = '\nWhen a bullet point is written in Japanese, do not end it with a trailing "。".';
 
 function tldrHint(summary, conclusion, note = '') {
   return (
-    'Return EXACTLY this structure, with no other text (27 lines total):\n' +
-    `${summary}: <one line>\n` +
-    '<blank line>\n' +
-    '12 bullet lines, each starting with "- ", with exactly one blank line between each pair of bullets\n' +
-    '<blank line>\n' +
-    `${conclusion}: <one line>\n` +
-    'No headings, no extra text.' +
+    'Return exactly this structure and nothing else (no title, no introduction, no closing note):\n' +
+    `${summary}: <one sentence>\n` +
+    Array.from({ length: 12 }, (_, i) => `- <bullet ${i + 1}>\n`).join('') +
+    `${conclusion}: <one sentence>\n` +
+    'There must be exactly 12 bullet points, one per line, each starting with "- ".' +
     note
   );
 }
@@ -316,7 +316,9 @@ test('RUN_SUMMARY_SINGLE: max_tokens per mode, with the Japanese note on bullet 
       type: 'RUN_SUMMARY_SINGLE',
       payload: { ...BASE, language: 'ja-JP', mode, articleText: 'Body text', model: HAIKU }
     });
-    const hint = `Return exactly ${count} bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${JA_NOTE}`;
+    const hint =
+      `Return exactly ${count} bullet points, one per line, each starting with "- ".\n` +
+      `Write nothing else: no title, no introduction, no closing note.${JA_NOTE}`;
     assert.equal(lastBody().max_tokens, maxTokens, mode);
     assert.equal(lastBody().messages[0].content, singlePrompt('ja-JP', hint), mode);
   }
