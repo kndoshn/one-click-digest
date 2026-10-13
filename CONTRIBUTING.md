@@ -20,6 +20,8 @@ npm test
 
 `npm run build` writes the unpacked extension to `dist/`, which is not committed. Load it from `chrome://extensions` with **Load unpacked**.
 
+Formatting-only commits are listed in `.git-blame-ignore-revs`. GitHub skips them in blame views; to do the same locally, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
 `.npmrc` sets `min-release-age=7`, so npm does not pick package versions published less than 7 days ago.
 
 ## Code style

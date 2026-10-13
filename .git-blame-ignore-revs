@@ -1,0 +1,5 @@
+# Commits that only reformat code. GitHub skips them in blame views.
+# Locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: format the codebase with oxfmt (#39)
+d3a932633e72bac218c98c79b04baefdae272266
