@@ -49,6 +49,25 @@ function bulletStyleNoteFor(language: string): string {
   return '';
 }
 
+// How long each bullet should be, so the summary can be read at a glance. A guide, not a limit:
+// nothing checks it. About 40 characters is the short end of the 40-60 characters Japanese style
+// guides give for one sentence. The last sentence says what gives way when the faithfulness rules
+// and the length pull apart: details, not hedges or numbers.
+function lengthGuideFor(mode: SummaryMode, language: string): string {
+  const lang = normalizeLang(language);
+  const size = lang.startsWith('ja') || lang.startsWith('zh') ? 'about 40 characters' : 'about 20 words';
+  const labels = headerLabelsFor(language);
+  const lines =
+    mode === 'TLDR_12_CONCLUSION'
+      ? ` The ${labels.summary} and ${labels.conclusion} lines are one sentence each too.`
+      : '';
+  return (
+    `Keep the summary quick to read: write each bullet as one short sentence with a single point, ${size}.${lines}\n` +
+    'If a point needs more, leave out its less important details instead of writing a longer sentence. ' +
+    'Keep the hedges and numbers of what you include.'
+  );
+}
+
 // What keeps a summary true to its source. `source` names what the model summarizes: the article or
 // the chunk summaries. The map prompt leaves the rules out: with them in it, the judge scored the
 // long-article summaries' coverage about 3.2 instead of 4 (eval, 2026-10-13).
@@ -103,7 +122,7 @@ export function buildSinglePrompt(args: {
     `Summarize the following web article for quick understanding.`,
     `Output language: ${args.language}.`,
     formatHintFor(args.mode, args.language),
-    `Keep each bullet readable (no overly long lines).`,
+    lengthGuideFor(args.mode, args.language),
     faithfulnessRules('article'),
     `Do not include extra commentary.`,
     '',
@@ -157,7 +176,7 @@ function buildReducePrefixBlocks(args: ReduceArgs): TextBlock[] {
     `You are an assistant that composes a final summary from multiple chunk summaries.`,
     `Output language: ${args.language}.`,
     formatHintFor(args.mode, args.language),
-    `Keep each bullet readable (no overly long lines).`,
+    lengthGuideFor(args.mode, args.language),
     faithfulnessRules('chunk summaries'),
     '',
     `Title: ${args.title}`,

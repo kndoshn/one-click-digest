@@ -136,12 +136,25 @@ function tldrHint(summary, conclusion, note = '') {
   );
 }
 
-function singlePrompt(language, hint) {
+const WORDS = 'about 20 words';
+const CHARS = 'about 40 characters';
+
+// The bullet length guide; `lines` are the TL;DR's Summary and Conclusion labels.
+function lengthGuide(size, lines) {
+  return (
+    `Keep the summary quick to read: write each bullet as one short sentence with a single point, ${size}.` +
+    (lines ? ` The ${lines[0]} and ${lines[1]} lines are one sentence each too.` : '') +
+    '\nIf a point needs more, leave out its less important details instead of writing a longer sentence. ' +
+    'Keep the hedges and numbers of what you include.'
+  );
+}
+
+function singlePrompt(language, hint, guide) {
   return [
     'Summarize the following web article for quick understanding.',
     `Output language: ${language}.`,
     hint,
-    'Keep each bullet readable (no overly long lines).',
+    guide,
     faithful('article'),
     'Do not include extra commentary.',
     '',
@@ -158,7 +171,7 @@ function reducePrefix(hint) {
     'You are an assistant that composes a final summary from multiple chunk summaries.',
     'Output language: en.',
     hint,
-    'Keep each bullet readable (no overly long lines).',
+    lengthGuide(WORDS),
     faithful('chunk summaries'),
     '',
     'Title: T',
@@ -271,7 +284,7 @@ test('RUN_SUMMARY_SINGLE: BULLETS_3 request body', async () => {
   assert.deepEqual(lastBody(), {
     model: HAIKU,
     max_tokens: 450,
-    messages: [{ role: 'user', content: singlePrompt('en', HINT_3) }],
+    messages: [{ role: 'user', content: singlePrompt('en', HINT_3, lengthGuide(WORDS)) }],
     ...HAIKU_PARAMS
   });
 });
@@ -285,7 +298,12 @@ test('RUN_SUMMARY_SINGLE: Japanese TL;DR mode uses localized labels and the punc
   assert.deepEqual(lastBody(), {
     model: HAIKU,
     max_tokens: 1600,
-    messages: [{ role: 'user', content: singlePrompt('ja', tldrHint('要約', '結論', JA_NOTE)) }],
+    messages: [
+      {
+        role: 'user',
+        content: singlePrompt('ja', tldrHint('要約', '結論', JA_NOTE), lengthGuide(CHARS, ['要約', '結論']))
+      }
+    ],
     ...HAIKU_PARAMS
   });
 });
@@ -310,7 +328,12 @@ test('RUN_SUMMARY_SINGLE: header labels per language', async () => {
       type: 'RUN_SUMMARY_SINGLE',
       payload: { ...BASE, language, mode: 'TLDR_12_CONCLUSION', articleText: 'Body text', model: HAIKU }
     });
-    assert.equal(lastBody().messages[0].content, singlePrompt(language, tldrHint(summary, conclusion)), language);
+    const guide = lengthGuide(language.startsWith('zh') ? CHARS : WORDS, [summary, conclusion]);
+    assert.equal(
+      lastBody().messages[0].content,
+      singlePrompt(language, tldrHint(summary, conclusion), guide),
+      language
+    );
   }
 });
 
@@ -329,7 +352,7 @@ test('RUN_SUMMARY_SINGLE: max_tokens per mode, with the Japanese note on bullet 
     });
     const hint = `Return exactly ${count} bullet points, each starting with "- ", with exactly one blank line between each pair of bullets.${JA_NOTE}`;
     assert.equal(lastBody().max_tokens, maxTokens, mode);
-    assert.equal(lastBody().messages[0].content, singlePrompt('ja-JP', hint), mode);
+    assert.equal(lastBody().messages[0].content, singlePrompt('ja-JP', hint, lengthGuide(CHARS)), mode);
   }
 });
 
