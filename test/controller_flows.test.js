@@ -267,6 +267,10 @@ test('a failed reduce stops a map-reduce run with an error', async () => {
 test('extraction failures map to their messages', async () => {
   const cases = [
     [{ ok: false, code: 'NO_MAIN_TEXT', message: 'x' }, 'errorNoMainText'],
+    [{ ok: false, code: 'PDF_NO_TEXT', message: 'x' }, 'errorPdfNoText'],
+    [{ ok: false, code: 'PDF_FAILED', message: 'x' }, 'errorPdfFailed'],
+    // PDF extraction is asynchronous.
+    [Promise.resolve({ ok: false, code: 'PDF_FAILED', message: 'x' }), 'errorPdfFailed'],
     [{ ok: false, code: 'UNKNOWN', message: 'x' }, 'errorExtractionFailed'],
     [{ ok: false, code: 'SOMETHING_NEW', message: 'x' }, 'errorExtractionFailed']
   ];
@@ -291,6 +295,12 @@ test('extraction failures map to their messages', async () => {
   await runToPhase(env2, inst2, 'BULLETS_3', 'ERROR');
   assert.equal(inst2.lastState.message, 'boom');
   assert.deepEqual(env2.sent, []);
+
+  // So is a rejected asynchronous extraction.
+  const env3 = createControllerEnv({ extract: () => Promise.reject(new Error('async boom')) });
+  const inst3 = await injectAndWaitIdle(env3);
+  await runToPhase(env3, inst3, 'BULLETS_3', 'ERROR');
+  assert.equal(inst3.lastState.message, 'async boom');
 });
 
 test('a bootstrap failure is logged instead of thrown', async () => {

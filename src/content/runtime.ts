@@ -115,6 +115,15 @@ export async function openOptionsPage(): Promise<void> {
   }
 }
 
+// Unifies line endings, collapses runs of spaces and tabs, and keeps at most one blank line.
+export function normalizeText(text: string): string {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function clampText(text: string, maxChars: number): { text: string; truncated: boolean } {
   if (maxChars <= 0) return { text: '', truncated: text.length > 0 };
   if (text.length <= maxChars) return { text, truncated: false };

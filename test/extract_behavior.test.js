@@ -47,7 +47,7 @@ function readabilityReturning(parsed, calls = []) {
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
-test('Readability path: normalized text, title, URL and link density from the parsed content', () => {
+test('Readability path: normalized text, title, URL and link density from the parsed content', async () => {
   const calls = [];
   const text = `  ${sentence(1)}\r\n\r\n\r\n\r\n${sentence(2)}   \t ${sentence(3)} `.repeat(4);
   const { AS, doc } = load({
@@ -57,7 +57,7 @@ test('Readability path: normalized text, title, URL and link density from the pa
     )
   });
 
-  const r = plain(AS.Extract.extractArticle());
+  const r = plain(await AS.Extract.extractArticle());
   assert.equal(r.ok, true);
   assert.equal(r.title, 'Readable title');
   assert.equal(r.url, 'https://example.com/post');
@@ -71,22 +71,22 @@ test('Readability path: normalized text, title, URL and link density from the pa
   assert.equal(calls[0].opts.charThreshold, 200);
 });
 
-test('Readability path: a blank title falls back to the page title', () => {
+test('Readability path: a blank title falls back to the page title', async () => {
   const { AS } = load({
     title: 'Fallback title',
     readability: readabilityReturning({ title: ' ', textContent: sentence(1).repeat(10), content: 42 })
   });
-  const r = AS.Extract.extractArticle();
+  const r = await AS.Extract.extractArticle();
   assert.equal(r.title, 'Fallback title');
   assert.equal(r.linkDensity, 0);
 });
 
-test('Readability path: too short or link-heavy results are rejected without the fallback', () => {
+test('Readability path: too short or link-heavy results are rejected without the fallback', async () => {
   const short = load({
     readability: readabilityReturning({ textContent: 'Too short.', content: '' }),
     html: paragraphs(20)
   });
-  assert.deepEqual(plain(short.AS.Extract.extractArticle()), {
+  assert.deepEqual(plain(await short.AS.Extract.extractArticle()), {
     ok: false,
     code: 'TOO_SHORT',
     message: 'The extracted text is too short to summarize reliably.',
@@ -96,16 +96,16 @@ test('Readability path: too short or link-heavy results are rejected without the
 
   const linky = `<p>${'<a>link text here</a> '.repeat(30)} tail</p>`;
   const heavy = load({ readability: readabilityReturning({ textContent: sentence(1).repeat(10), content: linky }) });
-  const r = heavy.AS.Extract.extractArticle();
+  const r = await heavy.AS.Extract.extractArticle();
   assert.equal(r.code, 'LINK_HEAVY');
   assert.ok(r.linkDensity > 0.65);
 
   // Link-heavy but very long text is still treated as an article.
   const long = load({ readability: readabilityReturning({ textContent: sentence(1).repeat(250), content: linky }) });
-  assert.equal(long.AS.Extract.extractArticle().ok, true);
+  assert.equal((await long.AS.Extract.extractArticle()).ok, true);
 });
 
-test('the heuristic fallback runs when Readability is missing, returns nothing, or throws', () => {
+test('the heuristic fallback runs when Readability is missing, returns nothing, or throws', async () => {
   const html = `<article>${paragraphs(10)}</article>`;
   for (const readability of [
     undefined,
@@ -114,14 +114,14 @@ test('the heuristic fallback runs when Readability is missing, returns nothing, 
     readabilityReturning(new Error('x'))
   ]) {
     const { AS } = load({ html, readability });
-    const r = AS.Extract.extractArticle();
+    const r = await AS.Extract.extractArticle();
     assert.equal(r.ok, true);
     assert.equal(r.title, 'Page title');
     assert.equal(r.text.split('\n').length, 10);
   }
 });
 
-test('fallback: picks the article over navigation and skips nav/footer/header blocks and short fragments', () => {
+test('fallback: picks the article over navigation and skips nav/footer/header blocks and short fragments', async () => {
   const html = `
     <nav><ul>${'<li><a>Navigation link number one</a></li>'.repeat(10)}</ul></nav>
     <div id="content">
@@ -135,7 +135,7 @@ test('fallback: picks the article over navigation and skips nav/footer/header bl
       </article>
     </div>`;
   const { AS } = load({ html });
-  const r = AS.Extract.extractArticle();
+  const r = await AS.Extract.extractArticle();
   assert.equal(r.ok, true);
   const lines = r.text.split('\n');
   assert.equal(lines[0], 'A headline that is long enough');
@@ -147,7 +147,7 @@ test('fallback: picks the article over navigation and skips nav/footer/header bl
   assert.ok(r.linkDensity > 0 && r.linkDensity < 0.1);
 });
 
-test('fallback: an <article> outscores a slightly longer container, and link-heavy page chrome penalizes <body>', () => {
+test('fallback: an <article> outscores a slightly longer container, and link-heavy page chrome penalizes <body>', async () => {
   // <body> is always a candidate; the many short navigation links (counted for link density but
   // too short to count as text) push its score below the article's.
   const html = `
@@ -155,33 +155,33 @@ test('fallback: an <article> outscores a slightly longer container, and link-hea
     <div class="post">${paragraphs(10, 'Post')}</div>
     <article>${paragraphs(9, 'Art')}</article>`;
   const { AS } = load({ html });
-  const r = AS.Extract.extractArticle();
+  const r = await AS.Extract.extractArticle();
   assert.ok(r.text.startsWith(sentence(1, 'Art')), r.text.slice(0, 40));
 });
 
-test('fallback: link-heavy, too short, and empty pages are rejected', () => {
+test('fallback: link-heavy, too short, and empty pages are rejected', async () => {
   const linkHeavy = load({ html: `<main>${'<p><a>A link that is long enough to count</a> x</p>'.repeat(20)}</main>` });
-  assert.equal(linkHeavy.AS.Extract.extractArticle().code, 'LINK_HEAVY');
+  assert.equal((await linkHeavy.AS.Extract.extractArticle()).code, 'LINK_HEAVY');
 
   const short = load({ html: `<main>${paragraphs(2)}</main>`, minArticleChars: 600 });
-  const r = short.AS.Extract.extractArticle();
+  const r = await short.AS.Extract.extractArticle();
   assert.equal(r.code, 'TOO_SHORT');
   assert.ok(r.charCount > 0 && r.charCount < 600);
 
   const empty = load({ html: '<div><span>tiny</span></div>' });
-  assert.deepEqual(plain(empty.AS.Extract.extractArticle()), {
+  assert.deepEqual(plain(await empty.AS.Extract.extractArticle()), {
     ok: false,
     code: 'NO_MAIN_TEXT',
     message: 'No text blocks were found.'
   });
 });
 
-test('unexpected DOM errors are reported as UNKNOWN', () => {
+test('unexpected DOM errors are reported as UNKNOWN', async () => {
   const { AS, doc } = load({ html: paragraphs(10) });
   Object.defineProperty(doc, 'body', {
     get() {
       throw new Error('DOM exploded');
     }
   });
-  assert.deepEqual(plain(AS.Extract.extractArticle()), { ok: false, code: 'UNKNOWN', message: 'DOM exploded' });
+  assert.deepEqual(plain(await AS.Extract.extractArticle()), { ok: false, code: 'UNKNOWN', message: 'DOM exploded' });
 });

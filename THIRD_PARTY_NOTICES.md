@@ -16,3 +16,15 @@ This project bundles the following third-party component(s). The licenses below 
 
 The bundled file includes the original copyright and license header. A copy of the Apache 2.0
 license text is provided at `third_party/readability/LICENSE-2.0.txt`.
+
+## PDF.js
+
+- Source: Mozilla PDF.js (https://github.com/mozilla/pdf.js), npm package `pdfjs-dist` (legacy build)
+  - The version is the one in `package-lock.json`. Dependabot proposes updates.
+- Location in this repository:
+  - Not committed; installed from npm and bundled by `scripts/build.mjs`
+  - Built artifact: `dist/content/pdf.js` (injected only into PDF tabs)
+- License: Apache License 2.0
+
+The built file starts with PDF.js's copyright and license notice. A copy of the Apache 2.0 license
+text is provided at `third_party/readability/LICENSE-2.0.txt` (also in `dist/`).

@@ -15,6 +15,12 @@ const globals = /** @type {any} */ (globalThis);
 const storage = {};
 const listeners = { onClicked: [], onChanged: [], onMessage: [] };
 const injected = [];
+// The worker first asks each tab for its document's content type (a PDF tab gets the PDF reader).
+const probes = [];
+const contentTypes = new Map();
+let probeError;
+// Replaces the probe's whole return value when set (e.g. [] or undefined).
+let probeResults = null;
 const fetchCalls = [];
 let fetchQueue = [];
 
@@ -45,7 +51,14 @@ globals.chrome = {
   action: { onClicked: { addListener: (fn) => listeners.onClicked.push(fn) } },
   scripting: {
     executeScript: async (args) => {
+      if (args.func) {
+        probes.push(args);
+        if (probeError) throw probeError;
+        if (probeResults !== null) return probeResults;
+        return [{ frameId: 0, result: contentTypes.get(args.target.tabId) ?? 'text/html' }];
+      }
       injected.push(args);
+      return [{ frameId: 0, result: null }];
     }
   },
   storage: {
@@ -736,9 +749,20 @@ test('OPEN_OPTIONS and unknown message types', async () => {
   });
 });
 
+// The click listener does not wait for the injection, so tests wait for it to settle.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 test('action click injects content scripts only into regular pages', async () => {
   const click = listeners.onClicked[0];
-  await click({ id: 7, url: 'https://example.com/post' });
+  click({ id: 7, url: 'https://example.com/post' });
+  await settle();
+  assert.deepEqual(probes.at(-1).target, { tabId: 7 });
+  globals.document = { contentType: 'application/pdf' };
+  try {
+    assert.equal(probes.at(-1).func(), 'application/pdf');
+  } finally {
+    delete globals.document;
+  }
   assert.equal(injected.length, 1);
   assert.deepEqual(injected[0], {
     target: { tabId: 7, allFrames: false },
@@ -749,6 +773,7 @@ test('action click injects content scripts only into regular pages', async () =>
     assert.ok(fs.existsSync(path.join(process.cwd(), 'dist', f)), `dist/${f} must exist (run build first)`);
   }
 
+  const probesBefore = probes.length;
   for (const url of [
     'chrome://settings',
     'chrome-extension://x/y',
@@ -757,8 +782,60 @@ test('action click injects content scripts only into regular pages', async () =>
     'view-source:https://a',
     ''
   ]) {
-    await click({ id: 8, url });
+    click({ id: 8, url });
   }
-  await click({ url: 'https://example.com' });
+  click({ url: 'https://example.com' });
+  await settle();
   assert.equal(injected.length, 1);
+  assert.equal(probes.length, probesBefore, 'restricted pages are not probed either');
+  injected.length = 0;
+});
+
+test('action click on a PDF tab injects the PDF reader instead of Readability', async () => {
+  const click = listeners.onClicked[0];
+  contentTypes.set(9, 'application/pdf');
+  try {
+    // Chrome's PDF viewer: the URL need not end in .pdf; the document's content type decides.
+    click({ id: 9, url: 'https://example.com/download?id=3' });
+    await settle();
+    assert.deepEqual(injected, [
+      { target: { tabId: 9, allFrames: false }, files: ['content/pdf.js', 'content/main.js'] }
+    ]);
+    for (const f of injected[0].files) {
+      assert.ok(fs.existsSync(path.join(process.cwd(), 'dist', f)), `dist/${f} must exist (run build first)`);
+    }
+  } finally {
+    contentTypes.delete(9);
+    injected.length = 0;
+  }
+});
+
+test('action click: a failed or empty content type probe', async () => {
+  const click = listeners.onClicked[0];
+  const errors = [];
+  const origError = console.error;
+  console.error = (...args) => errors.push(args);
+  try {
+    // The probe throws (e.g. the page cannot be scripted): nothing is injected and the error is logged.
+    probeError = new Error('Cannot access contents of the page');
+    click({ id: 10, url: 'https://example.com/post' });
+    await settle();
+    assert.equal(injected.length, 0);
+    assert.equal(errors.length, 1);
+    probeError = undefined;
+
+    // No result from the probe: injected as a regular page.
+    for (const results of [undefined, []]) {
+      probeResults = results;
+      click({ id: 11, url: 'https://example.com/post' });
+      await settle();
+      assert.deepEqual(injected.at(-1)?.files, ['third_party/readability/Readability.js', 'content/main.js']);
+    }
+    assert.equal(injected.length, 2);
+  } finally {
+    console.error = origError;
+    probeError = undefined;
+    probeResults = null;
+    injected.length = 0;
+  }
 });

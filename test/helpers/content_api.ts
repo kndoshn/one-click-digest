@@ -13,3 +13,4 @@ export * as Extract from '../../src/content/extract.ts';
 export * as Format from '../../src/content/format.ts';
 export * as Overlay from '../../src/content/overlay.ts';
 export * as StateMachine from '../../src/content/state_machine.ts';
+export * as ExtractPdf from '../../src/content/extract_pdf.ts';

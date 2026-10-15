@@ -1,5 +1,6 @@
 import { type ExtractOk, type ExtractResult, MIN_ARTICLE_CHARS } from './models.ts';
-import { getPageTitle, getPageUrl } from './runtime.ts';
+import { extractPdf, isPdfDocument } from './extract_pdf.ts';
+import { getPageTitle, getPageUrl, normalizeText } from './runtime.ts';
 
 type Candidate = {
   el: Element;
@@ -9,14 +10,6 @@ type Candidate = {
   linkDensity: number;
   score: number;
 };
-
-function normalizeText(text: string): string {
-  return text
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
 
 function estimateLinkDensityFromHtml(html: string): number {
   try {
@@ -161,7 +154,13 @@ function gatherCandidates(): Element[] {
   return uniq;
 }
 
-export function extractArticle(): ExtractResult {
+// A PDF tab is read from the PDF itself (see extract_pdf.ts); other pages from their DOM.
+export async function extractArticle(): Promise<ExtractResult> {
+  if (isPdfDocument()) return extractPdf();
+  return extractHtmlArticle();
+}
+
+function extractHtmlArticle(): ExtractResult {
   try {
     // 1) Best-effort Readability extraction (higher success rate on general HTML articles).
     const readable = extractWithReadability();

@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "Haupttext des Artikels konnte nicht gefunden werden."
   },
+  "errorPdfNoText": {
+    "message": "Dieses PDF enthält kaum oder keinen lesbaren Text. Gescannte PDFs (Bilder von Seiten) können nicht zusammengefasst werden."
+  },
+  "errorPdfFailed": {
+    "message": "Dieses PDF konnte nicht gelesen werden."
+  },
   "errorExtractionFailed": {
     "message": "Extraktion des Artikeltexts fehlgeschlagen."
   },

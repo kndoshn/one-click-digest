@@ -19,6 +19,7 @@ When you run a summary, the extension sends the following to Anthropic's API end
 - The extracted article title
 - The extracted main article text
   - The text is truncated to a configurable maximum before sending (safety / cost control)
+  - For a PDF, the text is extracted in your browser: the extension downloads the PDF again from the tab's own URL (the same site, not a third party) and reads it locally. The PDF file itself is not sent.
 
 For long articles, the extension may send multiple chunk requests and a final reduce request. The data sent is still derived from the same extracted article text.
 

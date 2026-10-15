@@ -52,6 +52,19 @@ function isInjectableUrl(url: unknown): url is string {
 // unmodified upstream file and defines a global `Readability`; content/main.js is the bundled
 // content script (see scripts/build.mjs).
 const CONTENT_FILES: string[] = ['third_party/readability/Readability.js', 'content/main.js'];
+// PDF tabs get the PDF reader (pdf.js, see src/content/pdf_main.ts) instead of Readability. It is
+// large, so other pages do not get it.
+const PDF_CONTENT_FILES: string[] = ['content/pdf.js', 'content/main.js'];
+
+// Chrome shows PDFs in its viewer, and the tab's document then has the PDF's content type (the
+// URL need not end in .pdf).
+async function isPdfTab(tabId: number): Promise<boolean> {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => document.contentType
+  });
+  return results?.[0]?.result === 'application/pdf';
+}
 
 async function injectContentScripts(tab: chrome.tabs.Tab): Promise<void> {
   try {
@@ -64,7 +77,7 @@ async function injectContentScripts(tab: chrome.tabs.Tab): Promise<void> {
 
     await chrome.scripting.executeScript({
       target: { tabId, allFrames: false },
-      files: CONTENT_FILES
+      files: (await isPdfTab(tabId)) ? PDF_CONTENT_FILES : CONTENT_FILES
     });
   } catch (err) {
     // Avoid logging sensitive data.

@@ -53,8 +53,9 @@ export function apiError(status: number, type: string, message: string): ApiRepl
 type Fixtures = {
   serviceWorker: Worker;
   api: MockApi;
-  // Extra pages served from ORIGIN, by path (fixture files in e2e/pages are served too).
-  pages: Map<string, string>;
+  // Extra pages served from ORIGIN, by path (fixture files in e2e/pages are served too): HTML as a
+  // string, or the bytes of a PDF.
+  pages: Map<string, string | Uint8Array>;
 };
 
 export const test = base.extend<Fixtures & { context: BrowserContext }>({
@@ -81,13 +82,16 @@ export const test = base.extend<Fixtures & { context: BrowserContext }>({
   // Automatic, so every test serves the fixture pages and never reaches the real API.
   pages: [
     async ({ context }, use) => {
-      const pages = new Map<string, string>();
+      const pages = new Map<string, string | Uint8Array>();
       await context.route(`${ORIGIN}/**`, async (route) => {
         const { pathname } = new URL(route.request().url());
         const file = path.join(PAGES_DIR, path.basename(pathname));
-        const html = pages.get(pathname) ?? (fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : undefined);
-        if (html === undefined) return route.fulfill({ status: 404, body: 'not found' });
-        return route.fulfill({ contentType: 'text/html; charset=utf-8', body: html });
+        const body = pages.get(pathname) ?? (fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : undefined);
+        if (body === undefined) return route.fulfill({ status: 404, body: 'not found' });
+        if (typeof body !== 'string') {
+          return route.fulfill({ contentType: 'application/pdf', body: Buffer.from(body) });
+        }
+        return route.fulfill({ contentType: 'text/html; charset=utf-8', body });
       });
       await use(pages);
     },

@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "Could not find the main article text."
   },
+  "errorPdfNoText": {
+    "message": "This PDF has little or no text that can be read. Scanned PDFs (images of pages) cannot be summarized."
+  },
+  "errorPdfFailed": {
+    "message": "Could not read this PDF."
+  },
   "errorExtractionFailed": {
     "message": "Failed to extract article text."
   },

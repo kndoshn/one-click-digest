@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "No se pudo encontrar el texto principal del artículo."
   },
+  "errorPdfNoText": {
+    "message": "Este PDF tiene poco o ningún texto legible. Los PDF escaneados (imágenes de páginas) no se pueden resumir."
+  },
+  "errorPdfFailed": {
+    "message": "No se pudo leer este PDF."
+  },
   "errorExtractionFailed": {
     "message": "Error al extraer el texto del artículo."
   },

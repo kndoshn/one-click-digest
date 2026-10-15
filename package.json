@@ -50,6 +50,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "pdfjs-dist": "^6.4.299",
     "valibot": "^1.5.0"
   }
 }

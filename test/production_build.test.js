@@ -15,3 +15,11 @@ test('production build: no E2E hooks, closed overlay shadow root, no test origin
   assert.ok(!content.includes('"open"'), 'content bundle must not open the shadow root');
   assert.ok(!read('manifest.json').includes('e2e.test'), 'manifest must not allow the E2E origin');
 });
+
+test('production build: the PDF reader bundle starts with the pdf.js license notice', () => {
+  const pdf = read('content/pdf.js');
+  assert.match(
+    pdf.slice(0, 2000),
+    /^\/\*! PDF\.js \d+\.\d+\.\d+ [\s\S]*Copyright \d{4} Mozilla Foundation[\s\S]*Apache License, Version 2\.0/
+  );
+});

@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "找不到文章主體文字。"
   },
+  "errorPdfNoText": {
+    "message": "此 PDF 幾乎沒有可讀取的文字。掃描的 PDF（頁面影像）無法摘要。"
+  },
+  "errorPdfFailed": {
+    "message": "無法讀取此 PDF。"
+  },
   "errorExtractionFailed": {
     "message": "正文擷取失敗。"
   },
