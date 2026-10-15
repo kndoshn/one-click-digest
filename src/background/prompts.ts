@@ -51,11 +51,12 @@ function bulletStyleNoteFor(language: string): string {
 
 // How long each bullet should be, so the summary can be read at a glance. A guide, not a limit:
 // nothing checks it. 40-50 characters is the shorter half of the 40-60 characters Japanese style
-// guides give for one sentence. The model writes shorter than it is asked to: "one short sentence
-// with a single point, about 40 characters" gave a median of 27 characters (20 words in English
-// asked, 18 given) and cost coverage, most in the 3- and 5-bullet modes (judge, 4.26 to 3.86;
-// eval, 2026-10-15). The last sentence says what gives way when the faithfulness rules and the
-// length pull apart: details, not hedges or numbers.
+// guides give for one sentence. The model writes shorter than it is asked to: this wording gives a
+// median of 32 characters (90th percentile 41; without a guide, 43 and 80) and 21 words, with mean
+// coverage 4.15 against 4.26 without a guide. "One short sentence with a single point, about 40
+// characters" gave 27 characters and coverage 3.86, most of the loss in the 3- and 5-bullet modes
+// (eval with judge, 2026-10-15). The last sentence says what gives way when the faithfulness rules
+// and the length pull apart: details, not hedges or numbers.
 function lengthGuideFor(mode: SummaryMode, language: string): string {
   const lang = normalizeLang(language);
   const size = lang.startsWith('ja') || lang.startsWith('zh') ? 'about 40 to 50 characters' : 'about 20 to 25 words';
