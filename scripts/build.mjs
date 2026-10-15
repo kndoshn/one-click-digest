@@ -4,6 +4,8 @@
 //   "type": "module", and options.html uses <script type="module">).
 // - content/main.js: a single IIFE. It is injected with chrome.scripting.executeScript, which runs
 //   files as classic scripts, so it must not contain import/export.
+// - content/pdf.js: the PDF reader (pdf.js), also an IIFE, injected before content/main.js into PDF
+//   tabs only. Fully minified, as it is mostly third-party code; license comments are kept.
 // - public/ (manifest, options.html, locales, icons) and third_party/ are copied as is.
 //
 // Flags:
@@ -36,6 +38,16 @@ const common = {
   minifySyntax: true
 };
 
+// pdf.js marks its license notice with @licstart, which esbuild does not keep as a legal comment.
+// Put the notice from the bundled file at the top of content/pdf.js instead.
+function pdfjsLicenseBanner() {
+  const pdfjs = fs.readFileSync(path.join(rootDir, 'node_modules/pdfjs-dist/legacy/build/pdf.mjs'), 'utf-8');
+  const notice = /^\/\*\*[\s\S]*?\*\//.exec(pdfjs)?.[0];
+  if (!notice?.includes('Apache License')) throw new Error('pdf.js license notice not found');
+  const { version } = JSON.parse(fs.readFileSync(path.join(rootDir, 'node_modules/pdfjs-dist/package.json'), 'utf-8'));
+  return `/*! PDF.js ${version} (pdfjs-dist, legacy build)${notice.slice(3)}`;
+}
+
 fs.rmSync(outDir, { recursive: true, force: true });
 
 console.log(`[build] esbuild${e2e ? ' (e2e)' : ''}`);
@@ -51,6 +63,14 @@ await Promise.all([
     entryPoints: { 'content/main': 'src/content/main.ts' },
     outdir: outDir,
     format: 'iife'
+  }),
+  esbuild.build({
+    ...common,
+    entryPoints: { 'content/pdf': 'src/content/pdf_main.ts' },
+    outdir: outDir,
+    format: 'iife',
+    minify: true,
+    banner: { js: pdfjsLicenseBanner() }
   })
 ]);
 

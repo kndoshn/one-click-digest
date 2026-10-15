@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "未找到文章正文。"
   },
+  "errorPdfNoText": {
+    "message": "此 PDF 几乎没有可读取的文本。扫描的 PDF（页面图像）无法摘要。"
+  },
+  "errorPdfFailed": {
+    "message": "无法读取此 PDF。"
+  },
   "errorExtractionFailed": {
     "message": "正文提取失败。"
   },

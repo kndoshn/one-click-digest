@@ -265,6 +265,8 @@ const EXTRACT_ERROR_KEYS: Record<ExtractFail['code'], string> = {
   TOO_SHORT: 'errorTooShort',
   LINK_HEAVY: 'errorNotArticle',
   NO_MAIN_TEXT: 'errorNoMainText',
+  PDF_NO_TEXT: 'errorPdfNoText',
+  PDF_FAILED: 'errorPdfFailed',
   UNKNOWN: 'errorExtractionFailed'
 };
 
@@ -283,7 +285,7 @@ async function doExtractAndMaybeRun(runId: string): Promise<void> {
   await refreshRuntimeSettings();
   if (!isRunActive(runId)) return;
 
-  const r = deps.extract.extractArticle();
+  const r = await deps.extract.extractArticle();
   if (!isRunActive(runId)) return;
 
   if (r.ok === false) {

@@ -315,7 +315,7 @@ export type ExtractOk = {
 
 export type ExtractFail = {
   ok: false;
-  code: 'TOO_SHORT' | 'NO_MAIN_TEXT' | 'LINK_HEAVY' | 'UNKNOWN';
+  code: 'TOO_SHORT' | 'NO_MAIN_TEXT' | 'LINK_HEAVY' | 'PDF_NO_TEXT' | 'PDF_FAILED' | 'UNKNOWN';
   message: string;
   charCount?: number;
   linkDensity?: number;

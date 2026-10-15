@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "記事本文を抽出できませんでした。"
   },
+  "errorPdfNoText": {
+    "message": "この PDF には読み取れるテキストがほとんどありません。スキャンした PDF（ページの画像）は要約できません。"
+  },
+  "errorPdfFailed": {
+    "message": "PDF を読み込めませんでした。"
+  },
   "errorExtractionFailed": {
     "message": "本文抽出に失敗しました。"
   },

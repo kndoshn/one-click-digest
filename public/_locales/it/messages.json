@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "Impossibile trovare il testo principale dell'articolo."
   },
+  "errorPdfNoText": {
+    "message": "Questo PDF contiene poco o nessun testo leggibile. I PDF scansionati (immagini di pagine) non possono essere riassunti."
+  },
+  "errorPdfFailed": {
+    "message": "Impossibile leggere questo PDF."
+  },
   "errorExtractionFailed": {
     "message": "Estrazione del testo non riuscita."
   },

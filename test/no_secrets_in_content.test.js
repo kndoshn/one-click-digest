@@ -27,12 +27,17 @@ test('src/content must not contain Claude API calls or auth headers', () => {
   }
 });
 
-// Content scripts can import shared modules, so also check what actually ships: the bundle.
-test('the content script bundle must not contain Claude API calls or auth headers', () => {
-  const p = path.join(process.cwd(), 'dist', 'content', 'main.js');
-  assert.ok(fs.existsSync(p), 'dist/content/main.js must exist (run build first)');
-  const text = fs.readFileSync(p, 'utf-8');
-  for (const re of BAD_PATTERNS) {
-    assert.ok(!re.test(text), `Found forbidden pattern ${re} in dist/content/main.js`);
+// Content scripts can import shared modules and third-party code, so also check what actually
+// ships: every content bundle.
+test('the content script bundles must not contain Claude API calls or auth headers', () => {
+  const dir = path.join(process.cwd(), 'dist', 'content');
+  const files = ['main.js', 'pdf.js'];
+  for (const f of files) {
+    const p = path.join(dir, f);
+    assert.ok(fs.existsSync(p), `dist/content/${f} must exist (run build first)`);
+    const text = fs.readFileSync(p, 'utf-8');
+    for (const re of BAD_PATTERNS) {
+      assert.ok(!re.test(text), `Found forbidden pattern ${re} in dist/content/${f}`);
+    }
   }
 });

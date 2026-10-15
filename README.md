@@ -63,6 +63,7 @@ Download `one-click-digest-<version>.zip` from the latest [release](../../releas
 | **Bullet Styles** | Show and copy bullets as `-`, `・`, or `1.` without re-running; the last choice is remembered |
 | **Cost Estimation** | Shows character count, tokens, estimated cost, and time before running |
 | **Long Article Support** | Automatic chunked map-reduce summarization for lengthy content |
+| **PDF Support** | Summarizes PDFs opened in the browser from their text, read locally with [PDF.js](https://mozilla.github.io/pdf.js/) |
 | **Multi-language** | Output language can be set independently from UI language |
 | **Progress & Cancel** | Progress indicator with cancel option during summarization |
 
@@ -71,6 +72,10 @@ Download `one-click-digest-<version>.zip` from the latest [release](../../releas
 ### "This page does not look like a normal article"
 
 The extractor couldn't find article content. This happens on dashboards, feeds, or dynamic pages. Try scrolling to load all content, then retry.
+
+### "This PDF has little or no text that can be read"
+
+The PDF has no text layer, as with scanned documents (images of pages), so there is nothing to summarize. PDFs opened from local files (`file://`) are not supported either; open them from a web address instead.
 
 ### API Errors / Timeouts
 
@@ -90,6 +95,8 @@ When summarizing, the extension sends to the Claude API:
 - Page title
 - Page URL
 - Extracted article text
+
+For a PDF, the extension downloads the PDF again from the page's own address and extracts its text in your browser. Only that text is sent, not the PDF file.
 
 Your API key is stored locally and only sent to Anthropic for API calls. Do not use on content you don't want sent to a third-party API.
 
@@ -132,7 +139,7 @@ The developers are not liable for any damages, costs, or losses arising from the
 
 MIT License - See [LICENSE](LICENSE)
 
-Third-party components (e.g., Mozilla Readability) are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+Third-party components (Mozilla Readability and PDF.js) are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 
 ---
 

@@ -314,6 +314,12 @@
   "errorNoMainText": {
     "message": "기사 본문을 찾을 수 없습니다."
   },
+  "errorPdfNoText": {
+    "message": "이 PDF에는 읽을 수 있는 텍스트가 거의 없습니다. 스캔한 PDF(페이지 이미지)는 요약할 수 없습니다."
+  },
+  "errorPdfFailed": {
+    "message": "이 PDF를 읽을 수 없습니다."
+  },
   "errorExtractionFailed": {
     "message": "본문 추출에 실패했습니다."
   },
