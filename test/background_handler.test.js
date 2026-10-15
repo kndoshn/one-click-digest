@@ -136,13 +136,13 @@ function tldrHint(summary, conclusion, note = '') {
   );
 }
 
-const WORDS = 'about 20 words';
-const CHARS = 'about 40 characters';
+const WORDS = 'about 20 to 25 words';
+const CHARS = 'about 40 to 50 characters';
 
 // The bullet length guide; `lines` are the TL;DR's Summary and Conclusion labels.
 function lengthGuide(size, lines) {
   return (
-    `Keep the summary quick to read: write each bullet as one short sentence with a single point, ${size}.` +
+    `Keep the summary quick to read: write each bullet as one sentence of ${size}.` +
     (lines ? ` The ${lines[0]} and ${lines[1]} lines are one sentence each too.` : '') +
     '\nIf a point needs more, leave out its less important details instead of writing a longer sentence. ' +
     'Keep the hedges and numbers of what you include.'

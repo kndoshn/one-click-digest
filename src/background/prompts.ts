@@ -50,19 +50,22 @@ function bulletStyleNoteFor(language: string): string {
 }
 
 // How long each bullet should be, so the summary can be read at a glance. A guide, not a limit:
-// nothing checks it. About 40 characters is the short end of the 40-60 characters Japanese style
-// guides give for one sentence. The last sentence says what gives way when the faithfulness rules
-// and the length pull apart: details, not hedges or numbers.
+// nothing checks it. 40-50 characters is the shorter half of the 40-60 characters Japanese style
+// guides give for one sentence. The model writes shorter than it is asked to: "one short sentence
+// with a single point, about 40 characters" gave a median of 27 characters (20 words in English
+// asked, 18 given) and cost coverage, most in the 3- and 5-bullet modes (judge, 4.26 to 3.86;
+// eval, 2026-10-15). The last sentence says what gives way when the faithfulness rules and the
+// length pull apart: details, not hedges or numbers.
 function lengthGuideFor(mode: SummaryMode, language: string): string {
   const lang = normalizeLang(language);
-  const size = lang.startsWith('ja') || lang.startsWith('zh') ? 'about 40 characters' : 'about 20 words';
+  const size = lang.startsWith('ja') || lang.startsWith('zh') ? 'about 40 to 50 characters' : 'about 20 to 25 words';
   const labels = headerLabelsFor(language);
   const lines =
     mode === 'TLDR_12_CONCLUSION'
       ? ` The ${labels.summary} and ${labels.conclusion} lines are one sentence each too.`
       : '';
   return (
-    `Keep the summary quick to read: write each bullet as one short sentence with a single point, ${size}.${lines}\n` +
+    `Keep the summary quick to read: write each bullet as one sentence of ${size}.${lines}\n` +
     'If a point needs more, leave out its less important details instead of writing a longer sentence. ' +
     'Keep the hedges and numbers of what you include.'
   );
