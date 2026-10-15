@@ -27,6 +27,10 @@ import {
   JUDGE_MODEL,
   judgePrompt,
   type Judgement,
+  LENGTH_LIMIT,
+  lengthStats,
+  lengthUnit,
+  type LengthUnit,
   parseJudgement
 } from './grade.ts';
 import { installFakeApi } from './fake_api.ts';
@@ -209,6 +213,22 @@ const lines = [
   `| Cost (summaries) | $${summaryCost.toFixed(4)} |`,
   `| Median time per summary | ${median(done.map((r) => r.ms)).toFixed(0)} ms |`
 ];
+// Bullet lengths, per unit: characters (Japanese, Chinese) or words (other languages).
+for (const unit of ['characters', 'words'] as LengthUnit[]) {
+  const inUnit = done.filter((r) => lengthUnit(cases[results.indexOf(r)].language) === unit);
+  const st = lengthStats(
+    inUnit.flatMap((r) => r.checks!.bulletLengths),
+    unit
+  );
+  if (st.count === 0) continue;
+  lines.push(
+    `| Bullet length in ${unit}: median / 90th percentile | ${st.median} / ${st.p90} (${st.count} bullets) |`,
+    `| Bullets over ${LENGTH_LIMIT[unit]} ${unit} | ${pct(st.over, st.count)} |`
+  );
+}
+const bulletTotal = done.reduce((s, r) => s + r.checks!.bulletCount, 0);
+const multiSentence = done.reduce((s, r) => s + r.checks!.multiSentenceBullets, 0);
+lines.push(`| Bullets with more than one sentence | ${pct(multiSentence, bulletTotal)} |`);
 if (args.judge) {
   lines.push(
     `| Faithful: no issues (judge) | ${pct(judged.filter((r) => r.judgement!.faithful).length, judged.length)} of ${judged.length} judged |`,

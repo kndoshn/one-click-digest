@@ -16,6 +16,10 @@ export type Checks = {
   truncated: boolean;
   // The summary is written in the requested output language (checked for en and ja only).
   languageOk: boolean | null;
+  // Length of each bullet, in the unit of the output language (see lengthUnit).
+  bulletLengths: number[];
+  // Bullets with more than one sentence.
+  multiSentenceBullets: number;
 };
 
 const CJK = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu;
@@ -43,13 +47,61 @@ export function formatFailure(mode: SummaryMode, text: string): string | null {
   return r.ok ? null : (r as Format.ValidationFail).reason;
 }
 
+export type LengthUnit = 'characters' | 'words';
+
+// Japanese and Chinese are measured in characters, other languages in words.
+export function lengthUnit(language: string): LengthUnit {
+  const lang = language.toLowerCase();
+  return lang.startsWith('ja') || lang.startsWith('zh') ? 'characters' : 'words';
+}
+
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+// A bullet's length without its marker; spaces are not counted as characters.
+export function bulletLength(bullet: string, language: string): number {
+  const body = bullet.replace(/^\s*-/, '');
+  if (lengthUnit(language) === 'characters') return Array.from(GRAPHEMES.segment(body.replace(/\s/g, ''))).length;
+  return body.split(/\s+/).filter(Boolean).length;
+}
+
+// Approximate: a sentence ends at 。！？, or at . ! ? (and any closing quote) followed by a space,
+// unless the period follows a one-letter initial ("U.S."). A final sentence end is not counted twice.
+const SENTENCE_BREAK = /[。！？](?=\s*\S)|(?<!(?:^|[\s.])[A-Z])[.!?]["'”’)]*\s+(?=\S)/g;
+
+export function sentenceCount(bullet: string): number {
+  const body = bullet.replace(/^\s*-/, '').trim();
+  if (body.length === 0) return 0;
+  return (body.match(SENTENCE_BREAK)?.length ?? 0) + 1;
+}
+
+// Bullets longer than this are over the prompts' guide (about 40 characters or 20 words) by more
+// than a few words.
+export const LENGTH_LIMIT: Record<LengthUnit, number> = { characters: 50, words: 25 };
+
+export type LengthStats = { count: number; median: number; p90: number; over: number };
+
+// Median, 90th percentile (nearest rank) and the number of bullets over LENGTH_LIMIT.
+export function lengthStats(lengths: number[], unit: LengthUnit): LengthStats {
+  if (lengths.length === 0) return { count: 0, median: 0, p90: 0, over: 0 };
+  const s = [...lengths].sort((a, b) => a - b);
+  return {
+    count: s.length,
+    median: s[Math.floor(s.length / 2)],
+    p90: s[Math.ceil(s.length * 0.9) - 1],
+    over: s.filter((n) => n > LENGTH_LIMIT[unit]).length
+  };
+}
+
 export function checkSummary(mode: SummaryMode, language: string, text: string): Checks {
+  const bullets = Format.extractBulletLines(text);
   return {
     formatValid: Format.validate(mode, text).ok,
-    bulletCount: Format.extractBulletLines(text).length,
+    bulletCount: bullets.length,
     expectedBullets: Format.expectedBulletCount(mode),
     truncated: Format.isLikelyTruncatedOutput(text, language),
-    languageOk: languageOk(text, language)
+    languageOk: languageOk(text, language),
+    bulletLengths: bullets.map((b) => bulletLength(b, language)),
+    multiSentenceBullets: bullets.filter((b) => sentenceCount(b) > 1).length
   };
 }
 
