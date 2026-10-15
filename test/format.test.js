@@ -256,3 +256,72 @@ test('Format.applyBulletStyle: other markers the model may write are rewritten t
   const numbered = AS.Format.applyBulletStyle('- a\n\n- b', 'number');
   assert.equal(AS.Format.applyBulletStyle(numbered, 'dash'), '- a\n\n- b');
 });
+
+// A Japanese summary of an English article whose first bullet stayed in English (reported in the
+// wild, 2026-10-16).
+const MIXED_JA = [
+  '・Ramp is said to have raised $1.85 billion at a $60 billion valuation, four months after its $44 billion round',
+  '',
+  '・年換算売上高は20億ドルを超え、6月の報道値15億ドルから増加、成長率は前年同時期より25%速いという',
+  '',
+  '・年換算の購入額は2750億ドル超で前年比175%増、顧客数は6月の7万から8万5000に増えたと主張',
+  '',
+  '・経費管理から支払い、不正検知、調達、会計へ拡大し、AIエージェントを製品に組み込み、AI向け法人カードも投入',
+  '',
+  '・投資家のラボイス氏は「Anthropicより大きくなりたい」と語り、人事ソフトのRipplingとも競合している'
+].join('\n');
+
+test('Format.foreignLines: finds the line left in English in a Japanese summary', () => {
+  const AS = loadFormat();
+  const english = MIXED_JA.split('\n')[0];
+  assert.deepEqual([...AS.Format.foreignLines(MIXED_JA, 'ja')], [english]);
+  assert.deepEqual([...AS.Format.foreignLines(MIXED_JA, 'ja-JP')], [english]);
+  assert.deepEqual([...AS.Format.foreignLines(MIXED_JA.split('\n').slice(2).join('\n'), 'ja')], []);
+});
+
+test('Format.foreignLines: Japanese lines with Latin names, no kana or no letters are not flagged', () => {
+  const AS = loadFormat();
+  const lines = [
+    '- Dragoneer、Thrive Capital、Founders Fund、Sands Capital、Avenir Growthが共同主導',
+    '- 売上高20億ドル超',
+    '- アンスロピック',
+    '- $60B',
+    '- AI'
+  ];
+  assert.deepEqual([...AS.Format.foreignLines(lines.join('\n\n'), 'ja')], []);
+});
+
+test('Format.foreignLines: checks the text after the Summary and Conclusion labels', () => {
+  const AS = loadFormat();
+  const text = ['要約: Ramp raised $1.85 billion.', '', '- 評価額は600億ドル', '', '結論: 競争は激しくなる'].join('\n');
+  assert.deepEqual([...AS.Format.foreignLines(text, 'ja')], ['要約: Ramp raised $1.85 billion.']);
+  assert.deepEqual([...AS.Format.foreignLines('Summary: 評価額は600億ドル', 'ja')], []);
+});
+
+test('Format.foreignLines: Chinese and Korean need their own script', () => {
+  const AS = loadFormat();
+  const en = '- Ramp raised $1.85 billion.';
+  assert.deepEqual([...AS.Format.foreignLines(`${en}\n\n- 估值达到600亿美元`, 'zh-CN')], [en]);
+  assert.deepEqual([...AS.Format.foreignLines(`${en}\n\n- 估值達到600億美元`, 'zh-TW')], [en]);
+  assert.deepEqual([...AS.Format.foreignLines(`${en}\n\n- 램프는 18억 5천만 달러를 조달했다`, 'ko')], [en]);
+});
+
+test('Format.foreignLines: Latin-script languages flag lines written mostly in CJK or Hangul', () => {
+  const AS = loadFormat();
+  const ja = '- 市は新しい病院を建てる';
+  const ko = '- 시는 새 병원을 짓는다';
+  for (const language of ['en', 'fr', 'de', 'es', 'it', 'pt-BR']) {
+    assert.deepEqual(
+      [...AS.Format.foreignLines(`- The city merges 北原病院 into its network.\n\n${ja}\n\n${ko}`, language)],
+      [ja, ko],
+      language
+    );
+  }
+});
+
+test('Format.foreignLines: other languages are not checked', () => {
+  const AS = loadFormat();
+  assert.deepEqual([...AS.Format.foreignLines(MIXED_JA, 'ru')], []);
+  assert.deepEqual([...AS.Format.foreignLines(MIXED_JA, '')], []);
+  assert.deepEqual([...AS.Format.foreignLines('', 'ja')], []);
+});

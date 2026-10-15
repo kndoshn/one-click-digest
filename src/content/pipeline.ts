@@ -137,9 +137,14 @@ export async function runPipeline(
     repairModel = opts.mapModel;
   }
 
-  // Asks for a rewrite of `text` and keeps `text` unless the rewrite passes format validation.
+  // Valid output has the mode's format and every line in the output language.
+  const isValid = (text: string): boolean =>
+    Format.validate(mode, text).ok && Format.foreignLines(text, language).length === 0;
+
+  // Asks for a rewrite of `text` and keeps `text` unless the rewrite is valid.
   const repair = async (text: string, kind: RepairKind): Promise<string> => {
     progress('REPAIR');
+    const foreign = Format.foreignLines(text, language);
     const resp = await send({
       type: 'RUN_SUMMARY_REPAIR',
       payload: {
@@ -152,19 +157,24 @@ export async function runPipeline(
         url: article.url,
         // Map-reduce runs pass the chunk summaries so the repair pass can reuse the reduce prompt cache.
         chunkSummaries,
-        ...(kind === 'truncation' ? { fixTruncation: true } : { bulletCount: Format.extractBulletLines(text).length })
+        ...(kind === 'truncation'
+          ? { fixTruncation: true }
+          : {
+              bulletCount: Format.extractBulletLines(text).length,
+              ...(foreign.length > 0 ? { foreignLines: foreign } : {})
+            })
       }
     });
     if (!isActive()) return text;
     const ok = textOf(resp);
     const rewrite = ok ? Format.tidyLayout(ok.text) : '';
-    const accepted = Boolean(ok && Format.validate(mode, rewrite).ok);
+    const accepted = Boolean(ok && isValid(rewrite));
     trace.repairs.push({ kind, accepted });
     return accepted ? rewrite : text;
   };
 
   let text = Format.tidyLayout(draft.text);
-  trace.draftValid = Format.validate(mode, text).ok;
+  trace.draftValid = isValid(text);
   if (!trace.draftValid) {
     text = await repair(text, 'format');
     if (!isActive()) return { status: 'cancelled' };

@@ -531,6 +531,56 @@ test('RUN_SUMMARY_REPAIR: says how many bullets the output has when the count is
   assert.ok(!lastBody().messages[0].content.includes('The original output has'));
 });
 
+test('RUN_SUMMARY_REPAIR: asks to translate the lines that are not in the output language', async () => {
+  const hint = [
+    'These lines of the original output are not written in ja. Rewrite them in ja:',
+    '- The first point.',
+    '- The third point.'
+  ].join('\n');
+  const foreignLines = ['- The first point.', '- The third point.'];
+
+  resetFetch([messagesResponse('- fixed')]);
+  await send({
+    type: 'RUN_SUMMARY_REPAIR',
+    payload: {
+      ...BASE,
+      language: 'ja',
+      mode: 'BULLETS_3',
+      badOutput: 'bad',
+      model: HAIKU,
+      bulletCount: 3,
+      foreignLines
+    }
+  });
+  const prompt = lastBody().messages[0].content;
+  assert.ok(prompt.includes(`\n${hint}\n`), prompt);
+  assert.ok(prompt.indexOf(hint) > prompt.indexOf(HINT_3), 'after the format hint');
+
+  resetFetch([messagesResponse('- fixed')]);
+  await send({
+    type: 'RUN_SUMMARY_REPAIR',
+    payload: {
+      ...BASE,
+      language: 'ja',
+      mode: 'BULLETS_3',
+      badOutput: 'bad',
+      model: SONNET,
+      chunkSummaries: ['- a'],
+      foreignLines
+    }
+  });
+  const suffix = lastBody().messages[0].content.at(-1).text;
+  assert.ok(suffix.includes(`\n${hint}\n`), suffix);
+
+  // No lines, no hint.
+  resetFetch([messagesResponse('- fixed')]);
+  await send({
+    type: 'RUN_SUMMARY_REPAIR',
+    payload: { ...BASE, language: 'ja', mode: 'BULLETS_3', badOutput: 'bad', model: HAIKU, foreignLines: [] }
+  });
+  assert.ok(!lastBody().messages[0].content.includes('not written in'));
+});
+
 test('RUN_SUMMARY_REPAIR: the bullet count also goes into the prompt with chunk summaries', async () => {
   resetFetch([messagesResponse('- fixed')]);
   await send({

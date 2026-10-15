@@ -215,6 +215,16 @@ function bulletCountHint(mode: SummaryMode, bulletCount: number | undefined): st
   ];
 }
 
+// Without this, a repair tends to keep a line the draft left in the article's language. Empty when
+// every line is in the output language.
+function foreignLinesHint(language: string, foreignLines: string[] | undefined): string[] {
+  if (!foreignLines || foreignLines.length === 0) return [];
+  return [
+    `These lines of the original output are not written in ${language}. Rewrite them in ${language}:`,
+    ...foreignLines
+  ];
+}
+
 export function buildRepairPrompt(args: {
   language: string;
   mode: SummaryMode;
@@ -224,10 +234,12 @@ export function buildRepairPrompt(args: {
   chunkSummaries?: string[];
   fixTruncation?: boolean;
   bulletCount?: number;
+  foreignLines?: string[];
   cacheControl?: CacheControlEphemeral;
 }): UserContent {
   const formatHint = formatHintFor(args.mode, args.language);
   const countHint = bulletCountHint(args.mode, args.bulletCount);
+  const languageHint = foreignLinesHint(args.language, args.foreignLines);
   const truncationHint = args.fixTruncation
     ? `If the output looks cut off, complete the last bullet without adding new facts. Keep the bullet count unchanged.`
     : '';
@@ -250,6 +262,7 @@ export function buildRepairPrompt(args: {
       `Reformat the output to match the required format.`,
       formatHint,
       ...countHint,
+      ...languageHint,
       truncationHint,
       `Only return the corrected summary.`
     ].join('\n');
@@ -261,6 +274,7 @@ export function buildRepairPrompt(args: {
     `Output language: ${args.language}.`,
     formatHint,
     ...countHint,
+    ...languageHint,
     truncationHint,
     `Use only information from the original output, with its hedges and numbers unchanged.`,
     `Only return the corrected summary.`,

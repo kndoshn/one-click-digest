@@ -14,7 +14,8 @@ export type Checks = {
   expectedBullets: number;
   // The ending looks cut off (the extension tries one repair for this).
   truncated: boolean;
-  // The summary is written in the requested output language (checked for en and ja only).
+  // Every line of the summary is written in the requested output language (checked for en and ja
+  // only).
   languageOk: boolean | null;
   // Length of each bullet, in the unit of the output language (see lengthUnit).
   bulletLengths: number[];
@@ -35,7 +36,8 @@ export function japaneseRatio(text: string): number | null {
 export function languageOk(text: string, language: string): boolean | null {
   const ratio = japaneseRatio(text);
   if (ratio === null) return false;
-  if (language.startsWith('ja')) return ratio > 0.5;
+  // A summary in the right language overall can still have a line left in another language.
+  if (language.startsWith('ja')) return ratio > 0.5 && Format.foreignLines(text, language).length === 0;
   if (language.startsWith('en')) return ratio < 0.02;
   return null;
 }

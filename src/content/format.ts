@@ -140,6 +140,44 @@ export function validate(mode: SummaryMode, text: string): ValidationResult {
   return validateBulletBlock(lines, expected);
 }
 
+const KANA_HAN = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu;
+const HAN = /\p{Script=Han}/gu;
+const HANGUL = /\p{Script=Hangul}/gu;
+const CJK_HANGUL = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}\p{Script=Hangul}]/gu;
+const LATIN = /\p{Script=Latin}/gu;
+const LETTER = /\p{L}/gu;
+const LATIN_LANGS = ['en', 'fr', 'de', 'es', 'it', 'pt'];
+
+const countOf = (text: string, re: RegExp): number => text.match(re)?.length ?? 0;
+
+// Whether a line (without its bullet marker or label) is not written in `lang`, judged by script:
+// Japanese, Chinese and Korean lines need their own script, and lines in a Latin-script language
+// must not be mostly CJK or Hangul. Lines with fewer than 3 letters are too short to tell.
+function isForeign(body: string, lang: string): boolean {
+  if (countOf(body, LETTER) < 3) return false;
+  if (lang.startsWith('ja')) return countOf(body, KANA_HAN) === 0;
+  if (lang.startsWith('zh')) return countOf(body, HAN) === 0;
+  if (lang.startsWith('ko')) return countOf(body, HANGUL) === 0;
+  if (LATIN_LANGS.some((l) => lang.startsWith(l))) return countOf(body, CJK_HANGUL) > countOf(body, LATIN);
+  return false;
+}
+
+// Lines of a summary that are not written in the output language, as they appear in the text.
+// Models sometimes leave a line in the article's language; format validation alone accepts that.
+// Languages other than those offered in the overlay are not checked.
+export function foreignLines(text: string, language: string): string[] {
+  const lang = String(language || '')
+    .trim()
+    .toLowerCase();
+  return normalize(text)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => {
+      const body = line.replace(BULLET_RE, '').replace(SUMMARY_RE, '').replace(CONCLUSION_RE, '');
+      return isForeign(body, lang);
+    });
+}
+
 // Lay the output out the way validate() expects: every line trimmed, blank lines dropped, and exactly
 // one blank line between the remaining lines. Models often get the blank lines wrong while the
 // content is fine, and fixing that here saves a repair request. Lines are never merged, so stray
