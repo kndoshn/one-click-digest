@@ -97,6 +97,34 @@ test('an invalid rewrite is not accepted; the draft is kept', async () => {
   assert.deepEqual(r.trace.repairs, [{ kind: 'format', accepted: false }]);
 });
 
+const JA_VALID = '- 一つ目の要点\n\n- 二つ目の要点\n\n- 三つ目の要点';
+const JA_MIXED = '- The first point stayed in English.\n\n- 二つ目の要点\n\n- 三つ目の要点';
+
+test('a line in another language gets a format repair that names the line', async () => {
+  const t = transport(JA_MIXED, JA_VALID);
+  const r = await runPipeline(SHORT, { ...OPTS, language: 'ja' }, t.send);
+  assert.equal(r.text, JA_VALID);
+  assert.deepEqual(r.trace, { chunks: 1, draftValid: false, repairs: [{ kind: 'format', accepted: true }] });
+  const repair = t.sent[1];
+  assert.equal(repair.type, 'RUN_SUMMARY_REPAIR');
+  assert.equal(repair.payload.badOutput, JA_MIXED);
+  assert.deepEqual(repair.payload.foreignLines, ['- The first point stayed in English.']);
+  assert.equal(repair.payload.bulletCount, 3);
+});
+
+test('a rewrite that still has a line in another language is not accepted', async () => {
+  const t = transport(JA_MIXED, JA_MIXED);
+  const r = await runPipeline(SHORT, { ...OPTS, language: 'ja' }, t.send);
+  assert.equal(r.text, JA_MIXED);
+  assert.deepEqual(r.trace.repairs, [{ kind: 'format', accepted: false }]);
+});
+
+test('a format repair of a draft in the right language names no lines', async () => {
+  const t = transport('Not bullets.', VALID);
+  await runPipeline(SHORT, OPTS, t.send);
+  assert.equal('foreignLines' in t.sent[1].payload, false);
+});
+
 test('a likely truncated ending gets a truncation repair', async () => {
   const cut = '- One.\n\n- Two.\n\n- Three is cut in the mid';
   const t = transport(cut, VALID);

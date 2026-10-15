@@ -28,6 +28,14 @@ test('languageOk: Japanese vs English text', () => {
   assert.equal(languageOk('- 市は Kitahara Hospital を統合する。', 'en'), false);
   assert.equal(languageOk('- 123', 'en'), false);
   assert.equal(languageOk('- Die Stadt baut.', 'de'), null);
+  // Mostly Japanese, but one bullet stayed in English.
+  const mixed = [
+    '- 市は新しい病院を建てる。',
+    '- 県は道路を直す。',
+    '- 国は橋を架ける。',
+    '- The town will build a station.'
+  ];
+  assert.equal(languageOk(mixed.join('\n\n'), 'ja'), false);
   assert.equal(japaneseRatio('...'), null);
 });
 

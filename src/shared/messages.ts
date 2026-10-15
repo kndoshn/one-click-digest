@@ -67,7 +67,9 @@ export const RunRepairSchema = v.object({
     chunkSummaries: v.optional(v.array(text)),
     fixTruncation: v.optional(v.boolean()),
     // Bullets in badOutput, for a format repair; the prompt says so when the count is wrong.
-    bulletCount: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0)))
+    bulletCount: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+    // Lines of badOutput that are not in the output language, for a format repair.
+    foreignLines: v.optional(v.array(text))
   })
 });
 
