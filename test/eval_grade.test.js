@@ -5,12 +5,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  bulletLength,
   checkSummary,
   costUsd as rawCostUsd,
   formatFailure,
   japaneseRatio,
   languageOk,
-  parseJudgement
+  lengthStats,
+  lengthUnit,
+  parseJudgement,
+  sentenceCount
 } from '../eval/grade.ts';
 
 // Rounded to a millionth of a dollar, to compare without floating-point noise.
@@ -33,12 +37,72 @@ test('checkSummary: format, bullets, truncation and language', () => {
     bulletCount: 3,
     expectedBullets: 3,
     truncated: false,
-    languageOk: true
+    languageOk: true,
+    bulletLengths: [1, 1, 1],
+    multiSentenceBullets: 0
   });
   const bad = checkSummary('BULLETS_5', 'en', '- One.\n\n- Two and then');
   assert.equal(bad.formatValid, false);
   assert.equal(bad.bulletCount, 2);
   assert.equal(bad.truncated, true);
+});
+
+test('checkSummary: bullet lengths in the unit of the output language, and bullets with several sentences', () => {
+  const ja = checkSummary(
+    'BULLETS_3',
+    'ja',
+    '- 市は病院を建てる\n\n- 費用は約10億円。完成は2028年\n\n- 反対意見もある'
+  );
+  assert.deepEqual(ja.bulletLengths, [8, 17, 7]);
+  assert.equal(ja.multiSentenceBullets, 1);
+  const en = checkSummary(
+    'BULLETS_3',
+    'en',
+    '- The city builds.\n\n- It costs $1 billion. It opens in 2028.\n\n- Some object.'
+  );
+  assert.deepEqual(en.bulletLengths, [3, 8, 2]);
+  assert.equal(en.multiSentenceBullets, 1);
+  // TL;DR: only the bullets count, not the Summary and Conclusion lines.
+  const tldr = checkSummary('TLDR_12_CONCLUSION', 'en', 'Summary: a b c d e.\n\n- One two.\n\nConclusion: f g h i.');
+  assert.deepEqual(tldr.bulletLengths, [2]);
+});
+
+test('lengthUnit: characters for Japanese and Chinese, words for other languages', () => {
+  assert.equal(lengthUnit('ja'), 'characters');
+  assert.equal(lengthUnit('ja-JP'), 'characters');
+  assert.equal(lengthUnit('zh-TW'), 'characters');
+  assert.equal(lengthUnit('en'), 'words');
+  assert.equal(lengthUnit('ko'), 'words');
+});
+
+test('bulletLength: without the marker', () => {
+  assert.equal(bulletLength('- 売上は12%増', 'ja'), 7);
+  // Spaces do not count as characters.
+  assert.equal(bulletLength('-   売上 は 増加  ', 'ja'), 5);
+  assert.equal(bulletLength('- 𠮷野家の売上', 'ja'), 6);
+  assert.equal(bulletLength('- Sales rose  12% in Q3.', 'en'), 5);
+  assert.equal(bulletLength('-', 'en'), 0);
+});
+
+test('sentenceCount: sentence ends followed by more text', () => {
+  assert.equal(sentenceCount('- 売上は増えた'), 1);
+  assert.equal(sentenceCount('- 売上は増えた。'), 1);
+  assert.equal(sentenceCount('- 売上は増えた。利益も増えた'), 2);
+  assert.equal(sentenceCount('- 本当か？ 誰も知らない！ 次回に続く'), 3);
+  assert.equal(sentenceCount('- Sales rose 3.5% to $1.2 billion.'), 1);
+  assert.equal(sentenceCount('- Sales rose. Profit fell! Why? Nobody knows.'), 4);
+  assert.equal(sentenceCount('- He said "it works." Then he left.'), 2);
+  // An initial in an abbreviation is not a sentence end.
+  assert.equal(sentenceCount('- The U.S. Senate voted.'), 1);
+  assert.equal(sentenceCount('- It sold to IBM. Then it grew.'), 2);
+  assert.equal(sentenceCount('-'), 0);
+});
+
+test('lengthStats: median, 90th percentile and the number over the limit', () => {
+  const xs = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  assert.deepEqual(lengthStats(xs, 'characters'), { count: 10, median: 60, p90: 90, over: 5 });
+  assert.deepEqual(lengthStats([10, 26, 30], 'words'), { count: 3, median: 26, p90: 30, over: 2 });
+  assert.deepEqual(lengthStats([], 'words'), { count: 0, median: 0, p90: 0, over: 0 });
 });
 
 test('costUsd: catalog prices, long-context tier, cache multipliers and the judge model', () => {

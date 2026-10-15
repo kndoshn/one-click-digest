@@ -29,6 +29,7 @@ Deterministic checks on every summary:
 - **Needed a repair pass** and **valid format after repairs**: how often the extension had to ask for a rewrite, and whether the final text is valid.
 - **Ending looks truncated**: the final text still ends mid-sentence.
 - **Output language as requested**: Japanese characters dominate for `ja` and are absent for `en`.
+- **Bullet length**: median and 90th percentile, in characters for Japanese and Chinese and in words for other languages, and the share of bullets over 50 characters or 25 words (the prompts ask for about 40 characters or 20 words). **Bullets with more than one sentence** counts sentence ends inside a bullet; it is approximate for English abbreviations.
 - API calls, calls that stopped at `max_tokens`, cost and time.
 
 With `--judge`, an LLM judge also reports:
