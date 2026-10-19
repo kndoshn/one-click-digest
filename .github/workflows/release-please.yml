@@ -33,7 +33,7 @@ jobs:
     steps:
       # A GitHub App token instead of GITHUB_TOKEN, so that CI runs on the release PR
       # (resources created with GITHUB_TOKEN do not trigger workflows).
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: app-token
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
@@ -65,7 +65,7 @@ jobs:
           persist-credentials: false
 
       # No cache: release artifacts are built only from fresh downloads.
-      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           minimum_release_age: 7d
           cache: false
