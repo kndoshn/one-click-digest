@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/kndoshn/one-click-digest/compare/1.1.1...1.2.0) (2026-10-21)
+
+
+### Features
+
+* summarize PDFs opened in the browser ([#63](https://github.com/kndoshn/one-click-digest/issues/63)) ([aa9c6e5](https://github.com/kndoshn/one-click-digest/commit/aa9c6e5dfa5d7c428620718ecb71a6dbf026d977))
+
+
+### Bug Fixes
+
+* keep summary bullets to one short sentence ([#61](https://github.com/kndoshn/one-click-digest/issues/61)) ([fcc43ec](https://github.com/kndoshn/one-click-digest/commit/fcc43ec3df3706bb39f4a578aea76e2b903b1f6e))
+* repair summaries with a line left in another language ([#64](https://github.com/kndoshn/one-click-digest/issues/64)) ([6442bcc](https://github.com/kndoshn/one-click-digest/commit/6442bcca6c34e820d9914cd4a1214881e7b809cc))
+
 ## [1.1.1](https://github.com/kndoshn/one-click-digest/compare/1.1.0...1.1.1) (2026-10-13)
 
 
